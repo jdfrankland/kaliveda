@@ -153,9 +153,6 @@ KVMultiDetArray::~KVMultiDetArray()
 
 void KVMultiDetArray::Build(Int_t)
 {
-
-
-
 }
 
 //_______________________________________________________________________________________
@@ -2202,7 +2199,7 @@ void KVMultiDetArray::CalculateDetectorSegmentationIndex()
    }
 }
 
-/* void KVMultiDetArray::CalculateGeoNodeTrajectories()
+void KVMultiDetArray::CalculateGeoNodeTrajectories()
 {
    // Loop over all detectors of array
    // For each detector with no detectors behind it (i.e. furthest from target)
@@ -2221,8 +2218,24 @@ void KVMultiDetArray::CalculateDetectorSegmentationIndex()
       }
    }
 }
- */
+KVSeqCollection *KVMultiDetArray::GetListOfFiredTrajectories(KVSeqCollection *fired)
+{
+    // from list of fired acquisition parameters, create and fill list of
+    // fired trajectories. delete list after use.
 
+    if(fired){
+        KVSeqCollection* coll = new KVUniqueNameList;
+        TIter next(fired);
+        KVACQParam* par;
+        while( (par = (KVACQParam*)next()) ){
+            // only use fired nodes with a unique trajectory
+            if(par->GetDetector() && par->GetDetector()->GetNode()->GetNTraj()==1)
+                coll->Add( par->GetDetector()->GetNode()->GetTrajectories()->First() );
+        }
+        return coll;
+    }
+    return 0;
+}
 //___________________________________________________________________________//
 
 void KVMultiDetArray::GetAlignedIDTelescopesForDetector(KVDetector* det, TCollection* list)
@@ -2491,4 +2504,3 @@ void KVMultiDetArray::FillListOfIDTelescopes(KVIDGraph* gr) const
       }
    }
 }
-

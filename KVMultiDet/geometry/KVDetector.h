@@ -437,7 +437,7 @@ public:
    void RemoveParentStructure(KVGeoStrucElement* elem);
    KVGeoStrucElement* GetParentStructure(const Char_t* type, const Char_t* name = "") const;
 
-   //virtual KVGeoDNTrajectory* GetTrajectoryForReconstruction();
+    virtual KVGeoDNTrajectory* GetTrajectoryForReconstruction();
 
    void SetActiveLayerMatrix(const TGeoHMatrix*);
    void SetActiveLayerShape(TGeoBBox*);

@@ -5,6 +5,7 @@
 #include "KVGroup.h"
 #include "KVMultiDetArray.h"
 #include "KVACQParam.h"
+#include <KVGeoDNTrajectory.h>
 
 using namespace std;
 
@@ -272,7 +273,6 @@ void KVReconstructedNucleus::AddDetector(KVDetector* det)
    //Add a detector to the list of those through which the particle passed.
    //Put reference to detector into fDetectors array, increase number of detectors by one.
    //As this is only used in initial particle reconstruction, we add 1 unidentified particle to the detector.
-   // Creates KVHashList fDetList in case it does not exist.
 
    //add name of detector to fDetNames
    fDetNames += det->GetName();
@@ -296,8 +296,7 @@ void KVReconstructedNucleus::Reconstruct(KVDetector* kvd)
    //measured in a series of detectors/telescopes.
    //
    //Starting from detector *kvd, collect information from all detectors placed directly
-   //in front of *kvd (kvd->GetAlignedDetectors()),
-   //these are the detectors the particle has passed through.
+    //in front of *kvd : these are the detectors the particle has passed through (but see NOTE below)
    //
    //Each one is added to the particle's list (KVReconstructedNucleus::AddDetector), and,
    //if it is not an unsegmented detector, it is marked as having been "analysed"
@@ -306,7 +305,14 @@ void KVReconstructedNucleus::Reconstruct(KVDetector* kvd)
 
    fNSegDet = 0;
 
-   //get list of detectors through which particle passed
+    KVGeoDNTrajectory* recon_traj = kvd->GetTrajectoryForReconstruction();
+
+    if(recon_traj){
+        ReconstructWithTrajectory(kvd, recon_traj);
+        return;
+    }
+
+        // iterate over trajectory
    if (kvd->GetGroup()) {
       TList* aligned = kvd->GetAlignedDetectors();
       if (aligned) {
@@ -321,6 +327,30 @@ void KVReconstructedNucleus::Reconstruct(KVDetector* kvd)
       }
       kvd->GetGroup()->AddHit(this);
    }
+
+}
+
+void KVReconstructedNucleus::ReconstructWithTrajectory(KVDetector *kvd, KVGeoDNTrajectory *tr)
+{
+    // Reconstruct particle along given trajectory
+    //Starting from detector *kvd, collect information from all detectors on trajectory *tr
+    //in front of *kvd : these are the detectors the particle has passed through
+    //
+    //Each one is added to the particle's list (KVReconstructedNucleus::AddDetector), and,
+    //if it is not an unsegmented detector, it is marked as having been "analysed"
+    //(KVDetector::SetAnalysed) in order to stop it being considered as a starting point for another
+    //particle reconstruction.
+
+    //Info("ReconstructWithTrajectory","from %s using %s",kvd->GetName(),tr->GetTitle());
+    tr->IterateFrom(kvd->GetNode());
+    KVGeoDetectorNode* node;
+    while( (node = tr->GetNextNode()) ){
+        KVDetector *d = node->GetDetector();
+        AddDetector(d);
+        d->AddHit(this);  // add particle to list of particles hitting detector
+        d->SetAnalysed(kTRUE);   //cannot be used to seed another particle
+    }
+    kvd->GetGroup()->AddHit(this);
 }
 
 //_____________________________________________________________________________________
@@ -529,10 +559,8 @@ void KVReconstructedNucleus::GetAnglesFromStoppingDetector(Option_t* opt)
    // If "mean" the (theta,phi) position of the centre of the detector
    // is used to fix the nucleus' direction.
    //
-   // *unless the detector directly in front of the stopping detector has
-   //  a smaller solid angle, in which case we use that one (because the
-   //  particle had to pass through the smaller angular range defined by
-   //  the DE-detector)
+    // *unless one of the detectors on the particle's trajectory to the stopping detector has
+    //  a smaller solid angle, in which case we use that one
 
    //don't try if particle has no correctly defined energy
    if (GetEnergy() <= 0.0)
@@ -541,11 +569,14 @@ void KVReconstructedNucleus::GetAnglesFromStoppingDetector(Option_t* opt)
       return;
 
    KVDetector* angle_det = GetStoppingDetector();
-   if (angle_det->GetNode()->GetNDetsInFront()) {
-      KVDetector* d = (KVDetector*)angle_det->GetNode()->GetDetectorsInFront()->First();
+    Int_t ndets = GetNumDet();
+    if(ndets>1){
+        for(int id=1;id<ndets;id++){
+            KVDetector* d = GetDetector(id);
       if (d->GetSolidAngle() < angle_det->GetSolidAngle())
          angle_det = d;
    }
+    }
    if (!strcmp(opt, "random")) {
       //random angles
       TVector3 dir = angle_det->GetRandomDirection("random");

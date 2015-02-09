@@ -15,7 +15,7 @@
 #include "TGeoManager.h"
 #include "TGeoMatrix.h"
 #include "TGeoBBox.h"
-//#include <KVGeoDNTrajectory.h>
+#include <KVGeoDNTrajectory.h>
 
 using namespace std;
 
@@ -121,6 +121,7 @@ void KVDetector::init()
    fPresent = kTRUE;
    fDetecting = kTRUE;
    fParentStrucList.SetCleanup();
+    fNode.SetDetector(this);
 }
 
 KVDetector::KVDetector()
@@ -1556,7 +1557,7 @@ KVGeoStrucElement* KVDetector::GetParentStructure(const Char_t* type, const Char
    return el;
 }
 
-/* KVGeoDNTrajectory* KVDetector::GetTrajectoryForReconstruction()
+KVGeoDNTrajectory* KVDetector::GetTrajectoryForReconstruction()
 {
     // Return pointer to trajectory to be used for reconstruction of a
     // particle stopping in this detector.
@@ -1577,7 +1578,7 @@ KVGeoStrucElement* KVDetector::GetParentStructure(const Char_t* type, const Char
     }
     return (KVGeoDNTrajectory*)GetNode()->GetTrajectories()->First();
 }
- */
+
 void KVDetector::SetActiveLayerMatrix(const TGeoHMatrix* m)
 {
    // Set ROOT geometry global matrix transformation to coordinate frame of active layer volume

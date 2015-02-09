@@ -871,7 +871,7 @@ TGeoManager* KVINDRA::CreateGeoManager(Double_t , Double_t , Double_t , Bool_t c
    }
    delete evt;
    // calculate detector node trajectories
-   //CalculateGeoNodeTrajectories();
+    CalculateGeoNodeTrajectories();
    // check etalon module trajectories
    Info("CreateGeoManager", "ROOT geometry initialised for %d/%d detectors", nrootgeo, GetDetectors()->GetEntries());
    return fGeoManager;

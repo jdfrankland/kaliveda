@@ -1,0 +1,85 @@
+//Created by KVClassFactory on Tue Feb 25 16:31:36 2014
+//Author: John Frankland,,,
+
+#include "KVGeoDNTrajectory.h"
+
+ClassImp(KVGeoDNTrajectory)
+
+////////////////////////////////////////////////////////////////////////////////
+// BEGIN_HTML <!--
+/* -->
+<h2>KVGeoDNTrajectory</h2>
+<h4>Path taken by particles through multidetector geometry</h4>
+<!-- */
+// --> END_HTML
+// A trajectory links individual KVGeoDetectorNode objects.
+//
+////////////////////////////////////////////////////////////////////////////////
+
+Int_t KVGeoDNTrajectory::fGDNTrajNumber = 0;
+
+KVGeoDNTrajectory::KVGeoDNTrajectory() : fNodes(3,0)
+{
+   // Default constructor
+	init();
+}
+//______________________
+KVGeoDNTrajectory::KVGeoDNTrajectory(KVGeoDetectorNode* node) : fNodes(3,0)
+{
+   // Create a new trajectory starting from node
+	AddFirst(node);
+	init();
+}
+//______________________
+KVGeoDNTrajectory::KVGeoDNTrajectory(const KVGeoDNTrajectory & obj) : KVBase(), fNodes(3,0)
+{
+   //copy ctor
+   obj.Copy(*this);
+	init();
+}
+
+KVGeoDNTrajectory::~KVGeoDNTrajectory()
+{
+   // Destructor
+}
+
+//________________________________________________________________
+void KVGeoDNTrajectory::init()
+{
+    fIter_idx=-1;
+	++fGDNTrajNumber;
+	SetName(Form("GDNTraj_%d",fGDNTrajNumber));
+}
+
+void KVGeoDNTrajectory::Copy(TObject& obj) const
+{
+   // This method copies the current state of 'this' object into 'obj'
+   // You should add here any member variables, for example:
+   //    (supposing a member variable KVGeoDNTrajectory::fToto)
+   //    CastedObj.fToto = fToto;
+   // or
+   //    CastedObj.SetToto( GetToto() );
+
+   KVBase::Copy(obj);
+   KVGeoDNTrajectory& CastedObj = (KVGeoDNTrajectory&)obj;
+	TIter next(&fNodes);
+	KVGeoDetectorNode* node;
+	while( (node = (KVGeoDetectorNode*)next()) ) CastedObj.AddLast(node);
+}
+
+const Char_t* KVGeoDNTrajectory::GetTitle() const
+{
+	// Dynamically constructed title: DET1/DET2/DET3/
+	
+	TString t;
+	TIter next(&fNodes);
+	KVGeoDetectorNode* n;
+	while( (n=(KVGeoDetectorNode*)next()) ){
+	   t += n->GetName();
+       if(n->GetDetector()->Fired("all")) t+= "+";
+       else if(n->GetDetector()->Fired()) t+= "*";
+		t += "/";
+	}
+	const_cast<KVGeoDNTrajectory*>(this)->SetTitle(t);
+	return KVBase::GetTitle();
+}

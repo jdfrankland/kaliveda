@@ -16,5 +16,6 @@
 #pragma link C++ class KVGeoNavigator+;
 #pragma link C++ class KVRangeTableGeoNavigator+;
 #pragma link C++ class KVGeoDetectorNode+;
+#pragma link C++ class KVGeoDNTrajectory+;
 #pragma link C++ class KVGeoStrucElement+;
 #endif

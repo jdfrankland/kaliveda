@@ -59,6 +59,7 @@ public:
    virtual void Print(Option_t* option = "") const;
    virtual void Clear(Option_t* option = "");
    virtual void Reconstruct(KVDetector* kvd);
+    void ReconstructWithTrajectory(KVDetector*, KVGeoDNTrajectory*);
 
    virtual void SetIdentification(KVIdentificationResult*);
 

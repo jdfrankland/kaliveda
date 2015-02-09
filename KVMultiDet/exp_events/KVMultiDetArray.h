@@ -253,6 +253,8 @@ public:
       return (fROOTGeometry && fGeoManager);
    };
    void CalculateDetectorSegmentationIndex();
+	 virtual void CalculateGeoNodeTrajectories();
+    virtual KVSeqCollection* GetListOfFiredTrajectories(KVSeqCollection* fired = 0);
 
    ClassDef(KVMultiDetArray, 7) //Base class for multidetector arrays
    virtual void AnalyseGroupAndReconstructEvent(KVReconstructedEvent* recev, KVGroup* grp);

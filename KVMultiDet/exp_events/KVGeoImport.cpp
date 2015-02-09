@@ -155,7 +155,7 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
    KVDetector* d;
    while ((d = (KVDetector*)next())) d->GetNode()->RehashLists();
    // set up all detector node trajectories
-   //fArray->CalculateGeoNodeTrajectories();
+    fArray->CalculateGeoNodeTrajectories();
 
    if (fCreateArray) {
       fArray->SetGeometry(GetGeometry());
