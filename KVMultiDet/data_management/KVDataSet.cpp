@@ -237,6 +237,7 @@ KVAvailableRunsFile *KVDataSet::GetAvailableRunsFile(const Char_t * type)
    KVAvailableRunsFile *avrf =
        (KVAvailableRunsFile *) fAvailableRuns.FindObjectByName(type);
    if (!avrf) {
+      Info("GetAvailableRunsFile","generating new available runs file");
       avrf = fRepository->NewAvailableRunsFile(type, this);
       fAvailableRuns.Add(avrf);
    }
