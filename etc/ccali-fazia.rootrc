@@ -27,3 +27,5 @@ GE.BatchSystem.RunsPerJob:    20
 
 Default.BatchSystem:   GE
 
+# available run files are centralised in one place
+KVAvailableRunsFile.RunFileDirectory: $(THRONG_DIR)/KaliVeda-AvailableRuns
