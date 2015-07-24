@@ -23,10 +23,6 @@ class KVDataSet;
 class KVDataSetManager;
 
 class KVDataRepository:public KVBase {
-   const Char_t* GetType() const {
-      Info("GetType","called");
-      return KVBase::GetType();
-   }
 
  protected:
 

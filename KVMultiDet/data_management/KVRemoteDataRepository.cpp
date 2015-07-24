@@ -65,9 +65,11 @@ In the present example, this is configured to use bbftp ("...FileTransfer.type: 
 <!-- */
 // --> END_HTML
 ////////////////////////////////////////////////////////////////////////////////
-    KVRemoteDataRepository::KVRemoteDataRepository()
+KVRemoteDataRepository::KVRemoteDataRepository()
 {
    //Default constructor
+
+   SetType("remote");
 }
 
 KVRemoteDataRepository::~KVRemoteDataRepository()

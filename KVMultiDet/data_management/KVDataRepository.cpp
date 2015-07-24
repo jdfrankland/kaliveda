@@ -248,6 +248,7 @@ KVDataRepository::KVDataRepository()
    fDSM = 0;
    fHelpers       = 0;
    fCommitDataSet = 0;
+   SetType("local");
 }
 
 //___________________________________________________________________________

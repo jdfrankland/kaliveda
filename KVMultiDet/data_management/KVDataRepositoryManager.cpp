@@ -112,9 +112,9 @@ void KVDataRepositoryManager::Init()
       rep_type.ToLower();
 
       //create new repository
-		new_rep = KVDataRepository::NewRepository(rep_type.Data());
+      new_rep = KVDataRepository::NewRepository(rep_type.Data());
       new_rep->SetName(rep_name.Data());
-      new_rep->SetType(rep_type.Data());
+      //new_rep->SetType(rep_type.Data()); 'type' is set in default ctor of each repository class
       if(new_rep->Init()) {
          fRepositories.Add(new_rep);
          last_defined = new_rep;    //keep pointer to last defined repository
