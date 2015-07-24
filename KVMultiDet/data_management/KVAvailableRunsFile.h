@@ -39,6 +39,7 @@ class KVAvailableRunsFile:public KVBase {
 
    const Char_t *GetFileName();
    const Char_t *GetFilePath();
+   const Char_t *GetFullPathToAvailableRunsFile();
    virtual Bool_t OpenAvailableRunsFile();
    virtual void CloseAvailableRunsFile();
 

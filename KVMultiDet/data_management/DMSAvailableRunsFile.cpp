@@ -57,10 +57,8 @@ void DMSAvailableRunsFile::Update(Bool_t no_existing_file)
    // When no_existing_file=kTRUE we are making an available runs file
    // for the first time. There is no pre-existing file.
 
-   TString runlist;
-   AssignAndDelete(runlist,
-                   gSystem->ConcatFileName(fDataSet->GetDataSetDir(),
-                                           GetFileName()));
+   TString runlist = GetFullPathToAvailableRunsFile();
+
    if(!no_existing_file){
       // read all existing informations
       ReadFile();

@@ -132,6 +132,17 @@ const Char_t*KVAvailableRunsFile::GetFilePath()
    }
    return filepath.Data();
 }
+
+const Char_t*KVAvailableRunsFile::GetFullPathToAvailableRunsFile()
+{
+   // Return the full path on the local machine to the text file
+   // used to store information on available runs
+
+   static TString path;
+   AssignAndDelete(path, gSystem->ConcatFileName(GetFilePath(), GetFileName()));
+   return path.Data();
+}
+
 //__________________________________________________________________________________________________________________
 
 Int_t KVAvailableRunsFile::IsRunFileName(const Char_t * filename)
@@ -241,10 +252,8 @@ void KVAvailableRunsFile::Update(Bool_t no_existing_file)
    // for the first time. There is no pre-existing file.
 
 
-      TString runlist;
-      AssignAndDelete(runlist,
-                   gSystem->ConcatFileName(GetFilePath(),
-                                           GetFileName()));
+      TString runlist = GetFullPathToAvailableRunsFile();
+
    if(!no_existing_file){
       // read all existing informations
       ReadFile();
@@ -733,10 +742,8 @@ void KVAvailableRunsFile::UpdateInfos(Int_t run, const Char_t * filename, const 
    }
 
    CloseAvailableRunsFile();
-   TString fRunlist_path;
-   AssignAndDelete(fRunlist_path,
-                   gSystem->ConcatFileName(fDataSet->GetDataSetDir(),
-                                           GetFileName()));
+   TString fRunlist_path = GetFullPathToAvailableRunsFile();
+
    //keep lock on runsfile
    if( !runlist_lock.Lock( fRunlist_path.Data() ) ) return;
 
@@ -818,10 +825,8 @@ void KVAvailableRunsFile::Remove(Int_t run, const Char_t * filename)
    }
 
    CloseAvailableRunsFile();
-   TString fRunlist_path;
-   AssignAndDelete(fRunlist_path,
-                   gSystem->ConcatFileName(fDataSet->GetDataSetDir(),
-                                           GetFileName()));
+   TString fRunlist_path = GetFullPathToAvailableRunsFile();
+
    //keep lock on runsfile
    if( !runlist_lock.Lock( fRunlist_path.Data() ) ) return;
 
@@ -865,10 +870,8 @@ void KVAvailableRunsFile::Add(Int_t run, const Char_t * filename)
    }
 
    CloseAvailableRunsFile();
-   TString runlist_path;
-   AssignAndDelete(runlist_path,
-                   gSystem->ConcatFileName(fDataSet->GetDataSetDir(),
-                                           GetFileName()));
+   TString runlist_path = GetFullPathToAvailableRunsFile();
+
    // keep lock on runsfile
    if( !runlist_lock.Lock( runlist_path.Data() ) ) return;
 
@@ -909,10 +912,8 @@ Bool_t KVAvailableRunsFile::OpenAvailableRunsFile()
    //
    //Returns kFALSE in case of problems.
 
-   TString runlist;             //absolute path to runs file
-   AssignAndDelete(runlist,
-                   gSystem->ConcatFileName(GetFilePath(),
-                                           GetFileName()));
+   TString runlist = GetFullPathToAvailableRunsFile();
+
    fRunlist.clear();            // clear any error flags (EOF etc.) before trying to open file
    if (!SearchAndOpenKVFile(runlist, fRunlist, "", &runlist_lock)) {
       //no runlist exists. we therefore have to create it.
@@ -1264,10 +1265,8 @@ void KVAvailableRunsFile::RemoveDuplicateLines(KVNumberList lines_to_be_removed)
    }
 
    CloseAvailableRunsFile();
-   TString fRunlist_path;
-   AssignAndDelete(fRunlist_path,
-                   gSystem->ConcatFileName(GetFilePath(),
-                                           GetFileName()));
+   TString fRunlist_path = GetFullPathToAvailableRunsFile();
+
    //keep lock on runsfile
    if( !runlist_lock.Lock( fRunlist_path.Data() ) ) return;
 
