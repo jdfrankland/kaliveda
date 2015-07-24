@@ -8,7 +8,6 @@ $Date: 2009/03/12 14:01:02 $
 //Author: franklan
 
 #include "KVAvailableRunsFile.h"
-#include "KVDataSet.h"
 #include "KVDataBase.h"
 #include "KVDBRun.h"
 #include "TObjArray.h"
@@ -143,6 +142,27 @@ const Char_t*KVAvailableRunsFile::GetFullPathToAvailableRunsFile()
    return path.Data();
 }
 
+Bool_t KVAvailableRunsFile::CheckDirectoryForAvailableRunsFile()
+{
+   // Check that the directory given by GetFilePath() exists and is writable
+   // If it does not exist, it will be created if possible
+   // If it exists but is not writable, or cannot be created, returns kFALSE.
+
+   if(gSystem->AccessPathName(GetFilePath(),kFileExists)){ // directory does not exist
+      if(gSystem->mkdir(GetFilePath(),kTRUE)==-1){
+         Error("CheckDirectoryForAvailableRunsFile","cannot create directory %s - check access permissions",GetFilePath());
+         return kFALSE;
+      }
+      // set access permissions on created directory
+      gSystem->Chmod(GetFilePath(),CHMODE(6,6,4));
+   }
+   if(gSystem->AccessPathName(GetFilePath(),kWritePermission)){ // directory is not writable
+      Error("CheckDirectoryForAvailableRunsFile","directory %s is not writable - check access permissions",GetFilePath());
+      return kFALSE;
+   }
+   return kTRUE;
+}
+
 //__________________________________________________________________________________________________________________
 
 Int_t KVAvailableRunsFile::IsRunFileName(const Char_t * filename)
@@ -252,7 +272,7 @@ void KVAvailableRunsFile::Update(Bool_t no_existing_file)
    // for the first time. There is no pre-existing file.
 
 
-      TString runlist = GetFullPathToAvailableRunsFile();
+   TString runlist = GetFullPathToAvailableRunsFile();
 
    if(!no_existing_file){
       // read all existing informations
@@ -271,7 +291,7 @@ void KVAvailableRunsFile::Update(Bool_t no_existing_file)
    cout << endl << "Updating runlist : " << flush;
    //get directory listing from repository
    KVUniqueNameList *dir_list =
-       repository->GetDirectoryListing(fDataSet, GetDataType());
+         repository->GetDirectoryListing(fDataSet, GetDataType());
    if (!dir_list)
       return;
 
@@ -284,8 +304,8 @@ void KVAvailableRunsFile::Update(Bool_t no_existing_file)
    KVDBTable *run_table = 0;
    KVDataBase* db = fDataSet->GetDataBase();
    if (!db){
-   	db = new KVDataBase();
-   	db->AddTable("Runs","List of Runs");
+      db = new KVDataBase();
+      db->AddTable("Runs","List of Runs");
    }
    run_table = db->GetTable("Runs");
    while ((objs = (KVBase *) next())) {     // loop over all entries in directory
@@ -330,17 +350,17 @@ void KVAvailableRunsFile::Update(Bool_t no_existing_file)
             }
          }
          else{
-         	Info("Update","the current run [%s] is not in database",objs->GetName());
+            Info("Update","the current run [%s] is not in database",objs->GetName());
             FileStat_t fs;
             if (repository->GetFileInfo(fDataSet, GetDataType(),objs->GetName(), fs))
             {
                TDatime modt(fs.fMtime);
-            	// New Entry in a new file - write in temporary runlist file '[run number]|[date of modification]|[name of file]
-            	tmp_file << run_num  << '|' << modt.AsSQLString() << '|' << objs->GetName() << endl;
-            }	
+               // New Entry in a new file - write in temporary runlist file '[run number]|[date of modification]|[name of file]
+               tmp_file << run_num  << '|' << modt.AsSQLString() << '|' << objs->GetName() << endl;
+            }
             else{
                Warning("Update","%s GetFileInfo return kFALSE",objs->GetName());
-         	}
+            }
          }
       }
 
@@ -354,19 +374,22 @@ void KVAvailableRunsFile::Update(Bool_t no_existing_file)
    //close temp file
    tmp_file.close();
 
-   if(no_existing_file){
-      //use "lockfile" to make sure nobody else tries to modify available_runs file
-      //while we are working on it
-      if(!runlist_lock.Lock(runlist.Data())) return;
-   }
-   
-   //copy temporary file to KVFiles directory, overwrite previous   
-   gSystem->CopyFile(tmp_file_path, runlist, kTRUE);
-   //set access permissions to 664
-   gSystem->Chmod(runlist.Data(), CHMODE(6,6,4));
+   if( CheckDirectoryForAvailableRunsFile() ){
 
-      //remove lockfile
-      runlist_lock.Release();
+      if(no_existing_file){
+         //use "lockfile" to make sure nobody else tries to modify available_runs file
+         //while we are working on it
+         if(!runlist_lock.Lock(runlist.Data())) return;
+      }
+
+      //copy temporary file to available runs file directory, overwrite previous
+      gSystem->CopyFile(tmp_file_path, runlist, kTRUE);
+      //set access permissions to 664
+      gSystem->Chmod(runlist.Data(), CHMODE(6,6,4));
+   }
+
+   //remove lockfile
+   runlist_lock.Release();
 
    //delete temp file
    gSystem->Unlink(tmp_file_path);
@@ -938,23 +961,6 @@ void KVAvailableRunsFile::CloseAvailableRunsFile()
    fRunlist.close();
    fRunlist.clear();
    runlist_lock.Release();
-}
-
-//__________________________________________________________________________________________________________________
-
-KVDataSet *KVAvailableRunsFile::GetDataSet() const
-{
-   //Dataset to which this file belongs
-   return fDataSet;
-}
-
-
-//__________________________________________________________________________________________________________________
-
-void KVAvailableRunsFile::SetDataSet(KVDataSet* d)
-{
-   // Set dataset to which this file belongs
-   fDataSet = d;
 }
 
 //__________________________________________________________________________________________________________________

@@ -56,7 +56,7 @@ void KVRemoteAvailableRunsFile::init()
    //value of DataRepository.RemoteAvailableRuns.protocol
    fCurl = gEnv->GetValue(Form
                           ("%s.DataRepository.RemoteAvailableRuns.protocol",
-                           fDataSet->GetRepository()->GetName()), "curl");
+                           GetDataSet()->GetRepository()->GetName()), "curl");
    KVBase::FindExecutable(fCurl);
 }
 
@@ -87,11 +87,11 @@ Bool_t KVRemoteAvailableRunsFile::OpenAvailableRunsFile()
    }
    TString http =
        gEnv->GetValue(Form("%s.DataRepository.RemoteAvailableRuns.url",
-                           fDataSet->GetRepository()->GetName()), "");
+                           GetDataSet()->GetRepository()->GetName()), "");
    if (http == "") {
       Warning("OpenAvailableRunsFile(ifstream& runlist)",
               "%s.DataRepository.RemoteAvailableRuns.url is not defined. See $KVROOT/KVFiles/.kvrootrc",
-              fDataSet->GetRepository()->GetName());
+              GetDataSet()->GetRepository()->GetName());
       return kFALSE;
    }
    TString url;

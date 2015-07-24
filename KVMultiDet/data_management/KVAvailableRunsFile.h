@@ -18,9 +18,9 @@ $Date: 2008/02/07 09:25:39 $
 #include "KVNumberList.h"
 #include "KVLockfile.h"
 #include "KVDatime.h"
+#include "KVDataSet.h"
 
 class KVDBSystem;
-class KVDataSet;
 class TList;
 class KVList;
 class KVHashList;
@@ -40,6 +40,7 @@ class KVAvailableRunsFile:public KVBase {
    const Char_t *GetFileName();
    const Char_t *GetFilePath();
    const Char_t *GetFullPathToAvailableRunsFile();
+   Bool_t CheckDirectoryForAvailableRunsFile();
    virtual Bool_t OpenAvailableRunsFile();
    virtual void CloseAvailableRunsFile();
 
@@ -73,8 +74,15 @@ class KVAvailableRunsFile:public KVBase {
    virtual void UpdateInfos(Int_t run, const Char_t * filename, const Char_t* kvversion, const Char_t* username);
    virtual Bool_t InfosNeedUpdate(Int_t run, const Char_t * filename);
    virtual void Add(Int_t run, const Char_t * filename);
-   virtual KVDataSet *GetDataSet() const;
-   virtual void SetDataSet(KVDataSet*);
+   KVDataSet *GetDataSet() const{
+      //Dataset to which this file belongs
+      return fDataSet;
+   }
+
+   void SetDataSet(KVDataSet*d){
+      // Set dataset to which this file belongs
+      fDataSet = d;
+   }
 
    KVNumberList CheckMultiRunfiles();
    void RemoveDuplicateLines(KVNumberList lines_to_be_removed);
