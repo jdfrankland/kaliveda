@@ -866,7 +866,8 @@ void KVDataSet::UpdateAvailableRuns(const Char_t * type)
             "No data of type \"%s\" available for dataset %s", type,
             GetName());
    }
-   GetAvailableRunsFile(type)->Update();
+   KVAvailableRunsFile* a = GetAvailableRunsFile(type);
+   a->Update(!a->FileExists());
 }
 
 //___________________________________________________________________________

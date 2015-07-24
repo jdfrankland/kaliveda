@@ -37,9 +37,9 @@ class KVAvailableRunsFile:public KVBase {
    void ReadFile();
    KVNameValueList* RunHasFileWithDateAndName(Int_t run, const Char_t* filename, TDatime modtime, Int_t& OccNum);
 
-   const Char_t *GetFileName();
-   const Char_t *GetFilePath();
-   const Char_t *GetFullPathToAvailableRunsFile();
+   const Char_t *GetFileName() const;
+   const Char_t *GetFilePath() const;
+   const Char_t *GetFullPathToAvailableRunsFile() const;
    Bool_t CheckDirectoryForAvailableRunsFile();
    virtual Bool_t OpenAvailableRunsFile();
    virtual void CloseAvailableRunsFile();
@@ -55,7 +55,12 @@ class KVAvailableRunsFile:public KVBase {
    KVAvailableRunsFile(const Char_t * type, KVDataSet * parent);
    virtual ~ KVAvailableRunsFile();
 
-   virtual const Char_t *GetDataType() {
+   Bool_t FileExists() const
+   {
+      return !gSystem->AccessPathName(GetFullPathToAvailableRunsFile());
+   }
+
+   const Char_t *GetDataType() const {
       return GetName();
    }
    virtual Int_t IsRunFileName(const Char_t * filename);

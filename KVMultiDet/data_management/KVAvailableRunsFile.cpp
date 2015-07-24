@@ -85,7 +85,7 @@ KVAvailableRunsFile::~KVAvailableRunsFile()
 
 //__________________________________________________________________________________________________________________
 
-const Char_t *KVAvailableRunsFile::GetFileName()
+const Char_t *KVAvailableRunsFile::GetFileName() const
 {
    // Filename of text file containing information on available runs
    // i.e. [repository].available_runs.[dataset subdir].[dattype subdir]
@@ -101,7 +101,7 @@ const Char_t *KVAvailableRunsFile::GetFileName()
    return filename.Data();
 }
 
-const Char_t*KVAvailableRunsFile::GetFilePath()
+const Char_t*KVAvailableRunsFile::GetFilePath() const
 {
    // Returns the full path to the directory where the available runs file is stored.
    // This is by default
@@ -132,7 +132,7 @@ const Char_t*KVAvailableRunsFile::GetFilePath()
    return filepath.Data();
 }
 
-const Char_t*KVAvailableRunsFile::GetFullPathToAvailableRunsFile()
+const Char_t*KVAvailableRunsFile::GetFullPathToAvailableRunsFile() const
 {
    // Return the full path on the local machine to the text file
    // used to store information on available runs
