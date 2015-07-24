@@ -13,13 +13,10 @@ macro( create_git_version_control_header )
 		
 			#--- sources are under version control
 			    		
-			add_custom_command(
-				OUTPUT ${CMAKE_BINARY_DIR}/KVGitInfo.h
+			add_custom_target(vcsinfos
 				COMMAND ${CMAKE_SOURCE_DIR}/tools/gitinfo.sh ${GIT_EXECUTABLE} ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}/KVGitInfo.h
-				DEPENDS ${CMAKE_SOURCE_DIR}/.git/HEAD
 				WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 			)
-			add_custom_target(vcsinfos DEPENDS ${CMAKE_BINARY_DIR}/KVGitInfo.h)
 			 
 		else()
 			
