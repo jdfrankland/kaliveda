@@ -43,6 +43,7 @@ ClassImp(KVReconstructedNucleus);
 void KVReconstructedNucleus::init()
 {
    //default initialisation
+   fReconTraj = nullptr;
    fRealZ = fRealA = 0.;
    fDetNames = "/";
    fIDTelName = "";
@@ -122,6 +123,12 @@ void KVReconstructedNucleus::Streamer(TBuffer& R__b)
       // concerning the detectors etc. hit by this particle
       if (gMultiDetArray) {
          MakeDetectorList();
+
+            // Removing the leading '/' character from fDetNames gives us the title of the
+            // trajectory used to reconstruct the particle
+            TString traj_t = fDetNames.Strip(TString::kLeading,'/');
+            fReconTraj = GetStoppingDetector()->GetNode()->FindTrajectory(traj_t);
+
          if (GetGroup()) GetGroup()->AddHit(this);
          fIDTelescope = 0;
          if (fIDTelName != "") fIDTelescope = gMultiDetArray->GetIDTelescope(fIDTelName.Data());
@@ -351,6 +358,8 @@ void KVReconstructedNucleus::ReconstructWithTrajectory(KVDetector *kvd, KVGeoDNT
         d->SetAnalysed(kTRUE);   //cannot be used to seed another particle
     }
     kvd->GetGroup()->AddHit(this);
+    // keep pointer to trajectory used for reconstruction
+    fReconTraj=tr;
 }
 
 //_____________________________________________________________________________________
@@ -374,6 +383,11 @@ void KVReconstructedNucleus::Identify()
       Int_t idnumber = 1;
       Int_t n_success_id = 0;//number of successful identifications
       while ((idt = (KVIDTelescope*) next())) {
+
+         // Make sure that all detectors making up the identification telescope
+         // are part of the trajectory used to reconstruct the particle
+         if(!fReconTraj->ContainsAllConsecutive(idt->GetDetectors(),kIterBackward)) continue;
+
          KVIdentificationResult* IDR = GetIdentificationResult(idnumber++);
 
 
