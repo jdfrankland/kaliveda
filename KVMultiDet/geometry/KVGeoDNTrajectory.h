@@ -127,30 +127,33 @@ class KVGeoDNTrajectory : public KVBase
        return 0x0;
    }
 
-   Int_t GetNumberOfFiredDetectorsForwardsFrom(const KVGeoDetectorNode *node)
+   Int_t GetNumberOfFiredDetectorsForwardsFrom(const KVGeoDetectorNode *node, Option_t * opt = "any")
    {
        // Starting from 'node', calculate and return the number of fired detectors
        // going forwards along this trajectory
+       // The option string will be passed to KVDetector::Fired(Option_t*)
 
        Int_t f=0;
        IterateFrom(node);
        KVGeoDetectorNode* n;
        while( (n = GetNextNode()) ){
-           f += n->GetDetector()->Fired();
+           f += n->GetDetector()->Fired(opt);
        }
        return f;
    }
 
-   Int_t GetNumberOfUnfiredDetectorsForwardsFrom(const KVGeoDetectorNode *node)
+   Int_t GetNumberOfUnfiredDetectorsForwardsFrom(const KVGeoDetectorNode *node, Option_t * opt = "any")
    {
        // Starting from 'node', calculate and return the number of unfired detectors
        // going forwards along this trajectory
+      // The option string will be passed to KVDetector::Fired(Option_t*)
+
        Int_t f=0;
        Int_t tot=0;
        IterateFrom(node);
        KVGeoDetectorNode* n;
        while( (n = GetNextNode()) ){
-           f += n->GetDetector()->Fired();
+           f += n->GetDetector()->Fired(opt);
            tot++;
        }
        return tot-f;
