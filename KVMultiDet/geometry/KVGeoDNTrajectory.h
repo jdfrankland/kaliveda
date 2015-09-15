@@ -15,8 +15,8 @@ class KVGeoDNTrajectory : public KVBase
 
    TObjArray fNodes;
    static Int_t fGDNTrajNumber;
-   Int_t fIter_idx;//! index for iteration
-   Int_t fIter_max;//! max index for iteration
+   mutable Int_t fIter_idx;//! index for iteration
+   mutable Int_t fIter_max;//! max index for iteration
 
    public:
    KVGeoDNTrajectory();
@@ -27,9 +27,16 @@ class KVGeoDNTrajectory : public KVBase
 
    const Char_t* GetTitle() const;
 
-   Bool_t Contains(const Char_t* node_name) const
+   KVGeoDetectorNode* GetNode(const Char_t* name) const
    {
-      return (fNodes.FindObject(node_name)!=NULL);
+      // return pointer to node with given name in this trajectory
+      return (KVGeoDetectorNode*)fNodes.FindObject(name);
+   }
+   Bool_t Contains(const Char_t* name) const
+   {
+      // returns kTRUE if trajectory contains the given node/detector
+      // (nodes have the same name as the detector they are associated to)
+      return GetNode(name)!=nullptr;
    }
 
    Int_t GetN() const { return fNodes.GetEntries(); }
@@ -90,8 +97,41 @@ class KVGeoDNTrajectory : public KVBase
    {
        return (fNodes.FindObject(n)!=NULL);
    }
+   Bool_t ContainsAll(const TCollection* l) const
+   {
+      // Returns kTRUE if trajectory contains all detectors/nodes in the list
+      // N.B. we only check the names of the (TObject-derived) objects in the list
+      TIter next(l);
+      TObject* o;
+      while((o=next())) {
+         if(!Contains(o->GetName())) return kFALSE;
+      }
+      return kTRUE;
+   }
+   Bool_t ContainsAllConsecutive(const TCollection* l, Bool_t direction = kIterForward) const
+   {
+      // Returns kTRUE if trajectory contains all detectors/nodes in the list
+      // in the same consecutive order
+      // N.B. we only check the names of the (TObject-derived) objects in the list
+      //
+      // if optional argument direction=kIterBackward then we look at the objects
+      // in the list in reverse order
 
-   KVGeoDetectorNode* GetNodeAt(Int_t i)
+      TIter next(l,direction);
+      TObject* o = next();
+      KVGeoDetectorNode* n = GetNode(o->GetName());
+      if(!n) return kFALSE;
+      IterateFrom(n);
+      GetNextNode();
+      while((o=next())){
+         n = GetNextNode();
+         if(!n) return kFALSE;// trajectory ended before list of detectors
+         if(!n->IsCalled(o->GetName())) return kFALSE;
+      }
+      return kTRUE;
+   }
+
+   KVGeoDetectorNode* GetNodeAt(Int_t i) const
    {
            // Return i-th node in trajectory
            //  i=0 -> first node, furthest from target
@@ -100,7 +140,7 @@ class KVGeoDNTrajectory : public KVBase
        return (KVGeoDetectorNode*)fNodes[i];
    }
 
-   void IterateFrom(const KVGeoDetectorNode *node0)
+   void IterateFrom(const KVGeoDetectorNode *node0) const
    {
        // Start an iteration over the trajectory nodes, starting from node0.
        // After calling this method, calling method GetNextNode()
@@ -111,7 +151,7 @@ class KVGeoDNTrajectory : public KVBase
        fIter_max = GetN()-1;
    }
 
-   KVGeoDetectorNode *GetNextNode()
+   KVGeoDetectorNode *GetNextNode() const
    {
        // Get next node in iteration over trajectory.
        // See IterateFrom(KVGeoDetectorNode*)
@@ -124,7 +164,7 @@ class KVGeoDNTrajectory : public KVBase
                return GetNodeAt(fIter_max);
            }
        }
-       return 0x0;
+       return nullptr;
    }
 
    Int_t GetNumberOfFiredDetectorsForwardsFrom(const KVGeoDetectorNode *node, Option_t * opt = "any")
