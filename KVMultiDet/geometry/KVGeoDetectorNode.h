@@ -5,7 +5,7 @@
 #define __KVDETECTORNODE_H
 
 #include "KVBase.h"
-class KVSeqCollection;
+#include "KVSeqCollection.h"
 class KVDetector;
 class KVGeoDNTrajectory;
 
@@ -51,6 +51,14 @@ public:
 
    KVGeoDNTrajectory* GetForwardTrajectoryWithMostFiredDetectors() const;
    KVGeoDNTrajectory* GetForwardTrajectoryWithLeastUnfiredDetectors() const;
+   KVGeoDNTrajectory* FindTrajectory(const char* title) const
+   {
+      // Return pointer to trajectory passing through this node with given title
+      // The title is of the form "DET1/DET2/DET3/" made of the names of the
+      // detectors/nodes on the trajectory
+
+      return (KVGeoDNTrajectory*)fTraj->FindObjectByTitle(title);
+   }
 
    void ls(Option_t* option = "") const;
 
