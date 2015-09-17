@@ -62,7 +62,7 @@ public:
 
    void ls(Option_t* option = "") const;
 
-   ClassDef(KVGeoDetectorNode,2)//Stores lists of detectors in front and behind this node
+   ClassDef(KVGeoDetectorNode,2)//Information on relative positions of detectors & particle trajectories
 };
 
 #endif

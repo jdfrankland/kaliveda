@@ -25,7 +25,7 @@ ClassImp(KVGeoImport)
 //
 // To use:
 //      KVGeoImport geo(gGeoManager, new KVedaLoss, new KVMultiDetArray);
-//      gImp.ImportGeometry();
+//      geo.ImportGeometry();
 //
 // RULES FOR VALID DETECTOR GEOMETRY
 //

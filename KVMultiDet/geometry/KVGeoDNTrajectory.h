@@ -39,8 +39,14 @@ class KVGeoDNTrajectory : public KVBase
       return GetNode(name)!=nullptr;
    }
 
-   Int_t GetN() const { return fNodes.GetEntries(); }
-   Int_t Index(const TObject*node) const { return fNodes.IndexOf(node); }
+   Int_t GetN() const {
+      // return number of nodes on this trajectory
+      return fNodes.GetEntries();
+   }
+   Int_t Index(const TObject*node) const {
+      // return index of node (=0,1,...)
+      return fNodes.IndexOf(node);
+   }
 
    void AddLast(KVGeoDetectorNode* n)
    {
@@ -140,14 +146,15 @@ class KVGeoDNTrajectory : public KVBase
        return (KVGeoDetectorNode*)fNodes[i];
    }
 
-   void IterateFrom(const KVGeoDetectorNode *node0) const
+   void IterateFrom(const KVGeoDetectorNode *node0 = nullptr) const
    {
        // Start an iteration over the trajectory nodes, starting from node0.
+       // If node0=nullptr (default value), start from the first node.
        // After calling this method, calling method GetNextNode()
        // will return each node of the trajectory starting with node0
        // to the last one, after which it returns 0x0
 
-       fIter_idx = Index(node0);
+       fIter_idx = (node0==nullptr ? 0 : Index(node0));
        fIter_max = GetN()-1;
    }
 
