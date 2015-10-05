@@ -114,5 +114,18 @@ const Char_t* KVGeoDNTrajectory::GetTitle() const
 		t += "/";
 	}
 	const_cast<KVGeoDNTrajectory*>(this)->SetTitle(t);
-	return KVBase::GetTitle();
+        return KVBase::GetTitle();
+}
+
+void KVGeoDNTrajectory::FillListOfIDTelescopes()
+{
+   // Fill fIDTelescopes with all identification telescopes on this trajectory
+
+   fIDTelescopes.Clear();
+   IterateFrom();
+   KVGeoDetectorNode* node;
+   while((node = GetNextNode())){
+      if(node->GetDetector()->GetTelescopesForIdentification()->GetEntries())
+         fIDTelescopes.AddAll(node->GetDetector()->GetTelescopesForIdentification());
+   }
 }

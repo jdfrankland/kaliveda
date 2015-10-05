@@ -44,7 +44,7 @@ public:
    Int_t GetNTraj() const;
    Int_t GetNTrajForwards() const;
 
-	void BuildTrajectoriesForwards(TList*);
+        void BuildTrajectoriesForwards(TSeqCollection*);
 	void AddTrajectory(KVGeoDNTrajectory*);
 
    void RehashLists();
@@ -59,6 +59,7 @@ public:
 
       return (KVGeoDNTrajectory*)fTraj->FindObjectByTitle(title);
    }
+
 
    void ls(Option_t* option = "") const;
 

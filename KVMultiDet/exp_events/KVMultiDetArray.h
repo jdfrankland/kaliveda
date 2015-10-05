@@ -62,6 +62,7 @@ protected:
 
    KVRangeTableGeoNavigator* fNavigator;//! for propagating particles through array geometry
 
+    KVHashList fTrajectories;//! list of all possible trajectories through detectors of array
    virtual void RenumberGroups();
    virtual void BuildGeometry()
    {
@@ -255,18 +256,20 @@ public:
    void CalculateDetectorSegmentationIndex();
 	 virtual void CalculateGeoNodeTrajectories();
     virtual KVSeqCollection* GetListOfFiredTrajectories(KVSeqCollection* fired = 0);
-
-   ClassDef(KVMultiDetArray, 7) //Base class for multidetector arrays
    virtual void AnalyseGroupAndReconstructEvent(KVReconstructedEvent* recev, KVGroup* grp);
    virtual void SetGridsInTelescopes(UInt_t run);
    void FillListOfIDTelescopes(KVIDGraph* gr) const;
-
    void Draw(Option_t* = "")
    {
       // Use OpenGL viewer to view multidetector geometry (only for ROOT geometries)
       if (IsROOTGeometry()) GetGeometry()->GetTopVolume()->Draw("ogl");
       else Error("Draw", "Only ROOT geometries can be viewed");
    }
+    const TSeqCollection* GetTrajectories() const {
+       // Get list of all possible trajectories for particles traversing array
+       return &fTrajectories;
+    }
+    ClassDef(KVMultiDetArray,7)//Base class for multidetector arrays    
 };
 
 //................  global variable

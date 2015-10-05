@@ -2208,6 +2208,7 @@ void KVMultiDetArray::CalculateGeoNodeTrajectories()
    // used in particle reconstruction
     // Detectors for which trajectories are already defined are skipped
 
+   fTrajectories.Clear();
    TIter next(GetDetectors());
    KVDetector* d;
    while ( (d = (KVDetector*)next()) ){
@@ -2215,9 +2216,11 @@ void KVMultiDetArray::CalculateGeoNodeTrajectories()
         if(!d->GetNode()->GetNDetsBehind() && !d->GetNode()->GetTrajectories()){
          TList trajs;
          d->GetNode()->BuildTrajectoriesForwards(&trajs);
+         if(trajs.GetEntries()) fTrajectories.AddAll(&trajs);
       }
    }
 }
+
 KVSeqCollection *KVMultiDetArray::GetListOfFiredTrajectories(KVSeqCollection *fired)
 {
     // from list of fired acquisition parameters, create and fill list of

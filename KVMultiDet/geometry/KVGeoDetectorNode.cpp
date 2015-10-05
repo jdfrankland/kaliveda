@@ -250,60 +250,60 @@ KVGeoDNTrajectory *KVGeoDetectorNode::GetForwardTrajectoryWithLeastUnfiredDetect
     return mft;
 }
 
-void KVGeoDetectorNode::BuildTrajectoriesForwards(TList*list)
+void KVGeoDetectorNode::BuildTrajectoriesForwards(TSeqCollection* list)
 {
-	// Add this node to each trajectory in list
-	// Then continue trajectories for each node in front of this one
-	// If more than one node is in front, a new trajectory is created
-	// and added to the list for each extra node
-	//
-	// N.B. we are building trajectories starting from nodes furthest from
-	// target and moving towards it. Trajectories always go from the stopping
-	// detector towards the target.
-	// Therefore we add each new node to the end of each trajectory.
-	
-	if(!list->GetEntries()){
-		// no trajectories in list
-		// add new trajectory starting here
-		list->Add(new KVGeoDNTrajectory(this));
-	}
-	else {
-		// add this node to each trajectory in list
-		list->R__FOR_EACH(KVGeoDNTrajectory,AddLast)(this);
-	}
-	// add each trajectory to list of trajectories through this node
-	TIter nextT(list);
-	KVGeoDNTrajectory* traj;
-	
-	
-	// if no nodes in front of this one, stop
-	if(!GetNDetsInFront()) return;
+   // Add this node to each trajectory in list
+   // Then continue trajectories for each node in front of this one
+   // If more than one node is in front, a new trajectory is created
+   // and added to the list for each extra node
+   //
+   // N.B. we are building trajectories starting from nodes furthest from
+   // target and moving towards it. Trajectories always go from the stopping
+   // detector towards the target.
+   // Therefore we add each new node to the end of each trajectory.
 
-   nextT.Reset();	
-	TList* newTrajectories = new TList;
-	while( (traj = (KVGeoDNTrajectory*)nextT()) ){
-		KVGeoDNTrajectory baseTraj(*traj);
-		// for each trajectory in list
-		// for first node in front of this one, continue existing trajectory
-		// for each subsequent node in front, create new copy of existing trajectory
-		// and continue it
-		TIter nextN(fInFront);
-		KVGeoDetectorNode* node;
-		KVDetector* det;
-		Int_t node_num=1;
-		while( (det = (KVDetector*)nextN()) ){
-			node = det->GetNode();
-			if(node_num==1) node->BuildTrajectoriesForwards(list);
-			else{
-				KVGeoDNTrajectory* newTraj = new KVGeoDNTrajectory(baseTraj);
-				newTrajectories->Add(newTraj);
-				node->BuildTrajectoriesForwards(newTrajectories);
-			}
-			node_num++;
-		}
-	}
-	if(newTrajectories->GetEntries()){
-		list->AddAll(newTrajectories);
-	}
-	delete newTrajectories;
+   if(!list->GetEntries()){
+      // no trajectories in list
+      // add new trajectory starting here
+      list->Add(new KVGeoDNTrajectory(this));
+   }
+   else {
+      // add this node to each trajectory in list
+      list->R__FOR_EACH(KVGeoDNTrajectory,AddLast)(this);
+   }
+   // add each trajectory to list of trajectories through this node
+   TIter nextT(list);
+   KVGeoDNTrajectory* traj;
+
+
+   // if no nodes in front of this one, stop
+   if(!GetNDetsInFront()) return;
+
+   nextT.Reset();
+   TList* newTrajectories = new TList;
+   while( (traj = (KVGeoDNTrajectory*)nextT()) ){
+      KVGeoDNTrajectory baseTraj(*traj);
+      // for each trajectory in list
+      // for first node in front of this one, continue existing trajectory
+      // for each subsequent node in front, create new copy of existing trajectory
+      // and continue it
+      TIter nextN(fInFront);
+      KVGeoDetectorNode* node;
+      KVDetector* det;
+      Int_t node_num=1;
+      while( (det = (KVDetector*)nextN()) ){
+         node = det->GetNode();
+         if(node_num==1) node->BuildTrajectoriesForwards(list);
+         else{
+            KVGeoDNTrajectory* newTraj = new KVGeoDNTrajectory(baseTraj);
+            newTrajectories->Add(newTraj);
+            node->BuildTrajectoriesForwards(newTrajectories);
+         }
+         node_num++;
+      }
+   }
+   if(newTrajectories->GetEntries()){
+      list->AddAll(newTrajectories);
+   }
+   delete newTrajectories;
 }

@@ -17,6 +17,7 @@ class KVGeoDNTrajectory : public KVBase
    static Int_t fGDNTrajNumber;
    mutable Int_t fIter_idx;//! index for iteration
    mutable Int_t fIter_max;//! max index for iteration
+   TList fIDTelescopes;//list of id telescopes on this trajectory
 
    public:
    KVGeoDNTrajectory();
@@ -64,7 +65,7 @@ class KVGeoDNTrajectory : public KVBase
 
    void ls(Option_t* = "") const
    {
-           cout << GetName() << " : " << GetTitle() << endl;
+           std::cout << GetName() << " : " << GetTitle() << std::endl;
    }
 
    Bool_t EndsAt(const Char_t* node_name) const
@@ -204,6 +205,13 @@ class KVGeoDNTrajectory : public KVBase
            tot++;
        }
        return tot-f;
+   }
+
+   void FillListOfIDTelescopes();
+   const TList& GetIDTelescopes() const
+   {
+      // List of identification telescopes on trajectory
+      return fIDTelescopes;
    }
 
    ClassDef(KVGeoDNTrajectory,1)//Path taken by particles through multidetector geometry

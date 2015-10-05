@@ -1143,3 +1143,7 @@ Bool_t KVIDTelescope::CheckTheoreticalIdentificationThreshold(KVNucleus* ION, Do
    if (EINC > 0.0) return (EINC > emin);
    return (ION->GetEnergy() > emin);
 }
+
+//_________________________________________________________________________________________
+
+

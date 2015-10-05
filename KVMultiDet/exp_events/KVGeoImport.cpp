@@ -12,6 +12,7 @@
 #include <TGeoPhysicalNode.h>
 #include <KVRangeTableGeoNavigator.h>
 #include <KVNamedParameter.h>
+#include <KVGeoDNTrajectory.h>
 
 ClassImp(KVGeoImport)
 
@@ -177,6 +178,10 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
       Info("ImportGeometry",
            "Created %d identification telescopes in array", fArray->GetListOfIDTelescopes()->GetEntries() - idtels0);
    }
+    // set up lists of id telescopes along trajectories
+    TIter nextT(fArray->GetTrajectories());
+    KVGeoDNTrajectory* traj;
+    while((traj=(KVGeoDNTrajectory*)nextT())) traj->FillListOfIDTelescopes();
 }
 
 void KVGeoImport::SetLastDetector(KVDetector* d)
