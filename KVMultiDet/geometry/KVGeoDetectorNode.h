@@ -15,12 +15,15 @@ class KVGeoDetectorNode : public KVBase {
    KVSeqCollection* fBehind;//list of detectors behind
     KVSeqCollection* fTraj;//list of trajectories passing through this node
     KVSeqCollection* fTrajF;//list of trajectories passing through this node going forwards
+    KVSeqCollection* fTrajB;//list of trajectories passing through this node going backwards
     Int_t fNTraj;//number of trajectories passing through this node
     Int_t fNTrajForwards;//number of trajectories going forwards from this node
+    Int_t fNTrajBackwards;//number of trajectories going backwards from this node
 
    void init();
 
     void CalculateForwardsTrajectories();
+    void CalculateBackwardsTrajectories();
 
 public:
    KVGeoDetectorNode();
@@ -39,10 +42,12 @@ public:
    KVSeqCollection* GetDetectorsBehind() const { return fBehind; }
    KVSeqCollection* GetTrajectories() const { return fTraj; }
    KVSeqCollection* GetForwardTrajectories() const;
+   KVSeqCollection* GetBackwardTrajectories() const;
    Int_t GetNDetsInFront() const;
    Int_t GetNDetsBehind() const;
    Int_t GetNTraj() const;
    Int_t GetNTrajForwards() const;
+   Int_t GetNTrajBackwards() const;
 
         void BuildTrajectoriesForwards(TSeqCollection*);
 	void AddTrajectory(KVGeoDNTrajectory*);
@@ -58,6 +63,13 @@ public:
       // detectors/nodes on the trajectory
 
       return (KVGeoDNTrajectory*)fTraj->FindObjectByTitle(title);
+   }
+
+   KVGeoDNTrajectory* FindTrajectory(UInt_t number) const
+   {
+      // Return pointer to trajectory passing through this node with given number
+
+      return (KVGeoDNTrajectory*)fTraj->FindObjectByNumber(number);
    }
 
 

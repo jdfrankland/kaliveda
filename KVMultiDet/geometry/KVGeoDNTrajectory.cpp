@@ -19,10 +19,11 @@ ClassImp(KVGeoDNTrajectory)
 // used in particle reconstruction & identification, each trajectory starts from the last
 // detector in a stack and moves towards the target.
 //
-// NAME & TITLE
-// GetName()  - The name of each trajectory is "GDNTraj_x" where x is the unique number of the trajectory.
-// GetTitle() - The title of each trajectory is "DET1/DET2/DET3/..." made up from the names of the
-//              detectors/nodes on the trajectory.
+// NAME, NUMBER & TITLE
+// GetName()   - The name of each trajectory is "GDNTraj_x" where x is the unique number of the trajectory.
+// GetNumber() - The unique number of the trajectory.
+// GetTitle()  - The title of each trajectory is "DET1/DET2/DET3/..." made up from the names of the
+//               detectors/nodes on the trajectory.
 //
 // ITERATE OVER TRAJECTORY
 // In order to visit each detector/node of the trajectory in order, use the iterators:
@@ -47,6 +48,12 @@ ClassImp(KVGeoDNTrajectory)
 //       /* your code */
 //
 //    }
+//
+// To iterate in the other direction i.e. away from the target:
+//
+//    trajectory->IterateBackFrom(); // default: start from last node of trajectory
+//                                   // [i.e. the detector closest to the target]
+//    trajectory->IterateBackFrom(node_on_traj);
 ////////////////////////////////////////////////////////////////////////////////
 
 Int_t KVGeoDNTrajectory::fGDNTrajNumber = 0;
@@ -82,6 +89,7 @@ void KVGeoDNTrajectory::init()
     fIter_idx=-1;
 	++fGDNTrajNumber;
 	SetName(Form("GDNTraj_%d",fGDNTrajNumber));
+        SetNumber(fGDNTrajNumber);
 }
 
 void KVGeoDNTrajectory::Copy(TObject& obj) const

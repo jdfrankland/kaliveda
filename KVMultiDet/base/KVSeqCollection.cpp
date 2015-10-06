@@ -327,10 +327,10 @@ void KVSeqCollection::RecursiveRemove(TObject* obj)
 
 void  KVSeqCollection::PrintCollectionHeader(Option_t*) const
 {
-   // Overrides TCollection::PrintCollectionHeader to show the class name of the embedded list
+    // Overrides TCollection::PrintCollectionHeader
    TROOT::IndentLevel();
-   printf("Collection name='%s', embedded list class='%s', size=%d\n", GetName(),
-          fCollection->ClassName(), GetSize());
+//    printf("Collection name='%s', embedded list class='%s', size=%d\n", GetName(),
+//           fCollection->ClassName(), GetSize());
 }
 
 TObject* KVSeqCollection::FindObjectByType(const Char_t* type) const

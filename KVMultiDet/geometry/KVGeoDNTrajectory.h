@@ -16,7 +16,8 @@ class KVGeoDNTrajectory : public KVBase
    TObjArray fNodes;
    static Int_t fGDNTrajNumber;
    mutable Int_t fIter_idx;//! index for iteration
-   mutable Int_t fIter_max;//! max index for iteration
+   mutable Int_t fIter_limit;//! last index for iteration
+   mutable Int_t fIter_delta;//! increment/decrement for each iteration
    TList fIDTelescopes;//list of id telescopes on this trajectory
 
    public:
@@ -149,6 +150,7 @@ class KVGeoDNTrajectory : public KVBase
 
    void IterateFrom(const KVGeoDetectorNode *node0 = nullptr) const
    {
+      // FORWARD ITERATION: moving towards the target
        // Start an iteration over the trajectory nodes, starting from node0.
        // If node0=nullptr (default value), start from the first node.
        // After calling this method, calling method GetNextNode()
@@ -156,20 +158,38 @@ class KVGeoDNTrajectory : public KVBase
        // to the last one, after which it returns 0x0
 
        fIter_idx = (node0==nullptr ? 0 : Index(node0));
-       fIter_max = GetN()-1;
+       fIter_delta = 1;
+       fIter_limit = GetN()-1;
+   }
+   void IterateBackFrom(const KVGeoDetectorNode *node0 = nullptr) const
+   {
+      // BACKWARD ITERATION: moving away from the target
+       // Start an iteration over the trajectory nodes, starting from node0.
+       // If node0=nullptr (default value), start from the last node.
+       // After calling this method, calling method GetNextNode()
+       // will return each node of the trajectory starting with node0
+       // to the last one, after which it returns 0x0
+
+       fIter_idx = (node0==nullptr ? GetN()-1 : Index(node0));
+       fIter_delta = -1;
+       fIter_limit = 0;
    }
 
    KVGeoDetectorNode *GetNextNode() const
    {
        // Get next node in iteration over trajectory.
-       // See IterateFrom(KVGeoDetectorNode*)
+       // See IterateFrom(KVGeoDetectorNode*) and IterateBackFrom(KVGeoDetectorNode*)
 
        if(fIter_idx>-1){
-           if(fIter_idx<fIter_max) return GetNodeAt(fIter_idx++);
+           if(fIter_delta*(fIter_limit-fIter_idx) > 0) {
+              Int_t idx = fIter_idx;
+              fIter_idx+=fIter_delta;
+              return GetNodeAt(idx);
+           }
            else {
                // last node
                fIter_idx=-1;
-               return GetNodeAt(fIter_max);
+               return GetNodeAt(fIter_limit);
            }
        }
        return nullptr;
@@ -178,7 +198,7 @@ class KVGeoDNTrajectory : public KVBase
    Int_t GetNumberOfFiredDetectorsForwardsFrom(const KVGeoDetectorNode *node, Option_t * opt = "any")
    {
        // Starting from 'node', calculate and return the number of fired detectors
-       // going forwards along this trajectory
+       // going forwards (move toward the target) along this trajectory
        // The option string will be passed to KVDetector::Fired(Option_t*)
 
        Int_t f=0;
@@ -193,7 +213,7 @@ class KVGeoDNTrajectory : public KVBase
    Int_t GetNumberOfUnfiredDetectorsForwardsFrom(const KVGeoDetectorNode *node, Option_t * opt = "any")
    {
        // Starting from 'node', calculate and return the number of unfired detectors
-       // going forwards along this trajectory
+       // going forwards (move toward the target) along this trajectory
       // The option string will be passed to KVDetector::Fired(Option_t*)
 
        Int_t f=0;

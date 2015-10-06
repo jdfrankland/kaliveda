@@ -34,17 +34,25 @@ ClassImp(KVGeoDetectorNode)
 // behind it, and which trajectories (see KVGeoDNTrajectory class) pass through
 // which node. This information can then be obtained from the KVGeoDetectorNode
 // associated to each detector.
+//
+// FORWARDS/BACKWARDS, IN FRONT/BEHIND
+// The convention is that movement towards the target is FORWARDS;
+//     a detector D1 is IN FRONT of detector D2 if D1 is closer to the target.
+// Conversely, movement away from the target is BACKWARDS;
+//     a detector D1 is BEHIND detector D2 if D1 is further from the target.
 ////////////////////////////////////////////////////////////////////////////////
 
 void KVGeoDetectorNode::init()
 {
-    fInFront=0;
-    fBehind=0;
-     fDetector=0;
-	 fTraj=0;
-     fNTrajForwards=-1;
-     fNTraj=-1;
-     fTrajF=0;
+   fInFront=nullptr;
+   fBehind=nullptr;
+   fDetector=nullptr;
+   fTraj=nullptr;
+   fNTrajForwards=-1;
+   fNTrajBackwards=-1;
+   fNTraj=-1;
+   fTrajF=nullptr;
+   fTrajB=nullptr;
 }
 
 void KVGeoDetectorNode::CalculateForwardsTrajectories()
@@ -63,6 +71,25 @@ void KVGeoDetectorNode::CalculateForwardsTrajectories()
             }
         }
     }
+}
+
+void KVGeoDetectorNode::CalculateBackwardsTrajectories()
+{
+   // Fill list with all trajectories going backwards from this node
+
+   fNTrajBackwards=0;
+   if(GetNTraj()){
+       TIter next(GetTrajectories());
+       KVGeoDNTrajectory* t;
+       while(( t = (KVGeoDNTrajectory*)next() )){
+           if(!t->BeginsAt(this)){
+               fNTrajBackwards++;
+               if(!fTrajB) fTrajB=new KVUniqueNameList;
+               fTrajB->Add(t);
+           }
+       }
+   }
+
 }
 
 KVGeoDetectorNode::KVGeoDetectorNode()
@@ -158,6 +185,15 @@ KVSeqCollection *KVGeoDetectorNode::GetForwardTrajectories() const
     return fTrajF;
 }
 
+KVSeqCollection*KVGeoDetectorNode::GetBackwardTrajectories() const
+{
+   // Return list of all trajectories going backwards from this node
+   // Returns 0x0 if there are no backwards trajectories
+
+   if(fNTrajBackwards<0) const_cast<KVGeoDetectorNode*>(this)->CalculateBackwardsTrajectories();
+   return fTrajB;
+}
+
 Int_t KVGeoDetectorNode::GetNDetsInFront() const
 {
     // Returns number of detectors directly in front of this one
@@ -188,6 +224,17 @@ Int_t KVGeoDetectorNode::GetNTrajForwards() const
 
     if(fNTrajForwards<0) const_cast<KVGeoDetectorNode*>(this)->CalculateForwardsTrajectories();
     return fNTrajForwards;
+}
+
+Int_t KVGeoDetectorNode::GetNTrajBackwards() const
+{
+   // Returns number of trajectories which go backwards (away from the target)
+   // from this node, i.e. the number of trajectories of which this is not the
+   // start-point node
+   // If not already done, this sets up the list of backwards trajectories
+
+   if(fNTrajBackwards<0) const_cast<KVGeoDetectorNode*>(this)->CalculateBackwardsTrajectories();
+   return fNTrajBackwards;
 }
 
 void KVGeoDetectorNode::RehashLists()
