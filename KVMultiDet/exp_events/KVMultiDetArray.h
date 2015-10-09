@@ -11,6 +11,8 @@
 #include "KVNucleus.h"
 #include "KVDetector.h"
 #include "KVReconNucTrajectory.h"
+#include <map>
+#include <string>
 
 class KVIDGraph;
 class KVTarget;
@@ -62,6 +64,7 @@ protected:
 
     KVHashList fTrajectories;//! list of all possible trajectories through detectors of array
     KVHashList fReconTraj;//! list of all possible trajectories for reconstructed particles
+   std::map<std::string, std::string> fReconTrajMap; //! map names of duplicate trajectories for reconstructed particles
 
    virtual void RenumberGroups();
    virtual void BuildGeometry()
@@ -248,18 +251,21 @@ public:
       if (IsROOTGeometry()) GetGeometry()->GetTopVolume()->Draw("ogl");
       else Error("Draw", "Only ROOT geometries can be viewed");
    }
-    const TSeqCollection* GetTrajectories() const {
+   const TSeqCollection* GetTrajectories() const
+   {
        // Get list of all possible trajectories for particles traversing array
        return &fTrajectories;
     }
-    const TSeqCollection* GetReconTrajectories() const {
+   const TSeqCollection* GetReconTrajectories() const
+   {
        // Get list of all possible trajectories for particle reconstruction in array
        return &fReconTraj;
     }
     const KVReconNucTrajectory* GetTrajectoryForReconstruction(const KVGeoDNTrajectory* t, const KVGeoDetectorNode* n) const
     {
-       const KVReconNucTrajectory* tr =
-             (const KVReconNucTrajectory*)fReconTraj.FindObject( Form("%s_%s",t->GetName(),n->GetName()));
+      std::string name = Form("%s_%s", t->GetName(), n->GetName());
+      TString mapped_name = fReconTrajMap.at(name).c_str();
+      const KVReconNucTrajectory* tr = (const KVReconNucTrajectory*)fReconTraj.FindObject(mapped_name);
        return tr;
     }
     void DeduceIdentificationTelescopesFromGeometry();

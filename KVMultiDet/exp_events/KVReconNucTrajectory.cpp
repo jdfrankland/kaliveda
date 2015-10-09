@@ -21,35 +21,35 @@ KVReconNucTrajectory::KVReconNucTrajectory(const KVReconNucTrajectory& o) :
    // Copy constructor
    o.Copy(*this);
 }
-using namespace std;
+
 KVReconNucTrajectory::KVReconNucTrajectory(const KVGeoDNTrajectory* tr, const KVGeoDetectorNode* n) :
    KVGeoDNTrajectory(), fIndependentIdentifications(0)
 {
    // Build a reconstructed trajectory on tr starting from node n
 
-   KVUniqueNameList* idtlist=dynamic_cast<KVUniqueNameList*>(AccessIDTelescopeList());
+   KVUniqueNameList* idtlist = dynamic_cast<KVUniqueNameList*>(AccessIDTelescopeList());
 
    tr->SaveIterationState();// in case an iteration was already underway
    // add all nodes starting at n
    tr->IterateFrom(n);
    KVGeoDetectorNode* _n;
-   while((_n = tr->GetNextNode())) {
+   while ((_n = tr->GetNextNode())) {
       AddLast(_n);
       // add all ID telescopes; if n->GetDetector() is part of the telescope,
       // it must either be alone (single-detector ID telescope) or the residual energy
       // detector (de-e telescope)
       TIter next(_n->GetDetector()->GetIDTelescopes());
       KVIDTelescope* idt;
-      while( (idt = (KVIDTelescope*)next()) ){
-         if(_n==n){
-            if(idt->GetDetector(idt->GetSize())!=n->GetDetector()) continue;
+      while ((idt = (KVIDTelescope*)next())) {
+         if (_n == n) {
+            if (idt->GetDetector(idt->GetSize()) != n->GetDetector()) continue;
          }
          idtlist->Add(idt);
-         if(idtlist->ObjectAdded()) fIndependentIdentifications += (Int_t)idt->IsIndependent();
+         if (idtlist->ObjectAdded()) fIndependentIdentifications += (Int_t)idt->IsIndependent();
       }
    }
    // unique name for fast look-up in hash table
-   SetName(Form("%s_%s",tr->GetName(),n->GetName()));
+   SetName(Form("%s_%s", tr->GetName(), n->GetName()));
    tr->RestoreIterationState();
 }
 
@@ -77,10 +77,10 @@ void KVReconNucTrajectory::ls(Option_t*) const
 {
    KVGeoDNTrajectory::ls();
    std::cout << "Identifications [" << GetIDTelescopes()->GetEntries() << "/"
-                << fIndependentIdentifications << "] : " << std::endl;
+             << fIndependentIdentifications << "] : " << std::endl;
    TIter next(GetIDTelescopes());
    KVIDTelescope* idt;
-   while ( (idt=(KVIDTelescope*)next()) ){
+   while ((idt = (KVIDTelescope*)next())) {
       std::cout << "\t" << idt->GetName() << " (" << idt->IsIndependent() << ")" << std::endl;
    }
 }

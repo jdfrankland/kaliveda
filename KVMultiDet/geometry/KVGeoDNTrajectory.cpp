@@ -58,20 +58,20 @@ ClassImp(KVGeoDNTrajectory)
 
 Int_t KVGeoDNTrajectory::fGDNTrajNumber = 0;
 
-KVGeoDNTrajectory::KVGeoDNTrajectory() : fNodes(3,0), fIDTelescopes(kFALSE)
+KVGeoDNTrajectory::KVGeoDNTrajectory() : fNodes(3, 0), fIDTelescopes(kFALSE)
 {
    // Default constructor
    init();
 }
 //______________________
-KVGeoDNTrajectory::KVGeoDNTrajectory(KVGeoDetectorNode* node) : fNodes(3,0), fIDTelescopes(kFALSE)
+KVGeoDNTrajectory::KVGeoDNTrajectory(KVGeoDetectorNode* node) : fNodes(3, 0), fIDTelescopes(kFALSE)
 {
    // Create a new trajectory starting from node
    AddFirst(node);
    init();
 }
 //______________________
-KVGeoDNTrajectory::KVGeoDNTrajectory(const KVGeoDNTrajectory & obj) : KVBase(), fNodes(3,0), fIDTelescopes(kFALSE)
+KVGeoDNTrajectory::KVGeoDNTrajectory(const KVGeoDNTrajectory& obj) : KVBase(), fNodes(3, 0), fIDTelescopes(kFALSE)
 {
    //copy ctor
    obj.Copy(*this);
@@ -86,41 +86,40 @@ KVGeoDNTrajectory::~KVGeoDNTrajectory()
 //________________________________________________________________
 void KVGeoDNTrajectory::init()
 {
-   fIter_idx=fIter_idx_sav=-1;
+   fIter_idx = fIter_idx_sav = -1;
    ++fGDNTrajNumber;
-   SetName(Form("GDNTraj_%d",fGDNTrajNumber));
+   SetName(Form("GDNTraj_%d", fGDNTrajNumber));
    SetNumber(fGDNTrajNumber);
 }
 
-void KVGeoDNTrajectory::Copy(TObject& obj) const
-{   
-   KVBase::Copy(obj);
-   KVGeoDNTrajectory& CastedObj = (KVGeoDNTrajectory&)obj;
-   TIter next(&fNodes);
-   KVGeoDetectorNode* node;
-   while( (node = (KVGeoDetectorNode*)next()) ) CastedObj.AddLast(node);
-}
-
-KVGeoDNTrajectory&KVGeoDNTrajectory::operator=(const KVGeoDNTrajectory& t)
+void KVGeoDNTrajectory::rebuild_title()
 {
-   t.Copy(*this);
-   return (*this);
-}
-
-const Char_t* KVGeoDNTrajectory::GetTitle() const
-{
-   // Dynamically constructed title: DET1/DET2/DET3/
+   // called every time a new node is added to the trajectory
+   // to update the title with the new node name
+   // Dynamically constructed title: DET1/DET2/DET3/...
 
    TString t;
    TIter next(&fNodes);
    KVGeoDetectorNode* n;
-   while( (n=(KVGeoDetectorNode*)next()) ){
+   while ((n = (KVGeoDetectorNode*)next())) {
       t += n->GetName();
-      if(n->GetDetector()->Fired("all")) t+= "+";
-      else if(n->GetDetector()->Fired()) t+= "*";
       t += "/";
    }
-   const_cast<KVGeoDNTrajectory*>(this)->SetTitle(t);
-   return KVBase::GetTitle();
+   SetTitle(t);
+}
+
+void KVGeoDNTrajectory::Copy(TObject& obj) const
+{
+   KVBase::Copy(obj);
+   KVGeoDNTrajectory& CastedObj = (KVGeoDNTrajectory&)obj;
+   TIter next(&fNodes);
+   KVGeoDetectorNode* node;
+   while ((node = (KVGeoDetectorNode*)next())) CastedObj.AddLast(node);
+}
+
+KVGeoDNTrajectory& KVGeoDNTrajectory::operator=(const KVGeoDNTrajectory& t)
+{
+   t.Copy(*this);
+   return (*this);
 }
 

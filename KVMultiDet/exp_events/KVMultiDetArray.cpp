@@ -206,46 +206,32 @@ void KVMultiDetArray::GetIDTelescopes(KVDetector* de, KVDetector* e, TCollection
             de_thick);
    if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
       set_up_single_stage_telescope(de,idt,list);
-   }
-   else
-   {
+   } else {
       uri.Form("%s.%s", fDataSet.Data(), de->GetType());
       if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
          set_up_single_stage_telescope(de,idt,list);
-      }
-      else
-      {
+      } else {
          uri.Form("%s.%s%d", fDataSet.Data(), e->GetType(),
                   e_thick);
          if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
             set_up_single_stage_telescope(e,idt,list);
-         }
-         else
-         {
+         } else {
             uri.Form("%s.%s", fDataSet.Data(), e->GetType());
             if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
                set_up_single_stage_telescope(e,idt,list);
-            }
-            else
-            {
+            } else {
                uri.Form("%s%d", de->GetType(), de_thick);
                if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
                   set_up_single_stage_telescope(de,idt,list);
-               }
-               else
-               {
+               } else {
                   uri.Form("%s", de->GetType());
                   if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
                      set_up_single_stage_telescope(de,idt,list);
-                  }
-                  else
-                  {
+                  } else {
                      uri.Form("%s%d", e->GetType(), e_thick);
                      if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
                         set_up_single_stage_telescope(e,idt,list);
-                     }
-                     else
-                     {
+                     } else {
                         uri.Form("%s", e->GetType());
                         if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
                            set_up_single_stage_telescope(e,idt,list);
@@ -264,57 +250,41 @@ void KVMultiDetArray::GetIDTelescopes(KVDetector* de, KVDetector* e, TCollection
                e_thick);
       if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
          set_up_telescope(de,e,idt,list);
-      }
-      else
-      {
+      } else {
          uri.Form("%s.%s%d-%s", fDataSet.Data(), de->GetType(),
                   de_thick, e->GetType());
          if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
             set_up_telescope(de,e,idt,list);
-         }
-         else
-         {
+         } else {
             uri.Form("%s.%s-%s%d", fDataSet.Data(), de->GetType(), e->GetType(),
                      e_thick);
             if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
                set_up_telescope(de,e,idt,list);
-            }
-            else
-            {
+            } else {
                uri.Form("%s.%s-%s", fDataSet.Data(), de->GetType(), e->GetType());
                if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
                   set_up_telescope(de,e,idt,list);
-               }
-               else
-               {
+               } else {
                   //now we look for generic ID telescopes
                   uri.Form("%s%d-%s%d", de->GetType(), de_thick,
                            e->GetType(), e_thick);
                   if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
                      set_up_telescope(de,e,idt,list);
-                  }
-                  else
-                  {
+                  } else {
                      uri.Form("%s%d-%s", de->GetType(), de_thick,
                               e->GetType());
                      if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
                         set_up_telescope(de,e,idt,list);
-                     }
-                     else
-                     {
+                     } else {
                         uri.Form("%s-%s%d", de->GetType(), e->GetType(),
                                  e_thick);
                         if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
                            set_up_telescope(de,e,idt,list);
-                        }
-                        else
-                        {
+                        } else {
                            uri.Form("%s-%s", de->GetType(), e->GetType());
                            if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
                               set_up_telescope(de,e,idt,list);
-                           }
-                           else
-                           {
+                           } else {
                               // Make a generic de-e identification telescope
                               idt = new KVIDTelescope;
                               set_up_telescope(de,e,idt,list);
@@ -402,6 +372,37 @@ void KVMultiDetArray::CalculateReconstructionTrajectories()
       while( (N = traj->GetNextNode()) ){
          fReconTraj.Add( new KVReconNucTrajectory(traj,N) );
       }
+   }
+
+   // There may be trajectories with different names but identical titles
+   // (=physically same trajectories)
+   // We find the duplicates, delete them, and set up a map between the names of the
+   // duplicates and the name of the one remaining trajectory in the list
+   TList toRemove;
+   KVUniqueNameList unique_trajectories;
+   unique_trajectories.SetOwner();
+   fReconTrajMap.clear();
+   TIter nxtRT(GetReconTrajectories());
+   KVReconNucTrajectory* rnt;
+   while ((rnt = (KVReconNucTrajectory*)nxtRT())) {
+
+      TNamed* n = new TNamed(rnt->GetTitle(), rnt->GetName());
+      unique_trajectories.Add(n);
+      TNamed* orig = n;
+      if (!unique_trajectories.ObjectAdded()) {
+         orig = (TNamed*)unique_trajectories.FindObject(rnt->GetTitle());
+         toRemove.Add(rnt);
+         delete n;
+      }
+      // set up mapping from duplicate trajectory name to orginal trajectory name
+      fReconTrajMap.insert(std::pair<string, string> (rnt->GetName(), orig->GetTitle()));
+
+   }
+   // now remove & delete the duplicates
+   TIter nxtDel(&toRemove);
+   while ((rnt = (KVReconNucTrajectory*)nxtDel())) {
+      fReconTraj.Remove(rnt);
+      delete rnt;
    }
 }
 
@@ -2297,8 +2298,7 @@ void KVMultiDetArray::SetDetecting(KVDetector* det, Bool_t detecting)
       KVGroup* gr = det->GetGroup();
       PrepareModifGroup(gr, det);
       // REIMPLEMENT GetIDTelescopesForGroup(gr,GetListOfIDTelescopes() );
-   }
-   else {
+   } else {
       KVGroup* gr = GetGroupWithAngles(det->GetTheta(), det->GetPhi());
       PrepareModifGroup(gr, det);
       // REIMPLEMENT GetIDTelescopesForGroup( gr, GetListOfIDTelescopes() );

@@ -5,7 +5,7 @@
 
 using namespace std;
 
-ClassImp(KVDetectorEvent);
+ClassImp(KVDetectorEvent)
 
 //////////////////////////////////////////////
 //KVDetectorEvent
