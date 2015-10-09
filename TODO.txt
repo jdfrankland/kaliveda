@@ -1,5 +1,9 @@
 NEW: separate class for event reconstruction
+
 NEW: separate class for simulated event detection
+   virtual base class ? KVVirtualDetectionSimulator
+     requires: event to detect (KVEvent*  not KVSimEvent*)
+               multidetector (KVMultiDetArray*)
 
 TO BE REMOVED:
 ==============
