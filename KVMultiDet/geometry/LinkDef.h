@@ -8,11 +8,11 @@
 #pragma link C++ class KVACQParam+;
 #pragma link C++ class KVCalibrator-;//customised streamer
 #pragma link C++ class KVDetector+;
-#pragma link C++ class KVTelescope+;
+//#pragma link C++ class KVTelescope+;
 #pragma link C++ class KVGroup+;
-#pragma link C++ class KVASGroup+;
-#pragma link C++ class KVLayer+;
-#pragma link C++ class KVRing+;
+//#pragma link C++ class KVASGroup+;
+//#pragma link C++ class KVLayer+;
+//#pragma link C++ class KVRing+;
 #pragma link C++ class KVGeoNavigator+;
 #pragma link C++ class KVRangeTableGeoNavigator+;
 #pragma link C++ class KVGeoDetectorNode+;

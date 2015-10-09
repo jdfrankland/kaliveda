@@ -4,7 +4,6 @@
 #include "TRandom3.h"
 #include "TBuffer.h"
 #include "KVUnits.h"
-#include "KVTelescope.h"
 #include "KVGroup.h"
 #include "KVCalibrator.h"
 #include "KVACQParam.h"
@@ -99,24 +98,16 @@ void KVDetector::init()
    fCalibrators = 0;
    fACQParams = 0;
    fParticles = 0;
-   fSegment = 0;
    fGain = 1.;
    fCalWarning = 0;
    fAbsorbers = new KVList;
    fActiveLayer = 0;
    fIDTelescopes = new KVList(kFALSE);
    fIDTelescopes->SetCleanup(kTRUE);
-   fIDTelAlign = new KVList(kFALSE);
-   fIDTelAlign->SetCleanup(kTRUE);
-   fIDTele4Ident = 0;
    fIdentP = fUnidentP = 0;
-   fTotThickness = 0.;
-   fDepthInTelescope = 0.;
    fFiredMask.Set("0");
    fELossF = fEResF = fRangeF = 0;
    fEResforEinc = -1.;
-   fAlignedDetectors[0] = 0;
-   fAlignedDetectors[1] = 0;
    fSimMode = kFALSE;
    fPresent = kTRUE;
    fDetecting = kTRUE;
@@ -193,11 +184,6 @@ KVDetector::~KVDetector()
    SafeDelete(fEResF);
    SafeDelete(fRangeF);
    fActiveLayer = -1;
-   fIDTelAlign->Clear();
-   SafeDelete(fIDTelAlign);
-   SafeDelete(fIDTele4Ident);
-   SafeDelete(fAlignedDetectors[0]);
-   SafeDelete(fAlignedDetectors[1]);
 }
 
 //________________________________________________________________
@@ -397,14 +383,6 @@ void KVDetector::Print(Option_t* opt) const
       if (fIDTelescopes) {
          cout << option << " --- Detector belongs to the following Identification Telescopes:" << endl;
          fIDTelescopes->ls();
-      }
-      if (fIDTelAlign) {
-         cout << option << " --- Identification Telescopes in front of detector:" << endl;
-         fIDTelAlign->ls();
-      }
-      if (fIDTele4Ident) {
-         cout << option << " --- Identification Telescopes used to identify particles stopping in this detector:" << endl;
-         fIDTele4Ident->ls();
       }
    } else {
       //just print name
@@ -627,25 +605,6 @@ void KVDetector::AddIDTelescope(TObject* idt)
    //Add ID telescope to list of telescopes to which detector belongs
    fIDTelescopes->Add(idt);
 }
-
-//___________________________________________________________________________//
-
-TList* KVDetector::GetTelescopesForIdentification()
-{
-   //Returns list of identification telescopes to be used in order to try to identify
-   //particles stopping in this detector. This is the same as GetAlignedIDTelescopes
-   //but only including the telescopes of which this detector is a member.
-   if (fIDTele4Ident) return fIDTele4Ident;
-   if (!fIDTelescopes || !fIDTelAlign) return 0;
-   fIDTele4Ident = new TList;
-   TIter next(fIDTelAlign);
-   TObject* idt;
-   while ((idt = next())) {
-      if (fIDTelescopes->FindObject(idt)) fIDTele4Ident->Add(idt);
-   }
-   return fIDTele4Ident;
-}
-
 
 //______________________________________________________________________________//
 
@@ -942,154 +901,6 @@ const TVector3& KVDetector::GetNormal()
    return fNormToMat;
 }
 
-//____________________________________________________________________________________
-
-void KVDetector::GetVerticesInOwnFrame(TVector3* corners, Double_t depth, Double_t layer_thickness)
-{
-   // This will fill the array corners[8] with the coordinates of the vertices of the
-   // front (corners[0],...,corners[3]) & back (corners[4],...,corners[7]) sides of the volume
-   // representing either a single absorber or the whole detector.
-   //
-   // depth = depth of detector/absorber inside the KVTelescope it belongs to (in centimetres)
-   // layer_thickness = thickness of absorber/detector (in centimetres)
-   //
-   // Positioning information is taken from the KVTelescope to which this detector
-   // belongs; if this is not the case, nothing will be done.
-
-   // relative distance to back of detector
-   Double_t dist_to_back = depth + layer_thickness;
-
-   // get coordinates
-   KVTelescope* fTelescope = (KVTelescope*)GetParentStructure("TELESCOPE");
-   if (fTelescope) {
-      fTelescope->GetCornerCoordinatesInOwnFrame(corners, depth);
-      fTelescope->GetCornerCoordinatesInOwnFrame(&corners[4], dist_to_back);
-   } else {
-      GetCornerCoordinatesInOwnFrame(corners, depth);
-      GetCornerCoordinatesInOwnFrame(&corners[4], dist_to_back);
-   }
-}
-
-//____________________________________________________________________________________
-
-TGeoVolume* KVDetector::GetGeoVolume()
-{
-   // Construct a TGeoVolume shape to represent this detector in the current
-   // geometry managed by gGeoManager.
-   //
-   // Making the volume requires:
-   //    - to construct a 'mother' volume (TGeoArb8) defined by the (theta-min/max, phi-min/max)
-   //      and the total thickness of the detector (all layers)
-   //    - to construct and position volumes (TGeoArb8) for each layer of the detector inside the
-   //      'mother' volume. Each layer is represented by a TGeoArb8 whose two parallel faces correspond
-   //      to the front and back surfaces of the layer.
-   //
-   // If the detector is composed of a single absorber, we do not create a superfluous "mother" volume.
-   //
-   // gGeoManager must point to current instance of geometry manager.
-
-   if (!gGeoManager) return NULL;
-
-   if (fTotThickness == 0) GetTotalThicknessInCM(); // calculate sum of absorber thicknesses in centimetres
-   // get from telescope info on relative depth of detector i.e. depth inside telescope
-
-   KVTelescope* fTelescope = (KVTelescope*)GetParentStructure("TELESCOPE");
-   if (fTelescope && fDepthInTelescope == 0)
-      fDepthInTelescope = fTelescope->GetDepthInCM(fTelescope->GetDetectorRank(this));
-
-   TVector3 coords[8];
-   Double_t vertices[16];
-   Double_t tot_thick_det = fTotThickness;
-   TGeoMedium* med;
-   TGeoVolume* mother_vol = 0;
-
-   Bool_t multi_layer = fAbsorbers->GetSize() > 1;
-
-   if (multi_layer) {
-      mother_vol = gGeoManager->MakeVolumeAssembly(Form("%s_DET", GetName()));
-   }
-
-   /**** BUILD & ADD ABSORBER VOLUMES ****/
-   TIter next(fAbsorbers);
-   KVMaterial* abs;
-   Double_t depth_in_det = 0.;
-   Int_t no_abs = 1;
-   while ((abs = (KVMaterial*)next())) {
-      // get medium for absorber
-      med = abs->GetGeoMedium();
-      Double_t thick = abs->GetThickness();
-      // do not include layers with zero thickness
-      if (thick == 0.0) continue;
-      GetVerticesInOwnFrame(coords, fDepthInTelescope + depth_in_det, thick);
-      for (register int i = 0; i < 8; i++) {
-         vertices[2 * i] = coords[i].X();
-         vertices[2 * i + 1] = coords[i].Y();
-      }
-      Double_t dz = thick / 2.;
-      TString vol_name;
-      if (abs == GetActiveLayer()) vol_name = GetName();
-      else vol_name = Form("%s_%d_%s", GetName(), no_abs, abs->GetType());
-      TGeoVolume* vol =
-         gGeoManager->MakeArb8(vol_name.Data(), med, dz, vertices);
-      vol->SetLineColor(med->GetMaterial()->GetDefaultColor());
-      if (multi_layer) {
-         /*** position absorber in mother ***/
-         Double_t trans_z = -tot_thick_det / 2. + depth_in_det + dz; // (note: reference is CENTRE of absorber)
-         TGeoTranslation* tr = new TGeoTranslation(0., 0., trans_z);
-         mother_vol->AddNode(vol, 1, tr);
-      } else {
-         // single absorber: mother is absorber is detector is mother is ...
-         mother_vol = vol;
-      }
-      depth_in_det += thick;
-      no_abs++;
-   }
-
-   return mother_vol;
-}
-
-//____________________________________________________________________________________
-
-void KVDetector::AddToGeometry()
-{
-   // Construct and position a TGeoVolume shape to represent this detector in the current
-   // geometry managed by gGeoManager.
-   //
-   // Adding the detector to the geometry requires:
-   //    - to construct a 'mother' volume (TGeoArb8) defined by the (theta-min/max, phi-min/max)
-   //      and the total thickness of the detector (all layers)
-   //    - to construct and position volumes (TGeoArb8) for each layer of the detector inside the
-   //      'mother' volume
-   //    - to position 'mother' inside the top-level geometry
-   //
-   // gGeoManager must point to current instance of geometry manager.
-
-   if (!gGeoManager) return;
-
-   // get volume for detector
-   TGeoVolume* vol = GetGeoVolume();
-
-   // rotate detector to orientation corresponding to (theta,phi)
-   Double_t theta = GetTheta();
-   Double_t phi = GetPhi();
-   TGeoRotation rot1, rot2;
-   rot2.SetAngles(phi + 90., theta, 0.);
-   rot1.SetAngles(-90., 0., 0.);
-   // distance to detector centre = distance to telescope + depth of detector in telescope + half total thickness of detector
-   KVTelescope* fTelescope = (KVTelescope*)GetParentStructure("TELESCOPE");
-   Double_t dist_telescope = (fTelescope ? fTelescope->GetDistance() : 0.);
-   Double_t dist = dist_telescope + fDepthInTelescope + fTotThickness / 2.;
-   // translate detector to correct distance from target (note: reference is CENTRE of detector)
-   Double_t trans_z = dist;
-
-   TGeoTranslation tran(0, 0, trans_z);
-   TGeoHMatrix h = rot2 * tran * rot1;
-   TGeoHMatrix* ph = new TGeoHMatrix(h);
-
-   // add detector volume to geometry
-   gGeoManager->GetTopVolume()->AddNode(vol, 1, ph);
-}
-
 void KVDetector::SetFiredBitmask(KVString& lpar)
 {
    // Set bitmask used to determine which acquisition parameters are
@@ -1142,47 +953,7 @@ Double_t KVDetector::GetEntranceWindowSurfaceArea()
    // the area will be too large (see TGeoBBox::GetFacetArea).
 
    if (GetShape()) return GetShape()->GetFacetArea(1);
-
-   KVTelescope* fTelescope = (KVTelescope*)GetParentStructure("TELESCOPE");
-   if (fTelescope && fDepthInTelescope == 0)
-      fDepthInTelescope = fTelescope->GetDepthInCM(fTelescope->GetDetectorRank(this));
-
-   TVector3 coords[4];
-
-   if (fTelescope) fTelescope->GetCornerCoordinates(coords, fDepthInTelescope);
-   else GetCornerCoordinates(coords, 0);
-   cout << "DETECTOR COORDINATES (in cm):" << endl;
-   cout << "=================================" << endl;
-   cout << " A : ";
-   printvec(coords[0]);
-   cout << endl;
-   cout << " B : ";
-   printvec(coords[1]);
-   cout << endl;
-   cout << " C : ";
-   printvec(coords[2]);
-   cout << endl;
-   cout << " D : ";
-   printvec(coords[3]);
-   cout << endl;
-
-   cout << "DETECTOR DIMENSIONS (in cm):" << endl;
-   cout << "================================" << endl;
-   Double_t c = (coords[0] - coords[1]).Mag();
-   Double_t b = (coords[1] - coords[2]).Mag();
-   Double_t d = (coords[2] - coords[3]).Mag();
-   Double_t a = (coords[0] - coords[3]).Mag();
-   cout << " AB = " << c << endl;
-   cout << " BC = " << b << endl;
-   cout << " CD = " << d << endl;
-   cout << " AD = " << a << endl;
-
-   cout << "DETECTOR SURFACE AREA = ";
-   Double_t surf = pow((a + b), 2.0) * (a - b + 2.0 * c) * (b - a + 2.0 * c);
-   surf = sqrt(surf) / 400.0;
-   cout << surf << " cm2" << endl;
-
-   return surf;
+   return 0.0;
 }
 
 TF1* KVDetector::GetEResFunction(Int_t Z, Int_t A)
@@ -1427,40 +1198,6 @@ void KVDetector::ReadDefinitionFromFile(const Char_t* envrc)
    }
 }
 
-//_________________________________________________________________________________________//
-
-TList* KVDetector::GetAlignedDetectors(UInt_t direction)
-{
-   // Returns list of detectors (including this one) which are in geometrical aligment
-   // with respect to the target position (assuming this detector is part of a multidetector
-   // array described by KVMultiDetArray).
-   //
-   // By default the list is in the order starting from this detector and going towards the target
-   // (direction=KVGroup::kBackwards).
-   // Call with argument direction=KVGroup::kForwards to have the list of detectors in the order
-   // "seen" by a particle flying out from the target and arriving in this detector.
-   //
-   // If this detector is not part of a KVMultiDetArray (i.e. we have no information on
-   // its geometrical relation to other detectors), we return 0x0.
-   //
-   // The list pointers are stored in member variable fAlignedDetectors[] for rapid retrieval,
-   // the lists will be deleted with this detector.
-   //
-   // See KVGroup::GetAlignedDetectors for more details.
-
-   if (!GetGroup() || direction > 1) return 0x0;
-   if (fAlignedDetectors[direction]) return fAlignedDetectors[direction];
-   return (fAlignedDetectors[direction] = GetGroup()->GetAlignedDetectors(this, direction));
-}
-
-//_________________________________________________________________________________________//
-
-void KVDetector::ResetAlignedDetectors(UInt_t direction)
-{
-   if (!GetGroup() || direction > 1) return;
-   if (fAlignedDetectors[direction]) fAlignedDetectors[direction] = 0;
-}
-
 Double_t KVDetector::GetRange(Int_t Z, Int_t A, Double_t Einc)
 {
    // WARNING: SAME AS KVDetector::GetLinearRange
@@ -1555,28 +1292,6 @@ KVGeoStrucElement* KVDetector::GetParentStructure(const Char_t* type, const Char
    } else
       el = (KVGeoStrucElement*)fParentStrucList.FindObjectByType(type);
    return el;
-}
-
-KVGeoDNTrajectory* KVDetector::GetTrajectoryForReconstruction()
-{
-    // Return pointer to trajectory to be used for reconstruction of a
-    // particle stopping in this detector.
-    // If only one trajectory going forwards from this detector exists,
-    // it is returned by default.
-    // If there are more than one possible trajectories, a choice is made:
-    //  - we choose the trajectory with the least 'unfired' detectors
-
-    if(!GetNode()->GetNTraj()) return 0x0;
-    Int_t ntrajfor = GetNode()->GetNTrajForwards();
-    if(ntrajfor>1){
-        KVGeoDNTrajectory* tr = GetNode()->GetForwardTrajectoryWithLeastUnfiredDetectors();
-        if(!tr) tr = GetNode()->GetForwardTrajectoryWithMostFiredDetectors();
-        return tr;
-    }
-    else if(ntrajfor==1){
-        return (KVGeoDNTrajectory*)GetNode()->GetForwardTrajectories()->First();
-    }
-    return (KVGeoDNTrajectory*)GetNode()->GetTrajectories()->First();
 }
 
 void KVDetector::SetActiveLayerMatrix(const TGeoHMatrix* m)

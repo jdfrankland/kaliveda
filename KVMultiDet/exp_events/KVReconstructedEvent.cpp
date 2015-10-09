@@ -20,7 +20,6 @@
 #include "KVGroup.h"
 #include "Riostream.h"
 #include "KVReconstructedNucleus.h"
-#include "KVTelescope.h"
 #include "KVDetector.h"
 #include "KVTarget.h"
 #include "KVMultiDetArray.h"
@@ -100,44 +99,6 @@ void KVReconstructedEvent::Streamer(TBuffer& R__b)
    } else {
       R__b.WriteClassBuffer(KVReconstructedEvent::Class(), this);
    }
-}
-
-
-//______________________________________________________________________________________//
-
-Bool_t KVReconstructedEvent::AnalyseDetectors(TList* kvtl)
-{
-   // Loop over detectors in list
-   // if any detector has fired, start construction of new detected particle
-   // More precisely: If detector has fired,
-   // making sure fired detector hasn't already been used to reconstruct
-   // a particle, then we create and fill a new detected particle.
-   // In order to avoid creating spurious particles when reading data,
-   // by default we ask that ALL coder values be non-zero here i.e. data and time-marker.
-   // This can be changed by calling SetPartSeedCond("any"): in this case,
-   // particles will be reconstructed starting from detectors with at least 1 fired parameter.
-
-   KVDetector* d;
-   TIter next(kvtl);
-   while ((d = (KVDetector*)next())) {
-      /*
-          If detector has fired,
-          making sure fired detector hasn't already been used to reconstruct
-          a particle, then we create and fill a new detected particle.
-      */
-      if ((d->Fired(fPartSeedCond.Data()) && !d->IsAnalysed())) {
-
-         KVReconstructedNucleus* kvdp = AddParticle();
-         //add all active detector layers in front of this one
-         //to the detected particle's list
-         kvdp->Reconstruct(d);
-
-         //set detector state so it will not be used again
-         d->SetAnalysed(kTRUE);
-      }
-   }
-
-   return kTRUE;
 }
 
 //______________________________________________________________________________

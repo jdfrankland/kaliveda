@@ -1,6 +1,5 @@
 #include "Riostream.h"
 #include "KVReconstructedNucleus.h"
-#include "KVTelescope.h"
 #include "KVIDTelescope.h"
 #include "KVGroup.h"
 #include "KVMultiDetArray.h"
@@ -43,7 +42,6 @@ ClassImp(KVReconstructedNucleus);
 void KVReconstructedNucleus::init()
 {
    //default initialisation
-   fReconTraj = nullptr;
    fRealZ = fRealA = 0.;
    fDetNames = "/";
    fIDTelName = "";
@@ -127,7 +125,8 @@ void KVReconstructedNucleus::Streamer(TBuffer& R__b)
             // Removing the leading '/' character from fDetNames gives us the title of the
             // trajectory used to reconstruct the particle
             TString traj_t = fDetNames.Strip(TString::kLeading,'/');
-            fReconTraj = GetStoppingDetector()->GetNode()->FindTrajectory(traj_t);
+            //fReconTraj = GetStoppingDetector()->GetNode()->FindTrajectory(traj_t);
+            if( R__v < 16 ) { ResetNSegDet(); } // fNSegDet/fAnalStatus non-persistent before v.16
 
          if (GetGroup()) GetGroup()->AddHit(this);
          fIDTelescope = 0;
@@ -135,7 +134,6 @@ void KVReconstructedNucleus::Streamer(TBuffer& R__b)
          TIter next_det(&fDetList);
          KVDetector* det;
          while ((det = (KVDetector*)next_det())) {
-            if (R__v < 16) fNSegDet += det->GetSegment();  // fNSegDet/fAnalStatus non-persistent before v.16
             det->AddHit(this);
             det->SetAnalysed();
             //modify detector's counters depending on particle's identification state
@@ -287,79 +285,9 @@ void KVReconstructedNucleus::AddDetector(KVDetector* det)
    // store pointer to detector
    fDetList.Add(det);
    if (det->IsDetecting()) {
-      //add segmentation index of detector to total segmentation index of particle
-      fNSegDet += det->GetSegment();
       //add 1 unidentified particle to the detector
       det->IncrementUnidentifiedParticles();
    }
-
-}
-
-//______________________________________________________________________________________________//
-
-void KVReconstructedNucleus::Reconstruct(KVDetector* kvd)
-{
-   //Reconstruction of a detected nucleus from the successive energy losses
-   //measured in a series of detectors/telescopes.
-   //
-   //Starting from detector *kvd, collect information from all detectors placed directly
-    //in front of *kvd : these are the detectors the particle has passed through (but see NOTE below)
-   //
-   //Each one is added to the particle's list (KVReconstructedNucleus::AddDetector), and,
-   //if it is not an unsegmented detector, it is marked as having been "analysed"
-   //(KVDetector::SetAnalysed) in order to stop it being considered as a starting point for another
-   //particle reconstruction.
-
-   fNSegDet = 0;
-
-    KVGeoDNTrajectory* recon_traj = kvd->GetTrajectoryForReconstruction();
-
-    if(recon_traj){
-        ReconstructWithTrajectory(kvd, recon_traj);
-        return;
-    }
-
-        // iterate over trajectory
-   if (kvd->GetGroup()) {
-      TList* aligned = kvd->GetAlignedDetectors();
-      if (aligned) {
-
-         TIter next_aligned(aligned);
-         KVDetector* d;
-         while ((d = (KVDetector*) next_aligned())) {
-            AddDetector(d);
-            d->AddHit(this);  // add particle to list of particles hitting detector
-            d->SetAnalysed(kTRUE);   //cannot be used to seed another particle
-         }
-      }
-      kvd->GetGroup()->AddHit(this);
-   }
-
-}
-
-void KVReconstructedNucleus::ReconstructWithTrajectory(KVDetector *kvd, KVGeoDNTrajectory *tr)
-{
-    // Reconstruct particle along given trajectory
-    //Starting from detector *kvd, collect information from all detectors on trajectory *tr
-    //in front of *kvd : these are the detectors the particle has passed through
-    //
-    //Each one is added to the particle's list (KVReconstructedNucleus::AddDetector), and,
-    //if it is not an unsegmented detector, it is marked as having been "analysed"
-    //(KVDetector::SetAnalysed) in order to stop it being considered as a starting point for another
-    //particle reconstruction.
-
-    //Info("ReconstructWithTrajectory","from %s using %s",kvd->GetName(),tr->GetTitle());
-    tr->IterateFrom(kvd->GetNode());
-    KVGeoDetectorNode* node;
-    while( (node = tr->GetNextNode()) ){
-        KVDetector *d = node->GetDetector();
-        AddDetector(d);
-        d->AddHit(this);  // add particle to list of particles hitting detector
-        d->SetAnalysed(kTRUE);   //cannot be used to seed another particle
-    }
-    kvd->GetGroup()->AddHit(this);
-    // keep pointer to trajectory used for reconstruction
-    fReconTraj=tr;
 }
 
 //_____________________________________________________________________________________
@@ -375,8 +303,9 @@ void KVReconstructedNucleus::Identify()
    // The identification code corresponding to the identifying telescope is set as the identification code of the particle.
 
 
-   KVList* idt_list = GetStoppingDetector()->GetAlignedIDTelescopes();
-   if (idt_list && idt_list->GetSize() > 0) {
+   const KVSeqCollection *idt_list = GetReconstructionTrajectory()->GetIDTelescopes();
+
+   if (idt_list->GetEntries() > 0) {
 
       KVIDTelescope* idt;
       TIter next(idt_list);
@@ -384,12 +313,7 @@ void KVReconstructedNucleus::Identify()
       Int_t n_success_id = 0;//number of successful identifications
       while ((idt = (KVIDTelescope*) next())) {
 
-         // Make sure that all detectors making up the identification telescope
-         // are part of the trajectory used to reconstruct the particle
-         if(!fReconTraj->ContainsAllConsecutive(idt->GetDetectors(),kIterBackward)) continue;
-
          KVIdentificationResult* IDR = GetIdentificationResult(idnumber++);
-
 
          if (idt->IsReadyForID()) { // is telescope able to identify for this run ?
 
@@ -430,53 +354,8 @@ void KVReconstructedNucleus::Identify()
 
 void KVReconstructedNucleus::AnalyseParticlesInGroup(KVGroup* grp)
 {
-   //The short description of this method is:
-   //
-   //      Here we analyse all the particles stopping in this group in order to
-   //      determine 'KVReconstructedNucleus::GetStatus()' for each one.
-   //      This is a sort of 'first-order' coherency analysis necessary prior to
-   //      attempting particle identification.
-   //
-   //The long description of this method is:
-   //
-   //Analyse the different particles reconstructed in this group in order to
-   //establish the strategy necessary to fully reconstruct each one
-   //In a group with >=3-member telescopes, the maximum number of particles which may be
-   //reconstructed correctly is equal to the number of telescopes constituting the
-   //last layer of the group if all particles stop in the last detector of the last
-   //layer.
-   //i.e. in rings 4-9 (ChIo-Si-CsI telescopes) any group can detect up to 4 particles
-   //all going through to the CsI i.e. either light particles identified from CsI R-L
-   //matrices or fragments identified from Si-CsI matrices.
-   //
-   //Any particle detected in a group on its own is perfectly fine (fAnalStatus=0).
-   //
-   //Any particle detected in the final layer of a "3-detector layer" group
-   //(i.e. ChIo-Si-CsI) is perfectly fine (fAnalStatus=0).
-   //
-   //A particle stopping in the 2nd layer of a "3-detector layer" group (i.e. in Si)
-   //can be reconstructed if all the other particles in its group stop in the 3rd
-   //layer (i.e. CsI), once the other particles have been reconstructed and their
-   //calculated energy loss in the ChIo has been subtracted from the measured value
-   //(fAnalStatus=1).
-   //
-   //It's a question of "segmented" or "independent" detectors. The ChIo's are not
-   //"independent" because a particle passing the ChIo can hit several detectors behind
-   //it, whereas any particle passing a given Si can only hit the CsI directly behind
-   //that Si, because the Si (and CsI) are more "segmented" than the ChIo's.
-   //Soooo...any particle crossing at least 2 "independent" detectors can be identified
-   //sans probleme. In fact CsI count for 2 independent detectors themselves, because
-   //light particles can be identified just from CsI information i.e. no need for
-   //"delta-E" signal. Unless of course the R-L attempt fails, at which moment the
-   //particle's AnalStatus may be changed and it may be up for reassessment in
-   //subsequent rounds of analysis.
-   //Particles hitting 0 independent detectors (I.e. stopped in ChIo)
-   //can not be reconstructed. Any particle hitting only 1 independent detector can
-   //be reconstructed if alone in the group i.e. no other particles or all others have
-   //hit >=2 independent detectors. If more than one particle in the same group only
-   //hit 1 independent detector, then one can only make a rough estimation of their
-   //nature.
-   if (GetNUnidentifiedInGroup(grp) > 1) { //if there is more than one unidentified particle in the group
+   if (GetNUnidentifiedInGroup(grp) > 1)  //if there is more than one unidentified particle in the group
+   {
 
       UShort_t n_nseg_1 = 0;
       if (!grp->GetParticles()) {

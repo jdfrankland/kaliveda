@@ -29,7 +29,7 @@ class TList;
 class KVReconstructedEvent: public KVEvent {
 
    Bool_t fMeanAngles;          //!kTRUE if particle momenta calculated using mean angles of detectors (default: randomised angles)
-   TString fPartSeedCond;   //!condition used in AnalyseTelescopes for seeding new reconstructed particle
+   TString fPartSeedCond;   //!condition used for seeding new reconstructed particle
 
 public:
 
@@ -46,9 +46,7 @@ public:
    inline KVReconstructedNucleus* GetParticle(const Char_t* group_name) const;
    inline KVReconstructedNucleus* GetNextParticle(Option_t* opt = "");
 
-   virtual Bool_t AnalyseDetectors(TList* kvtl);
-   virtual const Char_t* GetPartSeedCond() const
-   {
+   virtual const Char_t *GetPartSeedCond() const{
       return fPartSeedCond;
    }
    virtual void SetPartSeedCond(const Char_t* cond)

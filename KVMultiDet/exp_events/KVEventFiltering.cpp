@@ -173,14 +173,8 @@ void KVEventFiltering::InitAnalysis()
    gMultiDetArray->SetSimMode();
 
    TString geo = GetOpt("Geometry").Data();
-   if (geo == "ROOT") {
-      gMultiDetArray->SetROOTGeometry(kTRUE);
-      Info("InitAnalysis", "Filtering with ROOT geometry");
-      Info("InitAnalysis", "Navigator detector name format = %s", gMultiDetArray->GetNavigator()->GetDetectorNameFormat());
-   } else {
-      gMultiDetArray->SetROOTGeometry(kFALSE);
-      Info("InitAnalysis", "Filtering with KaliVeda geometry");
-   }
+   Info("InitAnalysis", "Filtering with ROOT geometry");
+   Info("InitAnalysis", "Navigator detector name format = %s", gMultiDetArray->GetNavigator()->GetDetectorNameFormat());
 
    TString filt = GetOpt("Filter").Data();
    if (filt == "Geo") {
@@ -268,11 +262,7 @@ void KVEventFiltering::OpenOutputFile(KVDBSystem* S, Int_t run)
    }
    (new TNamed("Dataset", gDataSet->GetName()))->Write();
    if (S)(new TNamed("Run", Form("%d", run)))->Write();
-   if (gMultiDetArray->IsROOTGeometry()) {
-      (new TNamed("Geometry", "ROOT"))->Write();
-   } else {
-      (new TNamed("Geometry", "KV"))->Write();
-   }
+   (new TNamed("Geometry", "ROOT"))->Write();
    (new TNamed("Filter", GetOpt("Filter").Data()))->Write();
    (new TNamed("Origin", (basefile + ".root").Data()))->Write();
    curdir->cd();

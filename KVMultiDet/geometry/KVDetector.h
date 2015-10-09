@@ -52,8 +52,6 @@ private:
    static Int_t fDetCounter;
    Short_t fActiveLayer;        //The active absorber in the detector
    KVList* fIDTelescopes;       //->list of ID telescopes to which detector belongs
-   KVList* fIDTelAlign;         //->list of ID telescopes made of this detector and all aligned detectors placed in front of it
-   TList* fIDTele4Ident;  //!list of ID telescopes used for particle ID
 
    enum {
       kIsAnalysed = BIT(14),    //for reconstruction of particles
@@ -94,12 +92,8 @@ protected:
    KVList* fACQParams;          //list of raw data parameters read from coders
    KVList* fParticles;         //!list of particles hitting detector in an event
    KVList* fAbsorbers;          //->list of absorbers making up the detector
-   UShort_t fSegment;           //used in particle reconstruction
    Double_t fGain;               //gain of amplifier
    Int_t fCalWarning;           //!just a counter so that missing calibrator warning is given only once
-
-   Double_t fTotThickness; //! used to store value calculated by GetTotalThicknessInCM
-   Double_t fDepthInTelescope; //! used to store depth of detector in parent telescope
 
    Binary8_t  fFiredMask;//bitmask used by Fired to determine which parameters to take into account
 
@@ -112,7 +106,6 @@ protected:
    TF1* fRangeF; //! parametric function range of particles in detector
 
    Double_t fEResforEinc;//! used by GetIncidentEnergy & GetCorrectedEnergy
-   TList* fAlignedDetectors[2];//! stores lists of aligned detectors in both directions
 
    Bool_t fSimMode;//! =kTRUE when using to simulate detector response, =kFALSE when analysing data
    Bool_t fPresent;//! =kTRUE if detector is present, =kFALSE if it has been removed
@@ -154,19 +147,14 @@ public:
       return fAbsorbers;
    };
    virtual const Char_t* GetArrayName();
-   virtual Double_t GetDepthInTelescope() const
-   {
-      return fDepthInTelescope;
-   };
 
    Double_t GetTotalThicknessInCM()
    {
       // Calculate and return the total thickness in centimetres of ALL absorbers making up the detector,
       // not just the active layer (value returned by GetThickness()).
 
-      fTotThickness = 0;
-      TIter next(fAbsorbers);
-      KVMaterial* mat;
+        Double_t fTotThickness=0;
+        TIter next(fAbsorbers); KVMaterial* mat;
       while ((mat = (KVMaterial*)next())) fTotThickness += mat->GetThickness();
       return fTotThickness;
    };
@@ -269,10 +257,7 @@ public:
       return (fParticles ? fParticles->GetEntries() : 0);
    };
 
-   inline UShort_t GetSegment() const;
-   inline virtual void SetSegment(UShort_t s);
-   Bool_t IsAnalysed()
-   {
+    Bool_t IsAnalysed() {
       return TestBit(kIsAnalysed);
    };
    void SetAnalysed(Bool_t b = kTRUE)
@@ -291,14 +276,7 @@ public:
    {
       //Return list of IDTelescopes to which detector belongs
       return fIDTelescopes;
-   };
-   KVList* GetAlignedIDTelescopes()
-   {
-      //return list of ID telescopes made of this detector
-      //and all aligned detectors placed in front of it
-      return fIDTelAlign;
-   };
-   TList* GetTelescopesForIdentification();
+    }
 
    inline void IncrementUnidentifiedParticles(Int_t n = 1)
    {
@@ -324,9 +302,6 @@ public:
    static KVDetector* MakeDetector(const Char_t* name, Float_t thick);
    const TVector3& GetNormal();
 
-   virtual TGeoVolume* GetGeoVolume();
-   virtual void AddToGeometry();
-   virtual void GetVerticesInOwnFrame(TVector3* /*corners[8]*/, Double_t /*depth*/, Double_t /*layer_thickness*/);
    virtual Double_t GetEntranceWindowSurfaceArea();
 
    virtual void SetFiredBitmask(KVString&);
@@ -381,9 +356,6 @@ public:
 
    virtual void ReadDefinitionFromFile(const Char_t*);
 
-   virtual TList* GetAlignedDetectors(UInt_t direction = /*KVGroup::kBackwards*/ 1);
-   void ResetAlignedDetectors(UInt_t direction = /*KVGroup::kBackwards*/ 1);
-
    virtual void SetSimMode(Bool_t on = kTRUE)
    {
       // Set simulation mode of detector
@@ -437,8 +409,6 @@ public:
    void RemoveParentStructure(KVGeoStrucElement* elem);
    KVGeoStrucElement* GetParentStructure(const Char_t* type, const Char_t* name = "") const;
 
-    virtual KVGeoDNTrajectory* GetTrajectoryForReconstruction();
-
    void SetActiveLayerMatrix(const TGeoHMatrix*);
    void SetActiveLayerShape(TGeoBBox*);
    TGeoHMatrix* GetActiveLayerMatrix() const;
@@ -454,7 +424,7 @@ public:
       return fEWPosition;
    }
 
-   ClassDef(KVDetector, 9)      //Base class for the description of detectors in multidetector arrays
+    ClassDef(KVDetector, 10)      //Base class for the description of detectors in multidetector arrays
 };
 
 inline KVCalibrator* KVDetector::GetCalibrator(const Char_t* name,
@@ -470,18 +440,6 @@ inline KVCalibrator* KVDetector::GetCalibrator(const Char_t* type) const
    if (fCalibrators)
       return (KVCalibrator*) fCalibrators->FindObjectByType(type);
    return 0;
-}
-
-inline UShort_t KVDetector::GetSegment() const
-{
-   //used in reconstruction of particles
-   return fSegment;
-}
-
-inline void KVDetector::SetSegment(UShort_t s)
-{
-   //set segmentation level - used in reconstruction of particles
-   fSegment = s;
 }
 
 inline void KVDetector::SetGain(Double_t gain)

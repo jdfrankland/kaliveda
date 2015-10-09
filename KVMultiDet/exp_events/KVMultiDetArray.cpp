@@ -11,12 +11,9 @@
 #include "KVReconstructedNucleus.h"
 #include "KVACQParam.h"
 #include "KVRList.h"
-#include "KVLayer.h"
 #include "KVEvent.h"
 #include "KVNucleus.h"
 #include "KVGroup.h"
-#include "KVRing.h"
-#include "KVTelescope.h"
 #include "KVMaterial.h"
 #include "KVTarget.h"
 #include "KVIDTelescope.h"
@@ -78,7 +75,8 @@ void KVMultiDetArray::init()
    //We use the ROOT automatic garbage collection to make sure that any object deleted
    //elsewhere is removed automatically from these lists.
 
-   fIDTelescopes = new KVHashList();
+    fIDTelescopes = new KVUniqueNameList(kTRUE); // any attempt to add a duplicate idtelescope
+                                                 // will lead to the first one being deleted
    fIDTelescopes->SetOwner(kTRUE); // owns its objects
    fIDTelescopes->SetCleanup(kTRUE);
 
@@ -92,7 +90,6 @@ void KVMultiDetArray::init()
    fCalibStatusDets = 0;
    fSimMode = kFALSE;
 
-   fROOTGeometry = gEnv->GetValue("KVMultiDetArray.FilterUsesROOTGeometry", kTRUE);
    fFilterType = kFilterType_Full;
 
    fGeoManager = 0;
@@ -100,6 +97,10 @@ void KVMultiDetArray::init()
    fUpDater = 0;
 
    if (!gIDGridManager) new KVIDGridManager;
+
+    // all trajectories belong to us
+    fTrajectories.SetOwner();
+    fReconTraj.SetOwner();
 }
 
 //___________________________________________________________________________________
@@ -177,177 +178,153 @@ void KVMultiDetArray::GetIDTelescopes(KVDetector* de, KVDetector* e, TCollection
    //
    // This method is called by DeduceIdentificationTelescopesFromGeometry
    // in order to set up all ID telescopes of the array.
-   //
-   // Returns number of ID telescopes created
 
    Int_t ntels = 0;
    // if both detectors are not OK then stop
    if (!de->IsOK() && !e->IsOK()) return;
+   // if only de-detector is not OK then set up single stage telscope with e-detector
+   if( !de->IsOK() ) de = e;
+   // else if only e-detector  is not OK then set up single stage telescope with de-detector
+   else if ( !e->IsOK() ) e = de;
+   // else both detectors are OK then explore all the possiblilities!
+   
+   TString sde="",se="";
+   if (de->IsOK()) sde = de->GetName();
+   if (e->IsOK()) se = e->GetName();
+
+   KVIDTelescope *idt = 0;
 
    if (fDataSet == "" && gDataSet) fDataSet = gDataSet->GetName();
 
    //look for ID telescopes with only one of the two detectors
-   if (de->IsOK()) ntels += try_all_singleID_telescopes(de, list);
-   if (e->IsOK() && de != e) ntels += try_all_singleID_telescopes(e, list);
-
-   if (de != e && e->IsOK() && de->IsOK()) ntels += try_all_doubleID_telescopes(de, e, list);
-
-}
-
-Int_t KVMultiDetArray::try_all_singleID_telescopes(KVDetector* d, TCollection* l)
-{
-   // Attempt to find a plugin KVIDTelescope class for making a single-detector
-   // ID telescope from detector *d
-   // We look for plugins with the following signatures (uri):
-   //
-   //       [type]
-   //       [type][thickness]
-   //
-   // where 'type' is the type of the detector in UPPER or lowercase letters
-   // 'thickness' is the nearest-integer thickness of the detector as returned by d->GetThickness()
-   // In addition, if a dataset is set (gDataSet!=nullptr) we try also for dataset-specific
-   // plugins:
-   //
-   //       [dataset].[type]
-   //       [dataset].[type][thickness]
-   //
-   // Returns number of generated telescopes
-
-   TString uri = d->GetType();
-   Int_t ntels = 0;
-   if (!(ntels += try_upper_and_lower_singleIDtelescope(uri, d, l))) {
-      Int_t d_thick = TMath::Nint(d->GetThickness());
-      uri += d_thick;
-      ntels += try_upper_and_lower_singleIDtelescope(uri, d, l);
+   uri.Form("%s", e->GetType());
+   if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+      set_up_single_stage_telescope(e,idt,list);
    }
-   return ntels;
-}
 
-
-Int_t KVMultiDetArray::try_all_doubleID_telescopes(KVDetector* de, KVDetector* e, TCollection* l)
-{
-   // Attempt to find a plugin KVIDTelescope class for making an ID telescope from detectors de & e.
-   // We look for plugins with the following signatures (uri):
-   //
-   //       [de-type]-[e-type]
-   //       [de-type][thickness]-[e-type]
-   //       [de-type]-[e-type][thickness]
-   //       [de-type][thickness]-[e-type][thickness]
-   //
-   // where 'type' is the type of the detector in UPPER or lowercase letters
-   // 'thickness' is the nearest-integer thickness of the detector.
-   // In addition, if a dataset is set (gDataSet!=nullptr) we try also for dataset-specific
-   // plugins:
-   //
-   //       [dataset].[de-type]-[e-type]
-   //       [dataset].[de-type][thickness]-[e-type]
-   //       [dataset].[de-type]-[e-type][thickness]
-   //       [dataset].[de-type][thickness]-[e-type][thickness]
-   //
-   // if no plugin is found, we return a KVIDTelescope base class object
-   //
-   // Returns 1 (we always generate exactly one telescope)
-
-   TString de_type = de->GetType();
-   TString e_type = e->GetType();
-   TString de_thick = Form("%d", TMath::Nint(de->GetThickness()));
-   TString e_thick = Form("%d", TMath::Nint(e->GetThickness()));
-
-   TString uri = de_type + "-" + e_type;
-   if (try_upper_and_lower_doubleIDtelescope(uri, de, e, l)) return 1;
-
-   uri = de_type + de_thick + "-" + e_type;
-   if (try_upper_and_lower_doubleIDtelescope(uri, de, e, l)) return 1;
-
-   uri = de_type + "-" + e_type + e_thick;
-   if (try_upper_and_lower_doubleIDtelescope(uri, de, e, l)) return 1;
-
-   uri = de_type + de_thick + "-" + e_type + e_thick;
-   if (try_upper_and_lower_doubleIDtelescope(uri, de, e, l)) return 1;
-
-   // default id telescope object
-   KVIDTelescope* idt = new KVIDTelescope;
-   uri = de_type + "-" + e_type;
-   idt->SetLabel(uri);
-   set_up_telescope(de, e, idt, l);
-
-   return 1;
-}
-
-bool KVMultiDetArray::try_upper_and_lower_singleIDtelescope(TString uri, KVDetector* d, TCollection* l)
-{
-   // Attempt to find a plugin KVIDTelescope class for making a single-detector
-   // ID telescope from detector *d with the given signature/uri
-   // Both original & all-upper-case versions of uri are tried.
-   // uri is tried both with & without prepended dataset name (if set)
-   // Returns true if successful (the new ID telescope will be added to internal
-   // list fIDTelescopes and also to TCollection* l)
-
-   if (try_a_singleIDtelescope(uri, d, l)) return true;
-   uri.ToUpper();
-   return try_a_singleIDtelescope(uri, d, l);
-}
-
-bool KVMultiDetArray::try_upper_and_lower_doubleIDtelescope(TString uri, KVDetector* de, KVDetector* e, TCollection* l)
-{
-   // Attempt to find a plugin KVIDTelescope class for making an ID telescope with the given signature/uri
-   // Both original & all-upper-case versions of uri are tried.
-   // uri is tried both with & without prepended dataset name (if set)
-   // Returns true if successful (the new ID telescope will be added to internal
-   // list fIDTelescopes and also to TCollection* l)
-
-   if (try_a_doubleIDtelescope(uri, de, e, l)) return true;
-   uri.ToUpper();
-   return try_a_doubleIDtelescope(uri, de, e, l);
-}
-
-bool KVMultiDetArray::try_a_singleIDtelescope(TString uri, KVDetector* d, TCollection* l)
-{
-   // Attempt to find a plugin KVIDTelescope class for making a single-detector
-   // ID telescope from detector *d with the given signature/uri
-   // Both original & all-upper-case versions of uri are tried.
-   // uri is tried both with & without prepended dataset name (if set)
-   // Returns true if successful (the new ID telescope will be added to internal
-   // list fIDTelescopes and also to TCollection* l)
-
-   // dataset-specific version takes precedence over default
-   TString duri = uri;
-   if (gDataSet) {
-      // try with dataset name
-      duri.Prepend(Form("%s.", fDataSet.Data()));
-      KVIDTelescope* idt;
-      if ((idt = KVIDTelescope::MakeIDTelescope(duri))) {
-         set_up_single_stage_telescope(d, idt, l);
-         return true;
+   uri.Form("%s.%s%d", fDataSet.Data(), de->GetType(),
+            de_thick);
+   if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+      set_up_single_stage_telescope(de,idt,list);
+   }
+   else
+   {
+      uri.Form("%s.%s", fDataSet.Data(), de->GetType());
+      if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+         set_up_single_stage_telescope(de,idt,list);
+      }
+      else
+      {
+         uri.Form("%s.%s%d", fDataSet.Data(), e->GetType(),
+                  e_thick);
+         if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+            set_up_single_stage_telescope(e,idt,list);
+         }
+         else
+         {
+            uri.Form("%s.%s", fDataSet.Data(), e->GetType());
+            if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+               set_up_single_stage_telescope(e,idt,list);
+            }
+            else
+            {
+               uri.Form("%s%d", de->GetType(), de_thick);
+               if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+                  set_up_single_stage_telescope(de,idt,list);
+               }
+               else
+               {
+                  uri.Form("%s", de->GetType());
+                  if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+                     set_up_single_stage_telescope(de,idt,list);
+                  }
+                  else
+                  {
+                     uri.Form("%s%d", e->GetType(), e_thick);
+                     if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+                        set_up_single_stage_telescope(e,idt,list);
+                     }
+                     else
+                     {
+                        uri.Form("%s", e->GetType());
+                        if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+                           set_up_single_stage_telescope(e,idt,list);
+                        }
+                     }
+                  }
+               }
+            }
+         }
       }
    }
-
-   // look for default version
-   KVIDTelescope* idt;
-   if ((idt = KVIDTelescope::MakeIDTelescope(uri))) {
-      set_up_single_stage_telescope(d, idt, l);
-      return true;
-   }
-
-   return false;
-}
-
-bool KVMultiDetArray::try_a_doubleIDtelescope(TString uri, KVDetector* de, KVDetector* e, TCollection* l)
-{
-   // Attempt to find a plugin KVIDTelescope class for making an ID telescope with the given signature/uri
-   // uri is tried both with & without prepended dataset name (if set)
-   // Returns true if successful (the new ID telescope will be added to internal
-   // list fIDTelescopes and also to TCollection* l)
-
-   // dataset-specific version takes precedence over default
-   TString duri = uri;
-   if (gDataSet) {
-      // try with dataset name
-      duri.Prepend(Form("%s.", fDataSet.Data()));
-      KVIDTelescope* idt;
-      if ((idt = KVIDTelescope::MakeIDTelescope(duri))) {
-         set_up_telescope(de, e, idt, l);
-         return true;
+   idt = 0;
+   if(de != e){
+      uri.Form("%s.%s%d-%s%d", fDataSet.Data(), de->GetType(),
+               de_thick, e->GetType(),
+               e_thick);
+      if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+         set_up_telescope(de,e,idt,list);
+      }
+      else
+      {
+         uri.Form("%s.%s%d-%s", fDataSet.Data(), de->GetType(),
+                  de_thick, e->GetType());
+         if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+            set_up_telescope(de,e,idt,list);
+         }
+         else
+         {
+            uri.Form("%s.%s-%s%d", fDataSet.Data(), de->GetType(), e->GetType(),
+                     e_thick);
+            if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+               set_up_telescope(de,e,idt,list);
+            }
+            else
+            {
+               uri.Form("%s.%s-%s", fDataSet.Data(), de->GetType(), e->GetType());
+               if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+                  set_up_telescope(de,e,idt,list);
+               }
+               else
+               {
+                  //now we look for generic ID telescopes
+                  uri.Form("%s%d-%s%d", de->GetType(), de_thick,
+                           e->GetType(), e_thick);
+                  if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+                     set_up_telescope(de,e,idt,list);
+                  }
+                  else
+                  {
+                     uri.Form("%s%d-%s", de->GetType(), de_thick,
+                              e->GetType());
+                     if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+                        set_up_telescope(de,e,idt,list);
+                     }
+                     else
+                     {
+                        uri.Form("%s-%s%d", de->GetType(), e->GetType(),
+                                 e_thick);
+                        if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+                           set_up_telescope(de,e,idt,list);
+                        }
+                        else
+                        {
+                           uri.Form("%s-%s", de->GetType(), e->GetType());
+                           if ((idt = KVIDTelescope::MakeIDTelescope(uri.Data()))){
+                              set_up_telescope(de,e,idt,list);
+                           }
+                           else
+                           {
+                              // Make a generic de-e identification telescope
+                              idt = new KVIDTelescope;
+                              set_up_telescope(de,e,idt,list);
+                           }
+                        }
+                     }
+                  }
+               }
+            }
+         }
       }
    }
    // look for default version
@@ -360,9 +337,9 @@ bool KVMultiDetArray::try_a_doubleIDtelescope(TString uri, KVDetector* de, KVDet
    return false;
 }
 
-void KVMultiDetArray::set_up_telescope(KVDetector* de, KVDetector* e, KVIDTelescope* idt, TCollection* idtels)
+void KVMultiDetArray::set_up_telescope(KVDetector * de, KVDetector * e, KVIDTelescope *idt, TCollection* l)
 {
-   // Set up detectors in de-e identification telescope and add to idtels
+   // Set up detectors in de-e identification telescope and add to fIDTelescopes
 
    idt->AddDetector(de);
    idt->AddDetector(e);
@@ -371,36 +348,61 @@ void KVMultiDetArray::set_up_telescope(KVDetector* de, KVDetector* e, KVIDTelesc
    } else {
       idt->SetGroup(e->GetGroup());
    }
-   if (idtels->FindObject(idt->GetName())) {
-      delete idt;
-   } else {
-      idtels->Add(idt);
-   }
+   fIDTelescopes->Add(idt);
+   l->Add(idt);
 }
 
-void KVMultiDetArray::set_up_single_stage_telescope(KVDetector* det, KVIDTelescope* idt, TCollection* idtels)
+void KVMultiDetArray::set_up_single_stage_telescope(KVDetector * det, KVIDTelescope *idt, TCollection* l )
 {
-   // Set up detector in single-stage identification telescope and add to idtels
+   // Set up detector in single-stage identification telescope and add to fIDTelescopes
 
    idt->AddDetector(det);
    idt->SetGroup(det->GetGroup());
-   if (idtels->FindObject(idt->GetName())) {
-      delete idt;
-   } else {
-      idtels->Add(idt);
+   fIDTelescopes->Add(idt);
+   l->Add(idt);
+}
+
+void KVMultiDetArray::DeduceIdentificationTelescopesFromGeometry()
+{
+   // Track over all possible particle trajectories calling
+   //   GetIDTelescopes(KVDetector*,KVDetector*)
+   // for each pair of (present & functioning) detectors.
+   // This will create all possible KVIDTelescope identification
+   // objects and put them in list fIDTelescopes
+   //
+
+   fIDTelescopes->Delete();
+   TIter next_traj(GetTrajectories());
+   KVGeoDNTrajectory* traj;
+   while( (traj = (KVGeoDNTrajectory*)next_traj()) ){   // loop over all trajectories
+
+      traj->IterateFrom();   // from furthest-out to closest-in detector
+
+      KVGeoDetectorNode* N;
+      while( (N = traj->GetNextNode()) ){
+         KVGeoDetectorNode* Nplus1 = traj->GetNodeInFront(N);
+
+         GetIDTelescopes((Nplus1 ? Nplus1->GetDetector() : N->GetDetector()), N->GetDetector(), traj->AccessIDTelescopeList());
+      }
    }
 }
-//______________________________________________________________________________________
-void KVMultiDetArray::CreateIDTelescopesInGroups()
+void KVMultiDetArray::CalculateReconstructionTrajectories()
 {
-   fIDTelescopes->Delete();     // clear out (delete) old identification telescopes
-   KVGroup* grp;
-   KVSeqCollection* fGroups = GetStructures()->GetSubListWithType("GROUP");
-   TIter ngrp(fGroups);
-   while ((grp = (KVGroup*) ngrp())) {
-      GetIDTelescopesForGroup(grp, fIDTelescopes);
+   // Calculate all possible (sub-)trajectories
+   // for particle reconstruction (GetReconTrajectories())
+
+   fReconTraj.Clear();
+   TIter next_traj(GetTrajectories());
+   KVGeoDNTrajectory* traj;
+   while( (traj = (KVGeoDNTrajectory*)next_traj()) ){   // loop over all trajectories
+
+      traj->IterateFrom();   // from furthest-out to closest-in detector
+
+      KVGeoDetectorNode* N;
+      while( (N = traj->GetNextNode()) ){
+         fReconTraj.Add( new KVReconNucTrajectory(traj,N) );
+      }
    }
-   delete fGroups;
 }
 
 //_______________________________________________________________________________________
@@ -434,7 +436,7 @@ Int_t KVMultiDetArray::FilteredEventCoherencyAnalysis(Int_t round, KVReconstruct
    while ((recon_nuc = rec_event->GetNextParticle())) {
       if (!recon_nuc->IsIdentified()) {
          int dethits = recon_nuc->GetStoppingDetector()->GetHits()->GetEntries() ;
-         KVIDTelescope* idtelstop = ((KVIDTelescope*)recon_nuc->GetStoppingDetector()->GetTelescopesForIdentification()->First());
+             KVIDTelescope* idtelstop = ((KVIDTelescope*)recon_nuc->GetReconstructionTrajectory()->GetIDTelescopes()->First());
          Bool_t pileup = kFALSE;
          if (dethits > 1) {
             // if any of the other particles also stopped in the same detector, we assume identification
@@ -461,7 +463,7 @@ Int_t KVMultiDetArray::FilteredEventCoherencyAnalysis(Int_t round, KVReconstruct
             nchanged++;
          } else if (recon_nuc->GetStatus() == 0) {
             // try to "identify" the particle
-            TIter nxtidt(recon_nuc->GetStoppingDetector()->GetTelescopesForIdentification());
+                 TIter nxtidt(recon_nuc->GetReconstructionTrajectory()->GetIDTelescopes());
             idtelstop = (KVIDTelescope*)nxtidt();
             while (idtelstop) {
                if (idtelstop->CanIdentify(recon_nuc->GetZ(), recon_nuc->GetA())) {
@@ -585,14 +587,12 @@ void KVMultiDetArray::DetectEvent(KVEvent* event, KVReconstructedEvent* rec_even
       return;
    }
 
-   if (IsROOTGeometry()) {
       if (!fGeoManager) {
          Error("DetectEvent", "ROOT geometry is requested, but has not been set: fGeoManager=0x0");
          return;
       }
       // set up geometry navigator
       if (!fNavigator) fNavigator = new KVRangeTableGeoNavigator(fGeoManager, KVMaterial::GetRangeTable());
-   }
 
    //Clear the KVReconstructed pointer before a new filter process
    rec_event->Clear();
@@ -680,27 +680,12 @@ void KVMultiDetArray::DetectEvent(KVEvent* event, KVReconstructedEvent* rec_even
                Int_t nbre_nvl = nvl->GetNpar();
                KVString LastDet(nvl->GetNameAt(nbre_nvl - 1));
                last_det = GetDetector(LastDet.Data());
-               TList* ldet = last_det->GetAlignedDetectors();
+                    TList* ldet = nullptr;//REIMPLEMENT last_det->GetAlignedDetectors();
                TIter it1(ldet);
 
                Int_t ntrav = 0;
                KVDetector* dd = 0;
-               if (!IsROOTGeometry()) {
-                  //Test de la trajectoire coherente
-                  while ((dd = (KVDetector*)it1.Next())) {
-                     if (dd->GetHits()) {
-                        if (dd->GetHits()->FindObject(_part))
-                           ntrav += 1;
-                        else if (dd->IsSmallerThan(last_det))
-                           ntrav += 1;
-                     } else {
-                        if (dd->IsSmallerThan(last_det))
-                           ntrav += 1;
-                     }
-                  }
-               } else {
-                  ntrav = ldet->GetEntries();
-               }
+               ntrav = ldet->GetEntries();
 
                if (ntrav != ldet->GetEntries()) {
 
@@ -737,7 +722,7 @@ void KVMultiDetArray::DetectEvent(KVEvent* event, KVReconstructedEvent* rec_even
 
                   //On recupere les telescopes d identification
                   //associe au dernier detecteur touche
-                  lidtel = last_det->GetTelescopesForIdentification();
+                        lidtel = nullptr;// REIMPLEMENT: last_det->GetTelescopesForIdentification();
                   if (lidtel->GetEntries() == 0 && last_det->GetEnergy() <= 0) {
                      //Arret dans un absorbeur
                      det_stat->SetValue("UNDETECTED", "THRESHOLD");
@@ -776,7 +761,7 @@ void KVMultiDetArray::DetectEvent(KVEvent* event, KVReconstructedEvent* rec_even
                         //Pour ces deux cas
                         //on a une information incomplete
                         //pour la particule
-                        if (nbre_nvl != Int_t(last_det->GetGroup()->GetNumberOfDetectorLayers())) {
+                                if (nbre_nvl != 0){//REIMPLEMENT Int_t(last_det->GetGroup()->GetNumberOfDetectorLayers())){
                            //----
                            // Fuite,
                            // la particule a loupe des detecteurs normalement aligne
@@ -900,7 +885,7 @@ void KVMultiDetArray::DetectEvent(KVEvent* event, KVReconstructedEvent* rec_even
                last_det = GetDetector(part->GetParameters()->GetStringValue("STOPPING DETECTOR"));
             if (!last_det) continue;
             KVReconstructedNucleus* recon_nuc = (KVReconstructedNucleus*)rec_event->AddParticle();
-            recon_nuc->Reconstruct(last_det);
+                // REIMPLEMENT: recon_nuc->Reconstruct(last_det);
             recon_nuc->SetZandA(part->GetZ(), part->GetA());
             recon_nuc->SetE(part->GetFrame(detection_frame)->GetE());
             // copy parameter list
@@ -972,7 +957,7 @@ void KVMultiDetArray::DetectEvent(KVEvent* event, KVReconstructedEvent* rec_even
             if (!last_det) continue;
 
             recon_nuc = (KVReconstructedNucleus*)rec_event->AddParticle();
-            recon_nuc->Reconstruct(last_det);
+                // REIMPLEMENT: recon_nuc->Reconstruct(last_det);
             recon_nuc->SetZandA(part->GetZ(), part->GetA());
             recon_nuc->SetE(part->GetFrame(detection_frame)->GetE());
             // copy parameter list
@@ -1147,14 +1132,6 @@ void KVMultiDetArray::ReplaceDetector(const Char_t*,
 }
 
 //____________________________________________________________________________________________
-
-KVTelescope* KVMultiDetArray::GetTelescope(const Char_t*) const
-{
-   // Return pointer to telescope in array with name given by "name"
-   return 0;
-}
-
-//____________________________________________________________________________________________
 KVIDTelescope* KVMultiDetArray::GetIDTelescope(const Char_t* name) const
 {
    //Return pointer to DeltaE-E ID Telescope with "name"
@@ -1167,16 +1144,10 @@ KVIDTelescope* KVMultiDetArray::GetIDTelescope(const Char_t* name) const
 
 KVGroup* KVMultiDetArray::GetGroupWithDetector(const Char_t* name)
 {
-   //return pointer to group in array which contains detector or telescope
-   //with name "name"
+    //return pointer to group in array which contains detector with name "name"
 
-   KVTelescope* tel = 0;
-   KVDetector* det = 0;
-   KVGroup* grp = 0;
-   if ((tel = GetTelescope(name))) {
-      grp = (KVGroup*)tel->GetParentStructure("GROUP");
-      return grp;
-   }
+    KVDetector *det = nullptr;
+    KVGroup *grp = nullptr;
    if ((det = GetDetector(name))) {
       grp = det->GetGroup();
    }
@@ -1316,23 +1287,6 @@ void KVMultiDetArray::SetCalibrators()
 
 //_________________________________________________________________________________
 
-void KVMultiDetArray::UpdateCalibrators()
-{
-   //This method can be used to update the calibrations of the detectors of a KVMultiDetArray
-   //object which has been read back from a ROOT file, and was possibly written with an old
-   //version of the class(es) which is now obsolete.
-   //The existing calibrator objects (read in from the file) are first removed from the array's
-   //detectors, and then SetCalibrators() is called in order to set new calibrators as defined
-   //in the current version of the class(es).
-   //In order to set the parameters of the new calibrators for a given run,
-   //SetParameters or SetRunCalibrationParameters must be called after this method.
-
-   const_cast<KVSeqCollection*>(GetDetectors())->R__FOR_EACH(KVDetector, RemoveCalibrators)();
-   SetCalibrators();
-}
-
-//_________________________________________________________________________________
-
 void KVMultiDetArray::GetDetectorEvent(KVDetectorEvent* detev, TSeqCollection* fired_params)
 {
    // First step in event reconstruction based on current status of detectors in array.
@@ -1390,35 +1344,77 @@ void KVMultiDetArray::ReconstructEvent(KVReconstructedEvent* recev, KVDetectorEv
    // Use the KVDetectorEvent (list of hit groups) in order to fill the
    // KVReconstructedEvent with reconstructed nuclei
    //
-   // Reconstruction of detected particles
-   //
-   // - loop over last stage of group telescopes
-   // - if any detector is hit, construct "particle" from energy losses in all detectors
-   //   directly in front of it.
-   // - loop over next to last stage...if any detector hit NOT ALREADY IN A "PARTICLE"
-   //   construct "particle" etc. etc.
+   // See KVReconstructedEvent::AnalyseTrajectory for details of particle reconstruction
 
    KVGroup* grp_tch;
    TIter nxt_grp(kvde->GetGroups());
+   // loop over hit groups
    while ((grp_tch = (KVGroup*) nxt_grp())) {
-      AnalyseGroupAndReconstructEvent(recev, grp_tch);
+
+      TIter nxt_traj(grp_tch->GetTrajectories());
+      KVGeoDNTrajectory* traj;
+      // loop over trajectories
+      while( (traj = (KVGeoDNTrajectory*)nxt_traj()) ){
+
+         // Work our way along the trajectory, starting from furthest detector from target,
+         // start reconstruction of new detected particle from first fired detector.
+         //
+         // More precisely: If detector has fired*,
+         // making sure fired detector hasn't already been used to reconstruct
+         // a particle, then we create and fill a new detected particle.
+         //
+         // *change condition by calling SetPartSeedCond("any"): in this case,
+         // particles will be reconstructed starting from detectors with at least 1 fired parameter.
+
+         traj->IterateFrom();
+         KVGeoDetectorNode* node;
+         while( (node = traj->GetNextNode()) ){
+
+            KVDetector* d = node->GetDetector();
+            /*
+                  If detector has fired,
+                  making sure fired detector hasn't already been used to reconstruct
+                  a particle, then we create and fill a new detected particle.
+              */
+            if ( (d->Fired( recev->GetPartSeedCond() ) && !d->IsAnalysed()) ) {
+
+               KVReconstructedNucleus *kvdp = recev->AddParticle();
+               //add all active detector layers in front of this one
+               //to the detected particle's list
+               ReconstructParticle(kvdp,traj,node);
+
+               //set detector state so it will not be used again
+               d->SetAnalysed(kTRUE);
    }
 }
 
-//________________________________________________________________________//
+      }
 
-void KVMultiDetArray::AnalyseGroupAndReconstructEvent(KVReconstructedEvent* recev, KVGroup* grp)
-{
-   // Loop over detectors in group, starting from the furthest from the target,
-   // and working inwards. Calls KVReconstructedEvent::AnalyseDetectors
-
-   for (Int_t il = grp->GetNumberOfDetectorLayers(); il > 0; il--) {
-      TList* dets = grp->GetDetectorsInLayer(il);
-      recev->AnalyseDetectors(dets);
-      delete dets;
+      KVReconstructedNucleus::AnalyseParticlesInGroup(grp_tch);
    }
-   //perform first-order coherency analysis (set fAnalStatus for each particle)
-   KVReconstructedNucleus::AnalyseParticlesInGroup(grp);
+}
+
+void KVMultiDetArray::ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node)
+{
+   // Reconstruction of a detected nucleus from the successive energy losses
+   // measured in a series of detectors/telescopes along a given trajectory
+
+   const KVReconNucTrajectory* Rtraj = gMultiDetArray->GetTrajectoryForReconstruction(traj,node);
+   part->SetReconstructionTrajectory(Rtraj);
+   node->GetDetector()->GetGroup()->AddHit(part);
+
+   Rtraj->IterateFrom();// iterate over trajectory
+   KVGeoDetectorNode* n;
+   while( (n = Rtraj->GetNextNode()) ){
+
+      KVDetector *d = n->GetDetector();
+      part->AddDetector(d);
+      d->AddHit(part);  // add particle to list of particles hitting detector
+      d->SetAnalysed(kTRUE);   //cannot be used to seed another particle
+
+   }
+
+   part->ResetNSegDet();
 }
 
 //_________________________________________________________________________________
@@ -1714,50 +1710,6 @@ void KVMultiDetArray::SetIdentifications()
 
    }
    delete toks;
-}
-
-//_________________________________________________________________________________
-
-void KVMultiDetArray::UpdateIdentifications()
-{
-   //This method can be used to update the identifications of a KVMultiDetArray
-   //object which has been read back from a ROOT file, and was possibly written with an old
-   //version of the identification parameters which are now obsolete.
-   //We remove/destroy the existing identification parameters and replace them with the current versions.
-   //In order to set the parameters of the new identifications for a given run,
-   //SetParameters or SetRunIdentificationParameters must be called after this method.
-
-   //remove existing identification objects/parameters
-   fIDTelescopes->R__FOR_EACH(KVIDTelescope, RemoveIdentificationParameters)();
-
-   //reset identifications
-   SetIdentifications();
-}
-
-//_________________________________________________________________________________
-
-void KVMultiDetArray::UpdateIDTelescopes()
-{
-   //This method can be used to update the identification telescopes of a KVMultiDetArray
-   //object which has been read back from a ROOT file, and was possibly written with an old
-   //version of the classes which are now obsolete, or for which new KVIDTelescope classes
-   //are now available.
-   //In order to set the parameters of the new identifications for a given run,
-   //SetParameters or SetRunIdentificationParameters must be called after this method.
-
-   //destroy old ID telescopes
-   fIDTelescopes->Delete();
-   //now read list of groups and create list of ID telescopes
-   KVGroup* grp;
-   KVSeqCollection* fGroups = GetStructures()->GetSubListWithType("GROUP");
-
-   TIter ngrp(fGroups);
-   while ((grp = (KVGroup*) ngrp())) {
-      GetIDTelescopesForGroup(grp, fIDTelescopes);
-   }
-   delete fGroups;
-   //reset identifications
-   SetIdentifications();
 }
 
 //_________________________________________________________________________________
@@ -2105,13 +2057,16 @@ void KVMultiDetArray::SetGeometry(TGeoManager* g)
    // ROOT geometry will be used by default from now on.
    fGeoManager = g;
    SetNameTitle(g->GetName(), g->GetTitle());
-   SetROOTGeometry();
+    // set up geometry navigator
+    if(!fNavigator) fNavigator=new KVRangeTableGeoNavigator(fGeoManager, KVMaterial::GetRangeTable());
 }
 
-Double_t KVMultiDetArray::GetPunchThroughEnergy(const Char_t* detector, Int_t Z, Int_t A)
+Double_t KVMultiDetArray::GetPunchThroughEnergy(const Char_t* detector, Int_t Z, Int_t A, const KVGeoDNTrajectory* TR)
 {
    // Calculate incident energy of particle (Z,A) required to punch through given detector,
    // taking into account any detectors which the particle must first cross in order to reach it.
+   // If more than one trajectory can reach the detector, by default we use the first one in its list,
+   // or you can give the required trajectory (TR)
 
    KVDetector* theDet = GetDetector(detector);
    if (!theDet) {
@@ -2119,14 +2074,24 @@ Double_t KVMultiDetArray::GetPunchThroughEnergy(const Char_t* detector, Int_t Z,
       return -1.0;
    }
    Double_t E0 = theDet->GetPunchThroughEnergy(Z, A);
-   TIter alDets(theDet->GetAlignedDetectors());
+
+   const KVGeoDNTrajectory* traj;
+   if(TR && theDet->GetNode()->FindTrajectory(TR->GetTitle())) traj = TR;
+   else traj = (KVGeoDNTrajectory*)theDet->GetNode()->GetTrajectories()->First();
+
+   traj->IterateFrom(theDet->GetNode());
+
    // first detector in list is theDet
-   alDets.Next();
-   KVDetector* D;
-   while ((D = (KVDetector*)alDets.Next())) {
+   traj->GetNextNode();
+   KVGeoDetectorNode* node;
+   while( (node = traj->GetNextNode()) ){
+
+      KVDetector* D = node->GetDetector();
+
       Double_t E1 = D->GetIncidentEnergyFromERes(Z, A, E0);
       E0 = E1;
    }
+
    return E0;
 }
 
@@ -2166,40 +2131,7 @@ TGraph* KVMultiDetArray::DrawPunchThroughEsurAVsZ(const Char_t* detector, Int_t 
    return punch;
 }
 
-void KVMultiDetArray::SetROOTGeometry(Bool_t on)
-{
-   // Call with on=kTRUE if array uses ROOT geometry for tracking
-   // Call SetGeometry(TGeoManager*) first with a valid geometry.
-
-   fROOTGeometry = on;
-   if (on && !fGeoManager) {
-      Error("SetROOTGeometry", "ROOT geometry is requested, but has not been set: fGeoManager=0x0");
-      return;
-   }
-
-   // set up geometry navigator
-   if (on && !fNavigator) fNavigator = new KVRangeTableGeoNavigator(fGeoManager, KVMaterial::GetRangeTable());
-   else if (!on) SafeDelete(fNavigator);
-}
-
-void KVMultiDetArray::CalculateDetectorSegmentationIndex()
-{
-   // *** Set 'segmentation' index of detectors ***
-   // This is essential for particle reconstruction, judging whether particles can be identified
-   // independently of any others in the same group etc.
-   // Basically, any detector with >1 detector placed directly behind it has a seg. index = 0
-   // if <=1 detector is directly behind, the seg. index = 1
-   // This method is used for arrays imported from ROOT geometries.
-
-   TIter next(GetDetectors());
-   KVDetector* d;
-   while ((d = (KVDetector*)next())) {
-      if (d->GetNode()->GetNDetsBehind() > 1) d->SetSegment(0);
-      else d->SetSegment(1);
-   }
-}
-
-void KVMultiDetArray::CalculateGeoNodeTrajectories()
+void KVMultiDetArray::CalculateTrajectories()
 {
    // Loop over all detectors of array
    // For each detector with no detectors behind it (i.e. furthest from target)
@@ -2207,6 +2139,10 @@ void KVMultiDetArray::CalculateGeoNodeTrajectories()
    // in order to create all possible particle trajectories through detectors
    // used in particle reconstruction
     // Detectors for which trajectories are already defined are skipped
+   // Then we calculate all trajectories for reconstructed particles
+   // i.e. for each trajectory we calculate (sub-)trajectories beginning
+   // from each node in the trajectory, corresponding to particles stopping in
+   // different detectors on the trajectory
 
    fTrajectories.Clear();
    TIter next(GetDetectors());
@@ -2216,120 +2152,13 @@ void KVMultiDetArray::CalculateGeoNodeTrajectories()
         if(!d->GetNode()->GetNDetsBehind() && !d->GetNode()->GetTrajectories()){
          TList trajs;
          d->GetNode()->BuildTrajectoriesForwards(&trajs);
-         if(trajs.GetEntries()) fTrajectories.AddAll(&trajs);
+         if(trajs.GetEntries()) {
+            fTrajectories.AddAll(&trajs);
+            d->GetGroup()->AddTrajectories(&trajs);
       }
    }
 }
 
-KVSeqCollection *KVMultiDetArray::GetListOfFiredTrajectories(KVSeqCollection *fired)
-{
-    // from list of fired acquisition parameters, create and fill list of
-    // fired trajectories. delete list after use.
-
-    if(fired){
-        KVSeqCollection* coll = new KVUniqueNameList;
-        TIter next(fired);
-        KVACQParam* par;
-        while( (par = (KVACQParam*)next()) ){
-            // only use fired nodes with a unique trajectory
-            if(par->GetDetector() && par->GetDetector()->GetNode()->GetNTraj()==1)
-                coll->Add( par->GetDetector()->GetNode()->GetTrajectories()->First() );
-        }
-        return coll;
-    }
-    return 0;
-}
-//___________________________________________________________________________//
-
-void KVMultiDetArray::GetAlignedIDTelescopesForDetector(KVDetector* det, TCollection* list)
-{
-   //Create and add to list all ID telescopes made of this detector
-   //and the aligned detectors placed in front of it.
-   //
-   //If list=0 then we store pointers to the ALREADY EXISTING ID telescopes
-   //in det->fIDTelAlign. (first clear det->fIDTelAlign)
-
-   if (!(det->IsOK())) return;
-
-   TList* aligned = det->GetAlignedDetectors();
-
-   Bool_t list_zero = kFALSE;
-
-   if (!list) {
-      list_zero = kTRUE;
-      //the IDTelescopes created will be destroyed at the end,
-      //once we have used their names to find pointers to the corresponding
-      //telescopes in gMultiDetArray
-      list = new KVList;
-      //clear any existing list of aligned telescopes
-      det->GetAlignedIDTelescopes()->Clear();
-   }
-
-   if (aligned->GetSize() > 1) {
-      //pairwise looping through list
-      for (int i = 0; i < (aligned->GetSize() - 1); i++) {
-         KVDetector* det1 = (KVDetector*) aligned->At(i + 1);
-         KVDetector* det2 = (KVDetector*) aligned->At(i);
-
-         GetIDTelescopes(det1, det2, list);
-      }
-   } else {
-      //The following line is in case there are no detectors aligned
-      //with 'det', but 'det' acts as an IDTelescope all by itself.
-      //In this case we expect KVMultiDetArray::GetIDTelescopes
-      //to define the appropriate ID telescope whenever one of the
-      //two detector arguments (or both!) corresponds to 'det''s type.
-      GetIDTelescopes(det, det, list);
-   }
-
-   if (list_zero) {
-      //now we use the created ID telescopes to find pointers to the already
-      //existing identical telescopes in gMultiDetArray, stock them in
-      //det->fIDTelAlign
-      TIter next_tel(list);
-      KVIDTelescope* tel;
-      while ((tel = (KVIDTelescope*) next_tel())) {
-         KVIDTelescope* trash = GetIDTelescope(tel->GetName());
-         if (trash) {
-            det->GetAlignedIDTelescopes()->Add(trash);
-         }
-      }
-      //destroy the superfluous copy telescopes we just created
-      list->Delete();
-      delete list;
-   }
-
-}
-
-void KVMultiDetArray::GetIDTelescopesForGroup(KVGroup* grp, TCollection* tel_list)
-{
-   //Identify all the ways of identifying particles possible from the detectors
-   //in the group, create the appropriate KVIDTelescope objects and add them to
-   //the list pointed to by tel_list.
-   //USER'S RESPONSIBILITY TO DELETE CONTENTS OF LIST!!
-   //
-   //Starting from each detector in the group,
-   //we build ID telescopes from all pairs of aligned detectors.
-   //
-   //For each pair of detectors, it is KVMultiDetArray::GetIDTelescopes
-   //which determines which KVIDTelescope class to use (specialise this method
-   //in KVMultiDetArray child classes). It must also make sure that
-   //each IDTelescope is added only once (i.e. check it is not already in the list).
-
-   TIter next_det(grp->GetDetectors());
-   KVDetector* det;
-
-   while ((det = (KVDetector*) next_det())) {
-      if (det->IsOK()) {
-         //1st call: create ID telescopes, they will be added to the
-         //gMultiDetArray list of IDTelescopes
-         GetAlignedIDTelescopesForDetector(det, tel_list);
-         //2nd call: set up in the detector a list of pointers to the
-         //ID telescopes made up of it and all aligned detectors in front
-         //of it
-         GetAlignedIDTelescopesForDetector(det, 0);
-      }
-   }
 }
 
 void KVMultiDetArray::PrepareModifGroup(KVGroup* grp, KVDetector* dd)
@@ -2351,8 +2180,8 @@ void KVMultiDetArray::PrepareModifGroup(KVGroup* grp, KVDetector* dd)
    TIter nextdet(lgrdet);
    while ((det = (KVDetector*)nextdet())) {
       //Info("PrepareModif","On retire les detecteurs alignes pour %s",det->GetName());
-      det->ResetAlignedDetectors(KVGroup::kForwards);
-      det->ResetAlignedDetectors(KVGroup::kBackwards);
+      //REIMPLEMENT det->ResetAlignedDetectors(KVGroup::kForwards);
+      //det->ResetAlignedDetectors(KVGroup::kBackwards);
       Int_t ntel = det->GetIDTelescopes()->GetEntries();
       for (Int_t ii = 0; ii < ntel; ii += 1) {
          id = (KVIDTelescope*)det->GetIDTelescopes()->At(0);
@@ -2385,6 +2214,9 @@ void KVMultiDetArray::PrepareModifGroup(KVGroup* grp, KVDetector* dd)
 
 void KVMultiDetArray::SetPresent(KVDetector* det, Bool_t present)
 {
+   // force seg fault if anybody calls this method
+   det=nullptr;
+   det->Print();
    //
    // If present=kTRUE (default), detector is present
    // If present=kFALSE, detector has been removed
@@ -2397,48 +2229,49 @@ void KVMultiDetArray::SetPresent(KVDetector* det, Bool_t present)
    // This method as always to be call before
    // call the SetDetecting() method
 
-   if (present == det->IsPresent())
-      return;
+//   if (present == det->IsPresent())
+//      return;
 
-   det->SetPresent(present);
+//   det->SetPresent(present);
 
-   //On passe l etat d un detecteur de present a absent
-   //
-   KVTelescope* fTelescope = (KVTelescope*)det->GetParentStructure("TELESCOPE");
-   if (!det->IsPresent()) {
+//   //On passe l etat d un detecteur de present a absent
+//   //
+//   KVTelescope* fTelescope = (KVTelescope*)det->GetParentStructure("TELESCOPE");
+//   if ( !det->IsPresent() ){
 
-      //Le detecteur etait l unique d un KVTelescope
-      //on retire directement le KVTelescope
-      if (fTelescope->GetDetectors()->GetEntries() == 1) {
-         KVGroup* gr = (KVGroup*)fTelescope->GetParentStructure("GROUP");
+//      //Le detecteur etait l unique d un KVTelescope
+//      //on retire directement le KVTelescope
+//      if (fTelescope->GetDetectors()->GetEntries()==1){
+//         KVGroup* gr = (KVGroup*)fTelescope->GetParentStructure("GROUP");
 
-         PrepareModifGroup(gr, det);
+//         PrepareModifGroup(gr,det);
 
-         gr->Remove(fTelescope);
-         gr->Remove(det);
-         GetIDTelescopesForGroup(gr, GetListOfIDTelescopes());
+//         gr->Remove(fTelescope);
+//         gr->Remove(det);
+//         GetIDTelescopesForGroup(gr, GetListOfIDTelescopes());
 
-      } else {
-         Warning("SetPresent", "Method implemented only in case detector is alone in telescope");
-      }
-   }
-   //On remet le detecteur dans le groupe auquel il appartenait
-   else {
+//      }
+//      else {
+//         Warning("SetPresent","Method implemented only in case detector is alone in telescope");
+//      }
+//   }
+//   //On remet le detecteur dans le groupe auquel il appartenait
+//   else {
 
-      if (!det->GetGroup()) {
-         KVGroup* gr = GetGroupWithAngles(det->GetTheta(), det->GetPhi());
+//      if (!det->GetGroup()){
+//         KVGroup* gr = GetGroupWithAngles(det->GetTheta(), det->GetPhi());
 
-         PrepareModifGroup(gr, det);
+//         PrepareModifGroup(gr,det);
 
-         gr->Add(fTelescope);
-         gr->Add(det);
-         gr->Sort();
-         gr->CountLayers();
-         GetIDTelescopesForGroup(gr, GetListOfIDTelescopes());
+//         gr->Add(fTelescope);
+//         gr->Add(det);
+//         gr->Sort();
+//         gr->CountLayers();
+//         GetIDTelescopesForGroup( gr, GetListOfIDTelescopes() );
 
-      }
+//      }
 
-   }
+//   }
 
 }
 
@@ -2463,11 +2296,12 @@ void KVMultiDetArray::SetDetecting(KVDetector* det, Bool_t detecting)
    if (!det->IsDetecting()) {
       KVGroup* gr = det->GetGroup();
       PrepareModifGroup(gr, det);
-      GetIDTelescopesForGroup(gr, GetListOfIDTelescopes());
-   } else {
+      // REIMPLEMENT GetIDTelescopesForGroup(gr,GetListOfIDTelescopes() );
+   }
+   else {
       KVGroup* gr = GetGroupWithAngles(det->GetTheta(), det->GetPhi());
       PrepareModifGroup(gr, det);
-      GetIDTelescopesForGroup(gr, GetListOfIDTelescopes());
+      // REIMPLEMENT GetIDTelescopesForGroup( gr, GetListOfIDTelescopes() );
    }
 
 }

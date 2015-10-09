@@ -13,7 +13,6 @@ $Date: 2009/01/14 15:35:50 $
 #include "KVString.h"
 #include "TVector3.h"
 #include "KVTarget.h"
-#include "KVLayer.h"
 #include "KVMaterial.h"
 #include "KVNucleus.h"
 #include "KVEvent.h"

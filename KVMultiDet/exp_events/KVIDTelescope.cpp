@@ -18,7 +18,6 @@ Author : $Author: franklan $
  ***************************************************************************/
 #include "TROOT.h"
 #include "KVIDTelescope.h"
-#include "KVTelescope.h"
 #include "KVGroup.h"
 #include "KVNucleus.h"
 #include "KVReconstructedNucleus.h"
@@ -252,8 +251,8 @@ TGraph* KVIDTelescope::MakeIDLine(KVNucleus* nuc, Double_t Emin,
 
    //get list of all detectors through which particle must pass in order to reach
    //2nd member of ID Telescope
-   TList* detectors =
-      GetDetector(2)->GetAlignedDetectors(KVGroup::kForwards);
+    TList *detectors = nullptr; //REIMPLEMENT
+            //GetDetector(2)->GetAlignedDetectors(KVGroup::kForwards);
    //detectors->ls();
    TIter next_det(detectors);
    //cout << "nsteps =" << nsteps << endl;

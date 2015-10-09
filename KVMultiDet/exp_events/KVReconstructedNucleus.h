@@ -9,13 +9,12 @@
 #include "KVIdentificationResult.h"
 #include "KVGroup.h"
 #include "TClonesArray.h"
-#include "KVGeoDNTrajectory.h"
-class KVTelescope;
+#include "KVReconNucTrajectory.h"
 
 class KVReconstructedNucleus: public KVNucleus {
 
 protected:
-   KVGeoDNTrajectory* fReconTraj;//! trajectory used to reconstruct particle
+    const KVReconNucTrajectory* fReconTraj;//! trajectory used to reconstruct particle
    KVString fDetNames; // list of names of detectors through which particle passed
    KVHashList fDetList; //! non-persistent list of pointers to detectors
    KVString fIDTelName;   // name of identification telescope which identified this particle (if any)
@@ -60,8 +59,6 @@ public:
    virtual ~ KVReconstructedNucleus();
    virtual void Print(Option_t* option = "") const;
    virtual void Clear(Option_t* option = "");
-   virtual void Reconstruct(KVDetector* kvd);
-    void ReconstructWithTrajectory(KVDetector*, KVGeoDNTrajectory*);
 
    virtual void SetIdentification(KVIdentificationResult*);
 
@@ -100,32 +97,25 @@ public:
    {
       // Return pointer to the detector in which this particle stopped
       return GetDetector(0);
-   };
-   Int_t GetNumDet() const
-   {
+    }
+   Int_t GetNumDet() const {
       return GetDetectorList()->GetEntries();
-   };
-   Int_t GetNSegDet() const
-   {
-      // return segmentation index of particle used by Identify() and
-      // KVGroup::AnalyseParticles
-      return fNSegDet;
-   };
-   void SetNSegDet(Int_t seg)
-   {
-      // set segmentation index of particle used by Identify() and
-      // KVGroup::AnalyseParticles
-      fNSegDet = seg;
-   };
-   void ResetNSegDet()
-   {
-      // recalculate segmentation index of particle used by Identify() and
-      // KVGroup::AnalyseParticles
-      fNSegDet = 0;
-      KVDetector* det;
-      TIter nxt(&fDetList);
-      while ((det = (KVDetector*)nxt())) fNSegDet += det->GetSegment();
-   };
+   }
+    Int_t GetNSegDet() const {
+    	// return segmentation index of particle used by Identify() and
+    	// KVGroup::AnalyseParticles
+        return fNSegDet;
+    }
+    void SetNSegDet(Int_t seg) {
+    	// set segmentation index of particle used by Identify() and
+    	// KVGroup::AnalyseParticles
+        fNSegDet = seg;
+    }
+    void ResetNSegDet() {
+       // reset segmentation index to that of reconstruction trajectory
+       SetNSegDet(fReconTraj->GetNumberOfIndependentIdentifications());
+    }
+
    inline Int_t GetStatus() const
    {
       // Returns status of reconstructed particle as decided by analysis of the group (KVGroup) in
@@ -145,7 +135,7 @@ public:
       // kStatusPileupDE,     (4) :   only for filtered simulations: undetectable pile-up in DE detector
       // kStatusPileupGhost   (5) :   only for filtered simulations: undetectable particle
       return fAnalStatus;
-   };
+    }
 
    inline void SetStatus(Int_t a)
    {
@@ -157,7 +147,7 @@ public:
    {
       //Return pointer to group in which the particle is detected
       return (GetStoppingDetector() ?  GetStoppingDetector()->GetGroup() : 0);
-   };
+    }
 
 
    void AddDetector(KVDetector*);
@@ -168,14 +158,14 @@ public:
    virtual void Copy(TObject&);
 #endif
 
-   KVSeqCollection* GetIDTelescopes() const
+    const KVSeqCollection *GetIDTelescopes() const
    {
-      //Gets from detector in which particle stopped the list of all ID telescopes
+        // Get list of all ID telescopes on the particle's reconstructed trajectory
       //made from the stopping detector and all those aligned in front of it.
       //The first ID telescope in the list is that in which the particle stopped.
 
-      return (GetStoppingDetector() ? GetStoppingDetector()->GetAlignedIDTelescopes() : 0);
-   };
+        return fReconTraj->GetIDTelescopes();
+    }
    virtual void Identify();
    virtual void Calibrate();
 
@@ -381,6 +371,9 @@ public:
    inline static UInt_t GetNIdentifiedInGroup(KVGroup* grp);
    inline static UInt_t GetNUnidentifiedInGroup(KVGroup* grp);
    static void AnalyseParticlesInGroup(KVGroup* grp);
+
+    const KVReconNucTrajectory* GetReconstructionTrajectory() const { return fReconTraj; }
+    void SetReconstructionTrajectory(const KVReconNucTrajectory* t) { fReconTraj = t; }
 
    ClassDef(KVReconstructedNucleus, 17)  //Nucleus detected by multidetector array
 };

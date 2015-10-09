@@ -16,7 +16,6 @@ $Date: 2007/04/04 10:39:17 $
 class TH1F;
 class TList;
 class KVGroup;
-class KVTelescope;
 class KVDetector;
 class KVTarget;
 class KV2Body;
@@ -34,7 +33,6 @@ class KVElasticScatter {
 
    KV2Body* fKinematics;        //kinematics calculation
 
-   KVTelescope* fTelescope;     //telescope where particle will be detected
    KVDetector* fDetector;       //detector where particle will be detected
    TList* fAlignedDetectors;    //all aligned detectors
    Int_t fNDets;                //number of aligned detectors

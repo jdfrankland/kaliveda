@@ -10,10 +10,10 @@
 #include "TGeoManager.h"
 #include "KVNucleus.h"
 #include "KVDetector.h"
+#include "KVReconNucTrajectory.h"
 
 class KVIDGraph;
 class KVTarget;
-class KVTelescope;
 class KVIDTelescope;
 class KVACQParam;
 class KVReconstructedEvent;
@@ -54,8 +54,6 @@ protected:
 
    Bool_t fSimMode;             //!=kTRUE in "simulation mode" (use for calculating response to simulated events)
 
-   Bool_t fROOTGeometry;//!=kTRUE if ROOT TGeo geometry and algorithms used for tracking/filtering
-
    Int_t fFilterType;//! type of filtering (used by DetectEvent)
 
    TGeoManager* fGeoManager;//! array geometry
@@ -63,6 +61,8 @@ protected:
    KVRangeTableGeoNavigator* fNavigator;//! for propagating particles through array geometry
 
     KVHashList fTrajectories;//! list of all possible trajectories through detectors of array
+    KVHashList fReconTraj;//! list of all possible trajectories for reconstructed particles
+
    virtual void RenumberGroups();
    virtual void BuildGeometry()
    {
@@ -73,12 +73,6 @@ protected:
 
    virtual void GetIDTelescopes(KVDetector*, KVDetector*, TCollection* list);
 
-   int try_all_doubleID_telescopes(KVDetector* de, KVDetector* e, TCollection* l);
-   bool try_a_doubleIDtelescope(TString uri, KVDetector* de, KVDetector* e, TCollection* l);
-   bool try_upper_and_lower_doubleIDtelescope(TString uri, KVDetector* de, KVDetector* e, TCollection* l);
-   int try_all_singleID_telescopes(KVDetector* d, TCollection* l);
-   bool try_a_singleIDtelescope(TString uri, KVDetector* d, TCollection* l);
-   bool try_upper_and_lower_singleIDtelescope(TString uri, KVDetector* d, TCollection* l);
    virtual void set_up_telescope(KVDetector* de, KVDetector* e, KVIDTelescope* idt, TCollection* l);
    virtual void set_up_single_stage_telescope(KVDetector* det, KVIDTelescope* idt, TCollection* l);
 
@@ -90,8 +84,6 @@ protected:
       return 0;
    }
 
-   virtual void GetAlignedIDTelescopesForDetector(KVDetector* det, TCollection* list);
-   virtual void GetIDTelescopesForGroup(KVGroup* grp, TCollection* tel_list);
    virtual void PrepareModifGroup(KVGroup* grp, KVDetector* dd);
    virtual void SetPresent(KVDetector* det, Bool_t present = kTRUE);
    virtual void SetDetecting(KVDetector* det, Bool_t detecting = kTRUE);
@@ -116,11 +108,9 @@ public:
    void init();
 
    virtual void Build(Int_t run = -1);
-   virtual void CreateIDTelescopesInGroups();
 
    virtual void Clear(Option_t* opt = "");
 
-   virtual KVTelescope* GetTelescope(const Char_t* name) const;
    virtual KVGroup* GetGroupWithDetector(const Char_t*);
    virtual KVGroup* GetGroup(const Char_t*);
    virtual KVGroup* GetGroupWithAngles(Float_t /*theta*/, Float_t /*phi*/)
@@ -142,10 +132,12 @@ public:
    };
    virtual void SetArrayACQParams();
 
+    virtual void ReconstructEvent(KVReconstructedEvent*,KVDetectorEvent*);
+    virtual void ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
+
    virtual void DetectEvent(KVEvent* event, KVReconstructedEvent* rec_event, const Char_t* detection_frame = "");
    virtual Int_t FilteredEventCoherencyAnalysis(Int_t round, KVReconstructedEvent* rec_event);
    virtual void GetDetectorEvent(KVDetectorEvent* detev, TSeqCollection* fired_params = 0);
-   virtual void ReconstructEvent(KVReconstructedEvent*, KVDetectorEvent*);
    KVNameValueList* DetectParticle_TGEO(KVNucleus* part);
    virtual KVNameValueList* DetectParticle(KVNucleus* part)
    {
@@ -213,9 +205,6 @@ public:
 
    virtual void SetIdentifications();
    virtual void InitializeIDTelescopes();
-   virtual void UpdateIDTelescopes();
-   virtual void UpdateIdentifications();
-   virtual void UpdateCalibrators();
 
    virtual Double_t GetTotalSolidAngle(void)
    {
@@ -244,19 +233,13 @@ public:
       return fSimMode;
    };
 
-   virtual Double_t GetPunchThroughEnergy(const Char_t* detector, Int_t Z, Int_t A);
+    virtual Double_t GetPunchThroughEnergy(const Char_t* detector, Int_t Z, Int_t A, const KVGeoDNTrajectory* TR = nullptr);
    virtual TGraph* DrawPunchThroughEnergyVsZ(const Char_t* detector, Int_t massform = KVNucleus::kBetaMass);
    virtual TGraph* DrawPunchThroughEsurAVsZ(const Char_t* detector, Int_t massform = KVNucleus::kBetaMass);
 
-   virtual void SetROOTGeometry(Bool_t on = kTRUE);
-   Bool_t IsROOTGeometry() const
-   {
-      return (fROOTGeometry && fGeoManager);
-   };
-   void CalculateDetectorSegmentationIndex();
-	 virtual void CalculateGeoNodeTrajectories();
-    virtual KVSeqCollection* GetListOfFiredTrajectories(KVSeqCollection* fired = 0);
-   virtual void AnalyseGroupAndReconstructEvent(KVReconstructedEvent* recev, KVGroup* grp);
+    void CalculateTrajectories();
+    void CalculateReconstructionTrajectories();
+
    virtual void SetGridsInTelescopes(UInt_t run);
    void FillListOfIDTelescopes(KVIDGraph* gr) const;
    void Draw(Option_t* = "")
@@ -269,6 +252,18 @@ public:
        // Get list of all possible trajectories for particles traversing array
        return &fTrajectories;
     }
+    const TSeqCollection* GetReconTrajectories() const {
+       // Get list of all possible trajectories for particle reconstruction in array
+       return &fReconTraj;
+    }
+    const KVReconNucTrajectory* GetTrajectoryForReconstruction(const KVGeoDNTrajectory* t, const KVGeoDetectorNode* n) const
+    {
+       const KVReconNucTrajectory* tr =
+             (const KVReconNucTrajectory*)fReconTraj.FindObject( Form("%s_%s",t->GetName(),n->GetName()));
+       return tr;
+    }
+    void DeduceIdentificationTelescopesFromGeometry();
+
     ClassDef(KVMultiDetArray,7)//Base class for multidetector arrays    
 };
 

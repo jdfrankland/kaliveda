@@ -18,7 +18,10 @@ class KVGeoDNTrajectory : public KVBase
    mutable Int_t fIter_idx;//! index for iteration
    mutable Int_t fIter_limit;//! last index for iteration
    mutable Int_t fIter_delta;//! increment/decrement for each iteration
-   TList fIDTelescopes;//list of id telescopes on this trajectory
+   mutable Int_t fIter_idx_sav;//! index for iteration
+   mutable Int_t fIter_limit_sav;//! last index for iteration
+   mutable Int_t fIter_delta_sav;//! increment/decrement for each iteration
+   KVUniqueNameList fIDTelescopes;//list of id telescopes on this trajectory
 
    public:
    KVGeoDNTrajectory();
@@ -26,6 +29,7 @@ class KVGeoDNTrajectory : public KVBase
    KVGeoDNTrajectory(const KVGeoDNTrajectory&);
    virtual ~KVGeoDNTrajectory();
    void Copy(TObject& obj) const;
+   KVGeoDNTrajectory& operator=(const KVGeoDNTrajectory&);
 
    const Char_t* GetTitle() const;
 
@@ -33,6 +37,14 @@ class KVGeoDNTrajectory : public KVBase
    {
       // return pointer to node with given name in this trajectory
       return (KVGeoDetectorNode*)fNodes.FindObject(name);
+   }
+   KVGeoDetectorNode* GetNodeInFront(const KVGeoDetectorNode* n) const
+   {
+      // return pointer to node immediately in front of 'n' on trajectory
+      if(Contains(n) && !EndsAt(n)){
+         return GetNodeAt( Index(n)+1 );
+      }
+      return nullptr;
    }
    Bool_t Contains(const Char_t* name) const
    {
@@ -148,6 +160,23 @@ class KVGeoDNTrajectory : public KVBase
        return (KVGeoDetectorNode*)fNodes[i];
    }
 
+   void SaveIterationState() const
+   {
+      // In order to perform an iteration while another is already in
+      // progress, we store the current iteration.
+      // Call RestoreIterationState() in order to continue.
+      fIter_idx_sav = fIter_idx;
+      fIter_delta_sav = fIter_delta;
+      fIter_limit_sav = fIter_limit;
+   }
+   void RestoreIterationState() const
+   {
+      // See SaveIterationState().
+
+      fIter_idx = fIter_idx_sav;
+      fIter_delta = fIter_delta_sav;
+      fIter_limit = fIter_limit_sav;
+   }
    void IterateFrom(const KVGeoDetectorNode *node0 = nullptr) const
    {
       // FORWARD ITERATION: moving towards the target
@@ -227,11 +256,15 @@ class KVGeoDNTrajectory : public KVBase
        return tot-f;
    }
 
-   void FillListOfIDTelescopes();
-   const TList& GetIDTelescopes() const
+   const KVSeqCollection* GetIDTelescopes() const
    {
       // List of identification telescopes on trajectory
-      return fIDTelescopes;
+      return &fIDTelescopes;
+   }
+   KVSeqCollection* AccessIDTelescopeList()
+   {
+      // Modifiable list of identification telescopes on trajectory
+      return &fIDTelescopes;
    }
 
    ClassDef(KVGeoDNTrajectory,1)//Path taken by particles through multidetector geometry

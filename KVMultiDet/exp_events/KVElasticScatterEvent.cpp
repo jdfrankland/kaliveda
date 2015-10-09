@@ -9,10 +9,7 @@ $Date: 2009/01/14 15:35:50 $
 
 #include "KVElasticScatterEvent.h"
 #include "KVPosition.h"
-#include "KVASMultiDetArray.h"
-#include "KVASGroup.h"
 #include "KVDetector.h"
-#include "KVTelescope.h"
 #include "TH2F.h"
 #include "TH1F.h"
 #include "KVNamedParameter.h"

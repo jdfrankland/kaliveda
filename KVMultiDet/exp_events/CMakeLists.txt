@@ -12,5 +12,5 @@ endif()
 BUILD_KALIVEDA_MODULE(exp_events
 	PARENT ${KVSUBPROJECT}
 	KVMOD_DEPENDS analysis globvars daq_cec identification base particles geometry stopping events data_management db
-	LIB_EXCLUDE ${do_not_build}
+   LIB_EXCLUDE ${do_not_build} KVASMultiDetArray KVElasticScatter KVElasticScatterEvent
 )

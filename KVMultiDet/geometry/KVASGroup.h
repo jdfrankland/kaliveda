@@ -5,7 +5,6 @@
 #define __KVASGROUP_H
 
 #include "KVGroup.h"
-#include "KVTelescope.h"
 
 class KVASGroup : public KVGroup, public KVPosition {
 

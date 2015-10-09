@@ -12,11 +12,12 @@
 
 #pragma link C++ class KVEventFiltering+;
 #pragma link C++ class KVReconstructedNucleus-;//customised streamer
+#pragma link C++ class KVReconNucTrajectory+;
 #pragma link C++ class KVDetectorEvent+;
-#pragma link C++ class KVElasticScatter+;
+//#pragma link C++ class KVElasticScatter+;
 #pragma link C++ class KVElasticCountRate+;
 #pragma link C++ class KVElasticCountRates+;
-#pragma link C++ class KVElasticScatterEvent+;
+//#pragma link C++ class KVElasticScatterEvent+;
 #pragma link C++ class KVReconstructedEvent-;//customised streamer
 #pragma link C++ class KVIDTelescope+;
 #ifdef WITH_FITLTG
@@ -28,7 +29,7 @@
 #pragma link C++ class KVRawDataAnalyser+;
 #endif
 #pragma link C++ class KVMultiDetArray+;
-#pragma link C++ class KVASMultiDetArray+;
+//#pragma link C++ class KVASMultiDetArray+;
 #pragma link C++ class KVGeoImport+;
 #ifdef WITH_GRULIB
 //#pragma link C++ class KVGRUNetClientGanilReader+;

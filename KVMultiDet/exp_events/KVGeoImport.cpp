@@ -151,12 +151,18 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
       }
    }
 
+    Info("ImportGeometry",
+         "Tested %d directions - Theta=[%f,%f:%f] Phi=[%f,%f:%f]",count,ThetaMin,ThetaMax,dTheta,PhiMin,PhiMax,dPhi);
+    Info("ImportGeometry",
+         "Imported %d detectors into array", fArray->GetDetectors()->GetEntries()-ndets0);
    // make sure detector nodes are correct
    TIter next(fArray->GetDetectors());
    KVDetector* d;
    while ((d = (KVDetector*)next())) d->GetNode()->RehashLists();
    // set up all detector node trajectories
-    fArray->CalculateGeoNodeTrajectories();
+    fArray->CalculateTrajectories();
+    Info("ImportGeometry",
+         "Calculated %d trajectories through array", fArray->GetTrajectories()->GetEntries());
 
    if (fCreateArray) {
       fArray->SetGeometry(GetGeometry());
@@ -167,21 +173,15 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
          nav->SetStructureNameFormat(fmt->GetName(), fmt->GetString());
       }
       nav->SetNameCorrespondanceList(fDetStrucNameCorrespList);
-      fArray->CalculateDetectorSegmentationIndex();
    }
-   Info("ImportGeometry",
-        "Tested %d directions - Theta=[%f,%f:%f] Phi=[%f,%f:%f]", count, ThetaMin, ThetaMax, dTheta, PhiMin, PhiMax, dPhi);
-   Info("ImportGeometry",
-        "Imported %d detectors into array", fArray->GetDetectors()->GetEntries() - ndets0);
    if (fCreateArray) {
-      fArray->CreateIDTelescopesInGroups();
+        fArray->DeduceIdentificationTelescopesFromGeometry();
       Info("ImportGeometry",
            "Created %d identification telescopes in array", fArray->GetListOfIDTelescopes()->GetEntries() - idtels0);
+        fArray->CalculateReconstructionTrajectories();
+        Info("ImportGeometry",
+             "Calculated %d trajectories for particle reconstruction", fArray->GetReconTrajectories()->GetEntries());
    }
-    // set up lists of id telescopes along trajectories
-    TIter nextT(fArray->GetTrajectories());
-    KVGeoDNTrajectory* traj;
-    while((traj=(KVGeoDNTrajectory*)nextT())) traj->FillListOfIDTelescopes();
 }
 
 void KVGeoImport::SetLastDetector(KVDetector* d)

@@ -11,7 +11,6 @@ $Date: 2007/04/04 10:39:17 $
 #include "KVMultiDetArray.h"
 #include "TH1F.h"
 #include "KVDetector.h"
-#include "KVTelescope.h"
 #include "KVGroup.h"
 #include "KVTarget.h"
 #include "KV2Body.h"

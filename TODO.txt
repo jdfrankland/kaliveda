@@ -1,0 +1,34 @@
+NEW: separate class for event reconstruction
+NEW: separate class for simulated event detection
+
+TO BE REMOVED:
+==============
+KVTelescope
+KVRing
+KVLayer
+KVASGroup
+KVASMultiDetArray
+
+TO BE REIMPLEMENTED:
+====================
+KVMultiDetArray:
+   ReplaceDetector
+   SetPresent
+   SetDetecting
+   PrepareModifGroup
+   DetectEvent => separate class for simulated event detection
+   AnalyseGroupAndReconstructEvent => DONE
+   GetPunchThroughEnergy => DONE
+   GetAlignedTelescopesForDetector => DONE
+
+KVElasticScatter
+KVElasticScatterEvent
+KVReconstructedNucleus:
+   ResetNSegDet => DONE
+   Streamer: recalculate NSegDet,=>DONE trajectory back. comp.?
+   AddDetector: calculation of NSegDet in initial reconstruction => DONE
+   Reconstruct => DONE
+   Identify => DONE
+
+KVIDTelescope:
+   MakeIDLine
