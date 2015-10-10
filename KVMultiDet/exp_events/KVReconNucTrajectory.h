@@ -6,11 +6,10 @@
 
 #include "KVGeoDNTrajectory.h"
 
-class KVReconNucTrajectory : public KVGeoDNTrajectory
-{
+class KVReconNucTrajectory : public KVGeoDNTrajectory {
    Int_t fIndependentIdentifications;//number of independent ID telescopes on trajectory
 
-   public:
+public:
    KVReconNucTrajectory() : KVGeoDNTrajectory(), fIndependentIdentifications(0) {}
    KVReconNucTrajectory(const KVReconNucTrajectory&);
    KVReconNucTrajectory(const KVGeoDNTrajectory*, const KVGeoDetectorNode*);
@@ -24,9 +23,9 @@ class KVReconNucTrajectory : public KVGeoDNTrajectory
       // Return number of independent ID telescopes on trajectory
       return fIndependentIdentifications;
    }
-   void ls(Option_t *) const;
+   void ls(Option_t* = "") const;
 
-   ClassDef(KVReconNucTrajectory,1)//Reconstructed trajectory of nucleus detected by array
+   ClassDef(KVReconNucTrajectory, 1) //Reconstructed trajectory of nucleus detected by array
 };
 
 #endif

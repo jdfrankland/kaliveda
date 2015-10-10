@@ -101,6 +101,7 @@ void KVMultiDetArray::init()
     // all trajectories belong to us
     fTrajectories.SetOwner();
     fReconTraj.SetOwner();
+   fReconTrajMap.SetOwner();
 }
 
 //___________________________________________________________________________________
@@ -381,7 +382,7 @@ void KVMultiDetArray::CalculateReconstructionTrajectories()
    TList toRemove;
    KVUniqueNameList unique_trajectories;
    unique_trajectories.SetOwner();
-   fReconTrajMap.clear();
+   fReconTrajMap.Clear();
    TIter nxtRT(GetReconTrajectories());
    KVReconNucTrajectory* rnt;
    while ((rnt = (KVReconNucTrajectory*)nxtRT())) {
@@ -395,7 +396,7 @@ void KVMultiDetArray::CalculateReconstructionTrajectories()
          delete n;
       }
       // set up mapping from duplicate trajectory name to orginal trajectory name
-      fReconTrajMap.insert(std::pair<string, string> (rnt->GetName(), orig->GetTitle()));
+      fReconTrajMap.Add(new TNamed(rnt->GetName(), orig->GetTitle()));
 
    }
    // now remove & delete the duplicates

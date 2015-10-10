@@ -11,9 +11,6 @@
 #include "KVNucleus.h"
 #include "KVDetector.h"
 #include "KVReconNucTrajectory.h"
-#include <map>
-#include <string>
-
 class KVIDGraph;
 class KVTarget;
 class KVIDTelescope;
@@ -30,6 +27,8 @@ class KVRangeTableGeoNavigator;
 class KVUpDater;
 
 class KVMultiDetArray : public KVGeoStrucElement {
+
+   friend class KVGeoImport;
 
 protected:
 
@@ -64,7 +63,7 @@ protected:
 
     KVHashList fTrajectories;//! list of all possible trajectories through detectors of array
     KVHashList fReconTraj;//! list of all possible trajectories for reconstructed particles
-   std::map<std::string, std::string> fReconTrajMap; //! map names of duplicate trajectories for reconstructed particles
+   KVHashList fReconTrajMap; //! map names of duplicate trajectories for reconstructed particles
 
    virtual void RenumberGroups();
    virtual void BuildGeometry()
@@ -90,6 +89,11 @@ protected:
    virtual void PrepareModifGroup(KVGroup* grp, KVDetector* dd);
    virtual void SetPresent(KVDetector* det, Bool_t present = kTRUE);
    virtual void SetDetecting(KVDetector* det, Bool_t detecting = kTRUE);
+
+   void CalculateTrajectories();
+   void CalculateReconstructionTrajectories();
+   void DeduceIdentificationTelescopesFromGeometry();
+
 public:
    void SetGeometry(TGeoManager*);
    TGeoManager* GetGeometry() const;
@@ -240,9 +244,6 @@ public:
    virtual TGraph* DrawPunchThroughEnergyVsZ(const Char_t* detector, Int_t massform = KVNucleus::kBetaMass);
    virtual TGraph* DrawPunchThroughEsurAVsZ(const Char_t* detector, Int_t massform = KVNucleus::kBetaMass);
 
-    void CalculateTrajectories();
-    void CalculateReconstructionTrajectories();
-
    virtual void SetGridsInTelescopes(UInt_t run);
    void FillListOfIDTelescopes(KVIDGraph* gr) const;
    void Draw(Option_t* = "")
@@ -263,12 +264,10 @@ public:
     }
     const KVReconNucTrajectory* GetTrajectoryForReconstruction(const KVGeoDNTrajectory* t, const KVGeoDetectorNode* n) const
     {
-      std::string name = Form("%s_%s", t->GetName(), n->GetName());
-      TString mapped_name = fReconTrajMap.at(name).c_str();
+      TString mapped_name = fReconTrajMap.FindObject(Form("%s_%s", t->GetName(), n->GetName()))->GetTitle();
       const KVReconNucTrajectory* tr = (const KVReconNucTrajectory*)fReconTraj.FindObject(mapped_name);
        return tr;
     }
-    void DeduceIdentificationTelescopesFromGeometry();
 
     ClassDef(KVMultiDetArray,7)//Base class for multidetector arrays    
 };
