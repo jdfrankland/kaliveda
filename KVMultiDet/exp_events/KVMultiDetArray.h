@@ -45,7 +45,6 @@ protected:
    TList* fStatusIDTelescopes;//! used by GetStatusIDTelescopes
    TList* fCalibStatusDets;//! used by GetStatusIDTelescopes
 
-   KVDetectorEvent* fHitGroups;          //!   list of hit groups in simulation
    KVSeqCollection* fIDTelescopes;       //->deltaE-E telescopes in groups
    KVSeqCollection* fACQParams;          //list of data acquisition parameters associated to detectors
 
@@ -63,28 +62,24 @@ protected:
 
     KVHashList fTrajectories;//! list of all possible trajectories through detectors of array
     KVHashList fReconTraj;//! list of all possible trajectories for reconstructed particles
-   KVHashList fReconTrajMap; //! map names of duplicate trajectories for reconstructed particles
+   KVNameValueList fReconTrajMap; //! map names of duplicate trajectories for reconstructed particles
 
-   virtual void RenumberGroups();
-   virtual void BuildGeometry()
-   {
-      AbstractMethod("BuildGeometry");
-   };
    virtual void MakeListOfDetectors();
    virtual void SetACQParams();
 
-   virtual void GetIDTelescopes(KVDetector*, KVDetector*, TCollection* list);
+   Int_t GetIDTelescopes(KVDetector*, KVDetector*, TCollection* list);
 
+   int try_all_doubleID_telescopes(KVDetector* de, KVDetector* e, TCollection* l);
+   bool try_a_doubleIDtelescope(TString uri, KVDetector* de, KVDetector* e, TCollection* l);
+   bool try_upper_and_lower_doubleIDtelescope(TString uri, KVDetector* de, KVDetector* e, TCollection* l);
+   int try_all_singleID_telescopes(KVDetector* d, TCollection* l);
+   bool try_a_singleIDtelescope(TString uri, KVDetector* d, TCollection* l);
+   bool try_upper_and_lower_singleIDtelescope(TString uri, KVDetector* d, TCollection* l);
    virtual void set_up_telescope(KVDetector* de, KVDetector* e, KVIDTelescope* idt, TCollection* l);
    virtual void set_up_single_stage_telescope(KVDetector* det, KVIDTelescope* idt, TCollection* l);
 
    virtual void SetCalibrators();
    virtual void SetDetectorThicknesses();
-   virtual TGeoManager* CreateGeoManager(Double_t /*dx*/ = 500, Double_t /*dy*/ = 500, Double_t /*dz*/ = 500,
-                                         Bool_t /*closegeo*/ = kTRUE)
-   {
-      return 0;
-   }
 
    virtual void PrepareModifGroup(KVGroup* grp, KVDetector* dd);
    virtual void SetPresent(KVDetector* det, Bool_t present = kTRUE);
@@ -120,13 +115,6 @@ public:
 
    virtual KVGroup* GetGroupWithDetector(const Char_t*);
    virtual KVGroup* GetGroup(const Char_t*);
-   virtual KVGroup* GetGroupWithAngles(Float_t /*theta*/, Float_t /*phi*/)
-   {
-      return 0;
-   }
-   void RemoveGroup(KVGroup*);
-   void RemoveGroup(const Char_t*);
-   void ReplaceDetector(const Char_t* name, KVDetector* new_kvd);
 
    void AddACQParam(KVACQParam*);
    KVSeqCollection* GetACQParams()
@@ -142,15 +130,9 @@ public:
     virtual void ReconstructEvent(KVReconstructedEvent*,KVDetectorEvent*);
     virtual void ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
 
-   virtual void DetectEvent(KVEvent* event, KVReconstructedEvent* rec_event, const Char_t* detection_frame = "");
+   //virtual void DetectEvent(KVEvent* event, KVReconstructedEvent* rec_event, const Char_t* detection_frame = "");
    virtual Int_t FilteredEventCoherencyAnalysis(Int_t round, KVReconstructedEvent* rec_event);
    virtual void GetDetectorEvent(KVDetectorEvent* detev, TSeqCollection* fired_params = 0);
-   KVNameValueList* DetectParticle_TGEO(KVNucleus* part);
-   virtual KVNameValueList* DetectParticle(KVNucleus* part)
-   {
-      return DetectParticle_TGEO(part);
-   }
-   void DetectParticleIn(const Char_t* detname, KVNucleus* kvp);
 
    KVIDTelescope* GetIDTelescope(const Char_t* name) const;
    KVSeqCollection* GetListOfIDTelescopes() const
@@ -264,7 +246,7 @@ public:
     }
     const KVReconNucTrajectory* GetTrajectoryForReconstruction(const KVGeoDNTrajectory* t, const KVGeoDetectorNode* n) const
     {
-      TString mapped_name = fReconTrajMap.FindObject(Form("%s_%s", t->GetName(), n->GetName()))->GetTitle();
+      TString mapped_name = fReconTrajMap.GetStringValue(Form("%s_%s", t->GetName(), n->GetName()));
       const KVReconNucTrajectory* tr = (const KVReconNucTrajectory*)fReconTraj.FindObject(mapped_name);
        return tr;
     }

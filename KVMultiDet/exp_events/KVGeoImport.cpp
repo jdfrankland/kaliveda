@@ -132,14 +132,16 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
    KVNucleus* nuc = evt->AddParticle();
    nuc->SetZAandE(1, 1, 1);
    Double_t theta, phi;
-   Int_t count = 0;
 
    // note that ImportGeometry can be called for a KVMultiDetArray
    // which already contains detectors, groups and id telescopes
    fGroupNumber = fArray->GetStructureTypeList("GROUP")->GetEntries();
    Int_t ndets0 = fArray->GetDetectors()->GetEntries();
-   Int_t idtels0 = fArray->GetListOfIDTelescopes()->GetEntries();
 
+   Info("ImportGeometry",
+        "Importing geometry in angular ranges : Theta=[%f,%f:%f] Phi=[%f,%f:%f]", ThetaMin, ThetaMax, dTheta, PhiMin, PhiMax, dPhi);
+   Int_t count = 0;
+   std::cout << "\xd" << "Info in <KVImportGeometry::ImportGeometry>: tested " << count << " directions" << std::flush;
    for (theta = ThetaMin; theta <= ThetaMax; theta += dTheta) {
       for (phi = PhiMin; phi <= PhiMax; phi += dPhi) {
          nuc->SetTheta(theta);
@@ -148,11 +150,11 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
          fLastDetector = 0;
          PropagateEvent(evt);
          count++;
+         std::cout << "\xd" << "Info in <KVImportGeometry::ImportGeometry>: tested " << count << " directions" << std::flush;
       }
    }
+   std::cout << std::endl;
 
-    Info("ImportGeometry",
-         "Tested %d directions - Theta=[%f,%f:%f] Phi=[%f,%f:%f]",count,ThetaMin,ThetaMax,dTheta,PhiMin,PhiMax,dPhi);
     Info("ImportGeometry",
          "Imported %d detectors into array", fArray->GetDetectors()->GetEntries()-ndets0);
    // make sure detector nodes are correct
@@ -161,8 +163,6 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
    while ((d = (KVDetector*)next())) d->GetNode()->RehashLists();
    // set up all detector node trajectories
     fArray->CalculateTrajectories();
-    Info("ImportGeometry",
-         "Calculated %d trajectories through array", fArray->GetTrajectories()->GetEntries());
 
    if (fCreateArray) {
       fArray->SetGeometry(GetGeometry());
@@ -173,14 +173,8 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
          nav->SetStructureNameFormat(fmt->GetName(), fmt->GetString());
       }
       nav->SetNameCorrespondanceList(fDetStrucNameCorrespList);
-   }
-   if (fCreateArray) {
         fArray->DeduceIdentificationTelescopesFromGeometry();
-      Info("ImportGeometry",
-           "Created %d identification telescopes in array", fArray->GetListOfIDTelescopes()->GetEntries() - idtels0);
         fArray->CalculateReconstructionTrajectories();
-        Info("ImportGeometry",
-             "Calculated %d trajectories for particle reconstruction", fArray->GetReconTrajectories()->GetEntries());
    }
 }
 

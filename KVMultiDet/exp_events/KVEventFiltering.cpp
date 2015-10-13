@@ -111,9 +111,9 @@ Bool_t KVEventFiltering::Analysis()
 
    if (fTransformKinematics) {
       GetEvent()->SetFrame("lab", fCMVelocity);
-      gMultiDetArray->DetectEvent(GetEvent(), fReconEvent, "lab");
+      // REIMPLEMENT gMultiDetArray->DetectEvent(GetEvent(), fReconEvent, "lab");
    } else {
-      gMultiDetArray->DetectEvent(GetEvent(), fReconEvent);
+      // REIMPLEMENT gMultiDetArray->DetectEvent(GetEvent(), fReconEvent);
    }
    fReconEvent->SetNumber(fEVN++);
    fTree->Fill();

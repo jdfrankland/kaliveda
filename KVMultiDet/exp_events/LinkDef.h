@@ -10,6 +10,7 @@
 #pragma link C++ enum KVMultiDetArray::EFilterType;
 #pragma link C++ global gMultiDetArray;
 
+#pragma link C++ class KVDetectionSimulator+;
 #pragma link C++ class KVEventFiltering+;
 #pragma link C++ class KVReconstructedNucleus-;//customised streamer
 #pragma link C++ class KVReconNucTrajectory+;
