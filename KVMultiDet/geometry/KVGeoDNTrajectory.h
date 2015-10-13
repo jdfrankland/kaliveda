@@ -5,11 +5,12 @@
 #define __KVGEODNTRAJECTORY_H
 
 #include "KVBase.h"
+#include "KVUniqueNameList.h"
 #include "TObjArray.h"
 #include "KVGeoDetectorNode.h"
-#include "KVDetector.h"
 
 class KVGeoDNTrajectory : public KVBase {
+
    void init();
 
    TObjArray fNodes;
@@ -20,13 +21,12 @@ class KVGeoDNTrajectory : public KVBase {
    mutable Int_t fIter_idx_sav;//! index for iteration
    mutable Int_t fIter_limit_sav;//! last index for iteration
    mutable Int_t fIter_delta_sav;//! increment/decrement for each iteration
-   KVUniqueNameList fIDTelescopes;//list of id telescopes on this trajectory
+   KVUniqueNameList fIDTelescopes;// list of id telescopes on this trajectory
 
    void rebuild_title();
-   void SetTitle(const char* t = "")
-   {
-      KVBase::SetTitle(t);
-   }
+
+protected:
+   Bool_t fAddToNodes;//! if kTRUE, add trajectory to node's list
 
 public:
    KVGeoDNTrajectory();
@@ -71,7 +71,7 @@ public:
    {
       // add node to end of trajectory
       fNodes.AddLast(n);
-      n->AddTrajectory(this);
+      if (fAddToNodes) n->AddTrajectory(this);
       rebuild_title();
    }
 
@@ -79,7 +79,7 @@ public:
    {
       // add node to start of trajectory
       fNodes.AddFirst(n);
-      n->AddTrajectory(this);
+      if (fAddToNodes) n->AddTrajectory(this);
       rebuild_title();
    }
 
@@ -132,28 +132,6 @@ public:
       TObject* o;
       while ((o = next())) {
          if (!Contains(o->GetName())) return kFALSE;
-      }
-      return kTRUE;
-   }
-   Bool_t ContainsAllConsecutive(const TCollection* l, Bool_t direction = kIterForward) const
-   {
-      // Returns kTRUE if trajectory contains all detectors/nodes in the list
-      // in the same consecutive order
-      // N.B. we only check the names of the (TObject-derived) objects in the list
-      //
-      // if optional argument direction=kIterBackward then we look at the objects
-      // in the list in reverse order
-
-      TIter next(l, direction);
-      TObject* o = next();
-      KVGeoDetectorNode* n = GetNode(o->GetName());
-      if (!n) return kFALSE;
-      IterateFrom(n);
-      GetNextNode();
-      while ((o = next())) {
-         n = GetNextNode();
-         if (!n) return kFALSE; // trajectory ended before list of detectors
-         if (!n->IsCalled(o->GetName())) return kFALSE;
       }
       return kTRUE;
    }
@@ -228,38 +206,6 @@ public:
          }
       }
       return nullptr;
-   }
-
-   Int_t GetNumberOfFiredDetectorsForwardsFrom(const KVGeoDetectorNode* node, Option_t* opt = "any")
-   {
-      // Starting from 'node', calculate and return the number of fired detectors
-      // going forwards (move toward the target) along this trajectory
-      // The option string will be passed to KVDetector::Fired(Option_t*)
-
-      Int_t f = 0;
-      IterateFrom(node);
-      KVGeoDetectorNode* n;
-      while ((n = GetNextNode())) {
-         f += n->GetDetector()->Fired(opt);
-      }
-      return f;
-   }
-
-   Int_t GetNumberOfUnfiredDetectorsForwardsFrom(const KVGeoDetectorNode* node, Option_t* opt = "any")
-   {
-      // Starting from 'node', calculate and return the number of unfired detectors
-      // going forwards (move toward the target) along this trajectory
-      // The option string will be passed to KVDetector::Fired(Option_t*)
-
-      Int_t f = 0;
-      Int_t tot = 0;
-      IterateFrom(node);
-      KVGeoDetectorNode* n;
-      while ((n = GetNextNode())) {
-         f += n->GetDetector()->Fired(opt);
-         tot++;
-      }
-      return tot - f;
    }
 
    const KVSeqCollection* GetIDTelescopes() const

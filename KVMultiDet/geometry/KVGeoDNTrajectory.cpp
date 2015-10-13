@@ -58,20 +58,20 @@ ClassImp(KVGeoDNTrajectory)
 
 Int_t KVGeoDNTrajectory::fGDNTrajNumber = 0;
 
-KVGeoDNTrajectory::KVGeoDNTrajectory() : fNodes(3, 0), fIDTelescopes(kFALSE)
+KVGeoDNTrajectory::KVGeoDNTrajectory() : fNodes(3, 0), fIDTelescopes(kFALSE), fAddToNodes(kTRUE)
 {
    // Default constructor
    init();
 }
 //______________________
-KVGeoDNTrajectory::KVGeoDNTrajectory(KVGeoDetectorNode* node) : fNodes(3, 0), fIDTelescopes(kFALSE)
+KVGeoDNTrajectory::KVGeoDNTrajectory(KVGeoDetectorNode* node) : fNodes(3, 0), fIDTelescopes(kFALSE), fAddToNodes(kTRUE)
 {
    // Create a new trajectory starting from node
    AddFirst(node);
    init();
 }
 //______________________
-KVGeoDNTrajectory::KVGeoDNTrajectory(const KVGeoDNTrajectory& obj) : KVBase(), fNodes(3, 0), fIDTelescopes(kFALSE)
+KVGeoDNTrajectory::KVGeoDNTrajectory(const KVGeoDNTrajectory& obj) : KVBase(), fNodes(3, 0), fIDTelescopes(kFALSE), fAddToNodes(kTRUE)
 {
    //copy ctor
    obj.Copy(*this);
@@ -115,6 +115,7 @@ void KVGeoDNTrajectory::Copy(TObject& obj) const
    TIter next(&fNodes);
    KVGeoDetectorNode* node;
    while ((node = (KVGeoDetectorNode*)next())) CastedObj.AddLast(node);
+   CastedObj.fAddToNodes = fAddToNodes;
 }
 
 KVGeoDNTrajectory& KVGeoDNTrajectory::operator=(const KVGeoDNTrajectory& t)

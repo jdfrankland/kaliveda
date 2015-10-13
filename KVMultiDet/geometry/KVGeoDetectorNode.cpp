@@ -44,50 +44,50 @@ ClassImp(KVGeoDetectorNode)
 
 void KVGeoDetectorNode::init()
 {
-   fInFront=nullptr;
-   fBehind=nullptr;
-   fDetector=nullptr;
-   fTraj=nullptr;
-   fNTrajForwards=-1;
-   fNTrajBackwards=-1;
-   fNTraj=-1;
-   fTrajF=nullptr;
-   fTrajB=nullptr;
+   fInFront = nullptr;
+   fBehind = nullptr;
+   fDetector = nullptr;
+   fTraj = nullptr;
+   fNTrajForwards = -1;
+   fNTrajBackwards = -1;
+   fNTraj = -1;
+   fTrajF = nullptr;
+   fTrajB = nullptr;
 }
 
 void KVGeoDetectorNode::CalculateForwardsTrajectories()
 {
-    // Fill list with all trajectories going forwards from this node
+   // Fill list with all trajectories going forwards from this node
 
-    fNTrajForwards=0;
-    if(GetNTraj()){
-        TIter next(GetTrajectories());
-        KVGeoDNTrajectory* t;
-        while(( t = (KVGeoDNTrajectory*)next() )){
-            if(!t->EndsAt(this)){
-                fNTrajForwards++;
-                if(!fTrajF) fTrajF=new KVUniqueNameList;
-                fTrajF->Add(t);
-            }
-        }
-    }
+   fNTrajForwards = 0;
+   if (GetNTraj()) {
+      TIter next(GetTrajectories());
+      KVGeoDNTrajectory* t;
+      while ((t = (KVGeoDNTrajectory*)next())) {
+         if (!t->EndsAt(this)) {
+            fNTrajForwards++;
+            if (!fTrajF) fTrajF = new KVUniqueNameList;
+            fTrajF->Add(t);
+         }
+      }
+   }
 }
 
 void KVGeoDetectorNode::CalculateBackwardsTrajectories()
 {
    // Fill list with all trajectories going backwards from this node
 
-   fNTrajBackwards=0;
-   if(GetNTraj()){
-       TIter next(GetTrajectories());
-       KVGeoDNTrajectory* t;
-       while(( t = (KVGeoDNTrajectory*)next() )){
-           if(!t->BeginsAt(this)){
-               fNTrajBackwards++;
-               if(!fTrajB) fTrajB=new KVUniqueNameList;
-               fTrajB->Add(t);
-           }
-       }
+   fNTrajBackwards = 0;
+   if (GetNTraj()) {
+      TIter next(GetTrajectories());
+      KVGeoDNTrajectory* t;
+      while ((t = (KVGeoDNTrajectory*)next())) {
+         if (!t->BeginsAt(this)) {
+            fNTrajBackwards++;
+            if (!fTrajB) fTrajB = new KVUniqueNameList;
+            fTrajB->Add(t);
+         }
+      }
    }
 
 }
@@ -95,7 +95,7 @@ void KVGeoDetectorNode::CalculateBackwardsTrajectories()
 KVGeoDetectorNode::KVGeoDetectorNode()
 {
    // Default constructor
-    init();
+   init();
 }
 
 //________________________________________________________________
@@ -103,127 +103,130 @@ KVGeoDetectorNode::KVGeoDetectorNode()
 KVGeoDetectorNode::KVGeoDetectorNode(const Char_t* name) : KVBase(name, "Detector node")
 {
    // Named node constructor
-    init();
+   init();
 }
 
 KVGeoDetectorNode::~KVGeoDetectorNode()
 {
    // Destructor
-    SafeDelete(fInFront);
-    SafeDelete(fBehind);
-    SafeDelete(fTraj);
-    SafeDelete(fTrajF);
+   SafeDelete(fInFront);
+   SafeDelete(fBehind);
+   SafeDelete(fTraj);
+   SafeDelete(fTrajF);
 }
 
-void KVGeoDetectorNode::SetDetector(KVDetector *d)
+void KVGeoDetectorNode::SetDetector(KVDetector* d)
 {
-    fDetector=d;
+   fDetector = d;
 }
 
-KVDetector *KVGeoDetectorNode::GetDetector() const
+KVDetector* KVGeoDetectorNode::GetDetector() const
 {
-    return fDetector;
+   return fDetector;
 }
 
-const Char_t *KVGeoDetectorNode::GetName() const
+const Char_t* KVGeoDetectorNode::GetName() const
 {
-    // Name of node is same as name of associated detector
-    return (fDetector ? fDetector->GetName() : KVBase::GetName());
+   // Name of node is same as name of associated detector
+   return (fDetector ? fDetector->GetName() : KVBase::GetName());
 }
 
 void KVGeoDetectorNode::ls(Option_t*) const
 {
-    std::cout << "Detector Node " << GetName() << std::endl;
-    if(fInFront){
-        std::cout << "In front:" << std::endl;
-        fInFront->Print();
-    }
-    if(fBehind){
-        std::cout << "Behind:" << std::endl;
-        fBehind->Print();
-    }
-	 if(fTraj){
-	     std::cout << "Trajectories:" << std::endl;
-		  fTraj->R__FOR_EACH(KVGeoDNTrajectory,ls)();
-	 }
+   std::cout << "Detector Node " << GetName() << std::endl;
+   if (fInFront) {
+      std::cout << "In front:" << std::endl;
+      fInFront->Print();
+   }
+   if (fBehind) {
+      std::cout << "Behind:" << std::endl;
+      fBehind->Print();
+   }
+   if (fTraj) {
+      std::cout << "Trajectories:" << std::endl;
+      fTraj->R__FOR_EACH(KVGeoDNTrajectory, ls)();
+   }
 }
 
 void KVGeoDetectorNode::AddTrajectory(KVGeoDNTrajectory* t)
 {
-	if(!fTraj) {fTraj = new KVUniqueNameList; fTraj->SetCleanup();}
-	fTraj->Add(t);
+   if (!fTraj) {
+      fTraj = new KVUniqueNameList;
+      fTraj->SetCleanup();
+   }
+   fTraj->Add(t);
 }
 
 void KVGeoDetectorNode::AddInFront(KVDetector* d)
 {
-    if(!fInFront) fInFront = new KVUniqueNameList;
-    fInFront->Add(d);
+   if (!fInFront) fInFront = new KVUniqueNameList;
+   fInFront->Add(d);
 }
 
 void KVGeoDetectorNode::AddBehind(KVDetector* d)
 {
-    if(!fBehind) fBehind = new KVUniqueNameList;
-    fBehind->Add(d);
+   if (!fBehind) fBehind = new KVUniqueNameList;
+   fBehind->Add(d);
 }
 Bool_t KVGeoDetectorNode::IsInFrontOf(KVDetector* d)
 {
-    // return true if this node is directly in front of the detector
-    return (fBehind && fBehind->FindObject(d)!=0);
+   // return true if this node is directly in front of the detector
+   return (fBehind && fBehind->FindObject(d) != 0);
 }
 Bool_t KVGeoDetectorNode::IsBehind(KVDetector* d)
 {
-    // return true if this node is directly behind the detector
-    return (fInFront && fInFront->FindObject(d)!=0);
+   // return true if this node is directly behind the detector
+   return (fInFront && fInFront->FindObject(d) != 0);
 }
 
-KVSeqCollection *KVGeoDetectorNode::GetForwardTrajectories() const
+KVSeqCollection* KVGeoDetectorNode::GetForwardTrajectories() const
 {
-    // Return list of all trajectories going forwards from this node
-    // Returns 0x0 if there are no forwards trajectories
+   // Return list of all trajectories going forwards from this node
+   // Returns 0x0 if there are no forwards trajectories
 
-    if(fNTrajForwards<0) const_cast<KVGeoDetectorNode*>(this)->CalculateForwardsTrajectories();
-    return fTrajF;
+   if (fNTrajForwards < 0) const_cast<KVGeoDetectorNode*>(this)->CalculateForwardsTrajectories();
+   return fTrajF;
 }
 
-KVSeqCollection*KVGeoDetectorNode::GetBackwardTrajectories() const
+KVSeqCollection* KVGeoDetectorNode::GetBackwardTrajectories() const
 {
    // Return list of all trajectories going backwards from this node
    // Returns 0x0 if there are no backwards trajectories
 
-   if(fNTrajBackwards<0) const_cast<KVGeoDetectorNode*>(this)->CalculateBackwardsTrajectories();
+   if (fNTrajBackwards < 0) const_cast<KVGeoDetectorNode*>(this)->CalculateBackwardsTrajectories();
    return fTrajB;
 }
 
 Int_t KVGeoDetectorNode::GetNDetsInFront() const
 {
-    // Returns number of detectors directly in front of this one
-    return (fInFront ? fInFront->GetEntries() : 0);
+   // Returns number of detectors directly in front of this one
+   return (fInFront ? fInFront->GetEntries() : 0);
 }
 
 Int_t KVGeoDetectorNode::GetNDetsBehind() const
 {
-    // Returns number of detectors directly behind this one
-    return (fBehind ? fBehind->GetEntries() : 0);
+   // Returns number of detectors directly behind this one
+   return (fBehind ? fBehind->GetEntries() : 0);
 }
 
 Int_t KVGeoDetectorNode::GetNTraj() const
 {
-    // Returns number of trajectories passing through this node
-    if(fNTraj<0){
-        const_cast<KVGeoDetectorNode*>(this)->fNTraj=(fTraj ? fTraj->GetEntries() : 0);
-    }
-    return fNTraj;
+   // Returns number of trajectories passing through this node
+   if (fNTraj < 0) {
+      const_cast<KVGeoDetectorNode*>(this)->fNTraj = (fTraj ? fTraj->GetEntries() : 0);
+   }
+   return fNTraj;
 }
 
 Int_t KVGeoDetectorNode::GetNTrajForwards() const
 {
-    // Returns number of trajectories which go forwards (towards the target)
-    // from this node, i.e. the number of trajectories of which this is not the
-    // end-point node
-    // If not already done, this sets up the list of forwards trajectories
+   // Returns number of trajectories which go forwards (towards the target)
+   // from this node, i.e. the number of trajectories of which this is not the
+   // end-point node
+   // If not already done, this sets up the list of forwards trajectories
 
-    if(fNTrajForwards<0) const_cast<KVGeoDetectorNode*>(this)->CalculateForwardsTrajectories();
-    return fNTrajForwards;
+   if (fNTrajForwards < 0) const_cast<KVGeoDetectorNode*>(this)->CalculateForwardsTrajectories();
+   return fNTrajForwards;
 }
 
 Int_t KVGeoDetectorNode::GetNTrajBackwards() const
@@ -233,68 +236,34 @@ Int_t KVGeoDetectorNode::GetNTrajBackwards() const
    // start-point node
    // If not already done, this sets up the list of backwards trajectories
 
-   if(fNTrajBackwards<0) const_cast<KVGeoDetectorNode*>(this)->CalculateBackwardsTrajectories();
+   if (fNTrajBackwards < 0) const_cast<KVGeoDetectorNode*>(this)->CalculateBackwardsTrajectories();
    return fNTrajBackwards;
 }
 
 void KVGeoDetectorNode::RehashLists()
 {
-    // Call this method if detector names change after lists are filled
-    // (they are hash lists, if names of objects change, strange behaviour
-    // will occur: you could put the same object in a list twice)
+   // Call this method if detector names change after lists are filled
+   // (they are hash lists, if names of objects change, strange behaviour
+   // will occur: you could put the same object in a list twice)
 
-    if(fInFront) dynamic_cast<KVUniqueNameList*>(fInFront)->Rehash();
-    if(fBehind) dynamic_cast<KVUniqueNameList*>(fBehind)->Rehash();
+   if (fInFront) dynamic_cast<KVUniqueNameList*>(fInFront)->Rehash();
+   if (fBehind) dynamic_cast<KVUniqueNameList*>(fBehind)->Rehash();
 }
 
-KVGeoDNTrajectory *KVGeoDetectorNode::GetForwardTrajectoryWithMostFiredDetectors() const
+KVGeoDNTrajectory* KVGeoDetectorNode::FindTrajectory(const char* title) const
 {
-    // Return pointer to trajectory going forwards from this node
-    // on which there are the largest number of fired detectors
-    // In case of ambiguities (i.e. more than one trajectory with the same number
-    // of fired detectors) this method returns 0x0
+   // Return pointer to trajectory passing through this node with given title
+   // The title is of the form "DET1/DET2/DET3/" made of the names of the
+   // detectors/nodes on the trajectory
 
-    Int_t most_fired=0;
-    KVGeoDNTrajectory* mft=0;
-    TIter next( GetForwardTrajectories() );
-    KVGeoDNTrajectory* t;
-    while( (t = (KVGeoDNTrajectory*)next()) ){
-
-        Int_t nfired = t->GetNumberOfFiredDetectorsForwardsFrom(this);
-        if(nfired>most_fired){
-            most_fired=nfired;
-            mft=t;
-        }
-        else if(most_fired && (nfired==most_fired)){
-            return 0x0;
-        }
-    }
-    return mft;
+   return (KVGeoDNTrajectory*)fTraj->FindObjectByTitle(title);
 }
 
-KVGeoDNTrajectory *KVGeoDetectorNode::GetForwardTrajectoryWithLeastUnfiredDetectors() const
+KVGeoDNTrajectory* KVGeoDetectorNode::FindTrajectory(UInt_t number) const
 {
-    // Return pointer to trajectory going forwards from this node
-    // on which there are the smallest number of unfired detectors.
-    // In case of ambiguities (i.e. more than one trajectory with the same number
-    // of unfired detectors) this method returns 0x0
+   // Return pointer to trajectory passing through this node with given number
 
-    Int_t least_fired=99;
-    KVGeoDNTrajectory* mft=0;
-    TIter next( GetForwardTrajectories() );
-    KVGeoDNTrajectory* t;
-    while( (t = (KVGeoDNTrajectory*)next()) ){
-
-        Int_t nunfired = t->GetNumberOfUnfiredDetectorsForwardsFrom(this);
-        if(nunfired<least_fired){
-            least_fired=nunfired;
-            mft=t;
-        }
-        else if(nunfired==least_fired){
-            return 0x0;
-        }
-    }
-    return mft;
+   return (KVGeoDNTrajectory*)fTraj->FindObjectByNumber(number);
 }
 
 void KVGeoDetectorNode::BuildTrajectoriesForwards(TSeqCollection* list)
@@ -309,14 +278,13 @@ void KVGeoDetectorNode::BuildTrajectoriesForwards(TSeqCollection* list)
    // detector towards the target.
    // Therefore we add each new node to the end of each trajectory.
 
-   if(!list->GetEntries()){
+   if (!list->GetEntries()) {
       // no trajectories in list
       // add new trajectory starting here
       list->Add(new KVGeoDNTrajectory(this));
-   }
-   else {
+   } else {
       // add this node to each trajectory in list
-      list->R__FOR_EACH(KVGeoDNTrajectory,AddLast)(this);
+      list->R__FOR_EACH(KVGeoDNTrajectory, AddLast)(this);
    }
    // add each trajectory to list of trajectories through this node
    TIter nextT(list);
@@ -324,11 +292,11 @@ void KVGeoDetectorNode::BuildTrajectoriesForwards(TSeqCollection* list)
 
 
    // if no nodes in front of this one, stop
-   if(!GetNDetsInFront()) return;
+   if (!GetNDetsInFront()) return;
 
    nextT.Reset();
    TList* newTrajectories = new TList;
-   while( (traj = (KVGeoDNTrajectory*)nextT()) ){
+   while ((traj = (KVGeoDNTrajectory*)nextT())) {
       KVGeoDNTrajectory baseTraj(*traj);
       // for each trajectory in list
       // for first node in front of this one, continue existing trajectory
@@ -337,11 +305,11 @@ void KVGeoDetectorNode::BuildTrajectoriesForwards(TSeqCollection* list)
       TIter nextN(fInFront);
       KVGeoDetectorNode* node;
       KVDetector* det;
-      Int_t node_num=1;
-      while( (det = (KVDetector*)nextN()) ){
+      Int_t node_num = 1;
+      while ((det = (KVDetector*)nextN())) {
          node = det->GetNode();
-         if(node_num==1) node->BuildTrajectoriesForwards(list);
-         else{
+         if (node_num == 1) node->BuildTrajectoriesForwards(list);
+         else {
             KVGeoDNTrajectory* newTraj = new KVGeoDNTrajectory(baseTraj);
             newTrajectories->Add(newTraj);
             node->BuildTrajectoriesForwards(newTrajectories);
@@ -349,7 +317,7 @@ void KVGeoDetectorNode::BuildTrajectoriesForwards(TSeqCollection* list)
          node_num++;
       }
    }
-   if(newTrajectories->GetEntries()){
+   if (newTrajectories->GetEntries()) {
       list->AddAll(newTrajectories);
    }
    delete newTrajectories;

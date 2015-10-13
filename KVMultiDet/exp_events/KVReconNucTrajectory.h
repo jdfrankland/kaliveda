@@ -7,10 +7,14 @@
 #include "KVGeoDNTrajectory.h"
 
 class KVReconNucTrajectory : public KVGeoDNTrajectory {
+
    Int_t fIndependentIdentifications;//number of independent ID telescopes on trajectory
 
 public:
-   KVReconNucTrajectory() : KVGeoDNTrajectory(), fIndependentIdentifications(0) {}
+   KVReconNucTrajectory() : KVGeoDNTrajectory(), fIndependentIdentifications(0)
+   {
+      fAddToNodes = kFALSE;
+   }
    KVReconNucTrajectory(const KVReconNucTrajectory&);
    KVReconNucTrajectory(const KVGeoDNTrajectory*, const KVGeoDetectorNode*);
    virtual ~KVReconNucTrajectory() {}

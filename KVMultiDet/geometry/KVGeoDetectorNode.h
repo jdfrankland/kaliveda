@@ -6,6 +6,7 @@
 
 #include "KVBase.h"
 #include "KVSeqCollection.h"
+
 class KVDetector;
 class KVGeoDNTrajectory;
 
@@ -38,9 +39,18 @@ public:
    void AddBehind(KVDetector*);
    Bool_t IsInFrontOf(KVDetector*);
    Bool_t IsBehind(KVDetector*);
-   KVSeqCollection* GetDetectorsInFront() const { return fInFront; }
-   KVSeqCollection* GetDetectorsBehind() const { return fBehind; }
-   KVSeqCollection* GetTrajectories() const { return fTraj; }
+   KVSeqCollection* GetDetectorsInFront() const
+   {
+      return fInFront;
+   }
+   KVSeqCollection* GetDetectorsBehind() const
+   {
+      return fBehind;
+   }
+   KVSeqCollection* GetTrajectories() const
+   {
+      return fTraj;
+   }
    KVSeqCollection* GetForwardTrajectories() const;
    KVSeqCollection* GetBackwardTrajectories() const;
    Int_t GetNDetsInFront() const;
@@ -54,24 +64,8 @@ public:
 
    void RehashLists();
 
-   KVGeoDNTrajectory* GetForwardTrajectoryWithMostFiredDetectors() const;
-   KVGeoDNTrajectory* GetForwardTrajectoryWithLeastUnfiredDetectors() const;
-   KVGeoDNTrajectory* FindTrajectory(const char* title) const
-   {
-      // Return pointer to trajectory passing through this node with given title
-      // The title is of the form "DET1/DET2/DET3/" made of the names of the
-      // detectors/nodes on the trajectory
-
-      return (KVGeoDNTrajectory*)fTraj->FindObjectByTitle(title);
-   }
-
-   KVGeoDNTrajectory* FindTrajectory(UInt_t number) const
-   {
-      // Return pointer to trajectory passing through this node with given number
-
-      return (KVGeoDNTrajectory*)fTraj->FindObjectByNumber(number);
-   }
-
+   KVGeoDNTrajectory* FindTrajectory(const char* title) const;
+   KVGeoDNTrajectory* FindTrajectory(UInt_t number) const;
 
    void ls(Option_t* option = "") const;
 

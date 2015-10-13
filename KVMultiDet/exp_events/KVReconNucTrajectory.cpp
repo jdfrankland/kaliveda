@@ -27,6 +27,7 @@ KVReconNucTrajectory::KVReconNucTrajectory(const KVGeoDNTrajectory* tr, const KV
 {
    // Build a reconstructed trajectory on tr starting from node n
 
+   fAddToNodes = kFALSE;
    KVUniqueNameList* idtlist = dynamic_cast<KVUniqueNameList*>(AccessIDTelescopeList());
 
    tr->SaveIterationState();// in case an iteration was already underway
@@ -35,19 +36,18 @@ KVReconNucTrajectory::KVReconNucTrajectory(const KVGeoDNTrajectory* tr, const KV
    KVGeoDetectorNode* _n;
    while ((_n = tr->GetNextNode())) {
       AddLast(_n);
-      // add all ID telescopes; if n->GetDetector() is part of the telescope,
-      // it must either be alone (single-detector ID telescope) or the residual energy
-      // detector (de-e telescope)
-      TIter next(_n->GetDetector()->GetIDTelescopes());
-      KVIDTelescope* idt;
-      while ((idt = (KVIDTelescope*)next())) {
-         if (_n == n) {
-            if (idt->GetDetector(idt->GetSize()) != n->GetDetector()) continue;
-         }
+   }
+   // add all ID telescopes from parent trajectory which contain only
+   // detectors on this trajectory
+   TIter next(tr->GetIDTelescopes());
+   KVIDTelescope* idt;
+   while ((idt = (KVIDTelescope*)next())) {
+      if (ContainsAll(idt->GetDetectors())) {
          idtlist->Add(idt);
          if (idtlist->ObjectAdded()) fIndependentIdentifications += (Int_t)idt->IsIndependent();
       }
    }
+
    // unique name for fast look-up in hash table
    SetName(Form("%s_%s", tr->GetName(), n->GetName()));
    tr->RestoreIterationState();
