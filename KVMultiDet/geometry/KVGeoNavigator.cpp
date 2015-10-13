@@ -531,7 +531,7 @@ void KVGeoNavigator::PropagateParticle(KVNucleus* part, TVector3* TheOrigin)
 
       TString vn = GetCurrentVolume()->GetName();
       if (vn.BeginsWith("DEADZONE")) {
-         part->GetParameters()->SetValue("DEADZONE", Form("%s/%s", GetCurrentVolume()->GetName(), GetCurrentNode()->GetName()));
+         part->SetParameter("DEADZONE", Form("%s/%s", GetCurrentVolume()->GetName(), GetCurrentNode()->GetName()));
          break;
       }
 

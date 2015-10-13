@@ -124,7 +124,6 @@ KVParticle::KVParticle() : fParameters("ParticleParameters", "Parameters associa
 void KVParticle::init()
 {
    //default initialisation
-   fE0 = 0;
    SetFrameName("");
    fGroups.SetOwner(kTRUE);
 }
@@ -292,10 +291,6 @@ void KVParticle::Clear(Option_t*)
    //Reset particle properties i.e. before creating/reading a new event
 
    SetXYZM(0., 0., 0., 0.);
-   if (fE0) {
-      delete fE0;
-      fE0 = 0;
-   }
    ResetIsOK();                 //in case IsOK() status was set "by hand" in previous event
    ResetBit(kIsDetected);
    fParameters.Clear();
@@ -336,23 +331,7 @@ KVParticle& KVParticle::operator=(const KVParticle& rhs)
    //KVParticle assignment operator.
 
    TLorentzVector::operator=((TLorentzVector&) rhs);
-   if (rhs.GetPInitial()) SetE0(rhs.GetPInitial());
    return *this;
-}
-
-//________________________________________________________________________________________________________
-
-void KVParticle::ResetEnergy()
-{
-   //Used for simulated particles after passage through some absorber/detector.
-   //The passage of a particle through the different absorbers modifies its
-   //kinetic energies, indeed the particle may be stopped in the detector.
-   //Calling this method will reset the particle's momentum to its
-   //initial value i.e. before it entered the first absorber.
-   //Particles which have not encountered any absorbers/detectors are left as they are.
-
-   if (IsDetected())
-      SetMomentum(GetPInitial());
 }
 
 //___________________________________________________________________________//

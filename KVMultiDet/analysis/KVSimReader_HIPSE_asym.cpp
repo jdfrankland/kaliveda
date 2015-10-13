@@ -122,7 +122,7 @@ Bool_t KVSimReader_HIPSE_asym::ReadNucleus()
 
          nuc->SetZ(GetIntReadPar(1));
          nuc->SetA(GetIntReadPar(0));
-         nuc->GetParameters()->SetValue("proven", GetDoubleReadPar(2));
+         nuc->SetParameter("proven", GetDoubleReadPar(2));
 
 
          break;

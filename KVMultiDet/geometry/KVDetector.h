@@ -20,13 +20,6 @@ $Id: KVDetector.h,v 1.71 2009/05/22 14:45:40 ebonnet Exp $
 #ifndef KVDETECTOR_H
 #define KVDETECTOR_H
 
-#ifndef KVD_RECPRC_CNXN
-#define KVD_RECPRC_CNXN 1
-#endif
-#ifndef KVD_NORECPRC_CNXN
-#define KVD_NORECPRC_CNXN 0
-#endif
-
 #include "KVMaterial.h"
 #include "KVPosition.h"
 #include "KVList.h"
@@ -39,6 +32,7 @@ $Id: KVDetector.h,v 1.71 2009/05/22 14:45:40 ebonnet Exp $
 class KVGeoStrucElement;
 class KVGroup;
 class KVCalibrator;
+
 class TGeoVolume;
 class TTree;
 class TGraph;
@@ -154,7 +148,8 @@ public:
       // not just the active layer (value returned by GetThickness()).
 
         Double_t fTotThickness=0;
-        TIter next(fAbsorbers); KVMaterial* mat;
+      TIter next(fAbsorbers);
+      KVMaterial* mat;
       while ((mat = (KVMaterial*)next())) fTotThickness += mat->GetThickness();
       return fTotThickness;
    };
@@ -257,7 +252,8 @@ public:
       return (fParticles ? fParticles->GetEntries() : 0);
    };
 
-    Bool_t IsAnalysed() {
+   Bool_t IsAnalysed()
+   {
       return TestBit(kIsAnalysed);
    };
    void SetAnalysed(Bool_t b = kTRUE)
@@ -308,7 +304,7 @@ public:
    Binary8_t GetFiredBitmask() const
    {
       return fFiredMask;
-   };
+   }
    virtual const Char_t* GetFiredACQParameterListFormatString() const
    {
       return fKVDetectorFiredACQParameterListFormatString.Data();

@@ -65,7 +65,7 @@ void KVDataPatch_CorrectEtalonModuleIDCode::ApplyToParticle(KVNucleus* n)
             // just set general IDcode gamma and set energy = 0
             N->SetIdentification(idr);
             N->SetEnergy(0.);
-            N->GetParameters()->SetValue("KVDataPatch_CorrectEtalonModuleIDCode", "correction applied");
+            N->SetParameter("KVDataPatch_CorrectEtalonModuleIDCode", "correction applied");
          } else {
             // charged particle
             // needs re-identifying and re-calibrating
@@ -74,10 +74,10 @@ void KVDataPatch_CorrectEtalonModuleIDCode::ApplyToParticle(KVNucleus* n)
             if (ok) {
                N->SetIdentification(&ID);
                N->Calibrate();
-               N->GetParameters()->SetValue("KVDataPatch_CorrectEtalonModuleIDCode", "correction applied");
+               N->SetParameter("KVDataPatch_CorrectEtalonModuleIDCode", "correction applied");
             } else {
                Warning("ApplyToParticle", "Rustine failed for the following particle:");
-               N->GetParameters()->SetValue("KVDataPatch_CorrectEtalonModuleIDCode", "correction failed");
+               N->SetParameter("KVDataPatch_CorrectEtalonModuleIDCode", "correction failed");
                N->Print();
             }
          }

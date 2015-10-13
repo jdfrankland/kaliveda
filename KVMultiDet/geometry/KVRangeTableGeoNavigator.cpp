@@ -136,9 +136,6 @@ void KVRangeTableGeoNavigator::ParticleEntersNewVolume(KVNucleus* part)
       }
       //set flag to say that particle has been slowed down
       part->SetIsDetected();
-      //If this is the first absorber that the particle crosses, we set a "reminder" of its
-      //initial energy
-      if (!part->GetPInitial()) part->SetE0();
 
       KVString dname;
       Bool_t multi;
@@ -149,13 +146,13 @@ void KVRangeTableGeoNavigator::ParticleEntersNewVolume(KVNucleus* part)
       } else
          absorber_name = irmat->GetName();
 
-      part->GetParameters()->SetValue(Form("DE:%s", absorber_name.Data()), de);
-      part->GetParameters()->SetValue(Form("Xin:%s", absorber_name.Data()), GetEntryPoint().X());
-      part->GetParameters()->SetValue(Form("Yin:%s", absorber_name.Data()), GetEntryPoint().Y());
-      part->GetParameters()->SetValue(Form("Zin:%s", absorber_name.Data()), GetEntryPoint().Z());
-      part->GetParameters()->SetValue(Form("Xout:%s", absorber_name.Data()), GetExitPoint().X());
-      part->GetParameters()->SetValue(Form("Yout:%s", absorber_name.Data()), GetExitPoint().Y());
-      part->GetParameters()->SetValue(Form("Zout:%s", absorber_name.Data()), GetExitPoint().Z());
+      part->SetParameter(Form("DE:%s", absorber_name.Data()), de);
+      part->SetParameter(Form("Xin:%s", absorber_name.Data()), GetEntryPoint().X());
+      part->SetParameter(Form("Yin:%s", absorber_name.Data()), GetEntryPoint().Y());
+      part->SetParameter(Form("Zin:%s", absorber_name.Data()), GetEntryPoint().Z());
+      part->SetParameter(Form("Xout:%s", absorber_name.Data()), GetExitPoint().X());
+      part->SetParameter(Form("Yout:%s", absorber_name.Data()), GetExitPoint().Y());
+      part->SetParameter(Form("Zout:%s", absorber_name.Data()), GetExitPoint().Z());
       part->SetEnergy(e);
    }
 }

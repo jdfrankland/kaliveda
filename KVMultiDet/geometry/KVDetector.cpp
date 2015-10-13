@@ -219,22 +219,17 @@ void KVDetector::DetectParticle(KVNucleus* kvp, TVector3* norm)
    AddHit(kvp);                 //add nucleus to list of particles hitting detector in the event
    //set flag to say that particle has been slowed down
    kvp->SetIsDetected();
-   //If this is the first absorber that the particle crosses, we set a "reminder" of its
-   //initial energy
-   if (!kvp->GetPInitial())
-      kvp->SetE0();
 
-   Double_t* thickness = 0;
+   vector<Double_t> thickness;
+
    if (norm) {
       // modify thicknesses of all layers according to orientation,
       // and store original thicknesses in array
       TVector3 p = kvp->GetMomentum();
-      thickness = new Double_t[fAbsorbers->GetEntries()];
       KVMaterial* abs;
-      int i = 0;
       TIter next(fAbsorbers);
       while ((abs = (KVMaterial*) next())) {
-         thickness[i++] = abs->GetThickness();
+         thickness.push_back(abs->GetThickness());
          Double_t T = abs->GetEffectiveThickness((*norm), p);
          abs->SetThickness(T);
       }
@@ -249,7 +244,6 @@ void KVDetector::DetectParticle(KVNucleus* kvp, TVector3* norm)
       while ((abs = (KVMaterial*) next())) {
          abs->SetThickness(thickness[i++]);
       }
-      delete [] thickness;
    }
    Double_t epart = kvp->GetEnergy() - eloss;
    if (epart < 1e-3) {
@@ -654,12 +648,12 @@ Double_t KVDetector::GetCorrectedEnergy(KVNucleus* nuc, Double_t e, Bool_t trans
    Double_t maxDE = GetMaxDeltaE(z, a);
    Double_t EINC, ERES = GetEResAfterDetector();
    if (e > maxDE) {
-      nuc->GetParameters()->SetValue("GetCorrectedEnergy.Warning", 1);
-      nuc->GetParameters()->SetValue("GetCorrectedEnergy.Detector", GetName());
-      nuc->GetParameters()->SetValue("GetCorrectedEnergy.MeasuredDE", e);
-      nuc->GetParameters()->SetValue("GetCorrectedEnergy.MaxDE", maxDE);
-      nuc->GetParameters()->SetValue("GetCorrectedEnergy.Transmission", (Int_t)transmission);
-      nuc->GetParameters()->SetValue("GetCorrectedEnergy.ERES", ERES);
+      nuc->SetParameter("GetCorrectedEnergy.Warning", 1);
+      nuc->SetParameter("GetCorrectedEnergy.Detector", GetName());
+      nuc->SetParameter("GetCorrectedEnergy.MeasuredDE", e);
+      nuc->SetParameter("GetCorrectedEnergy.MaxDE", maxDE);
+      nuc->SetParameter("GetCorrectedEnergy.Transmission", (Int_t)transmission);
+      nuc->SetParameter("GetCorrectedEnergy.ERES", ERES);
       return e;
 
    }

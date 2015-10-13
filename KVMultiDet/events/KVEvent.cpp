@@ -282,8 +282,7 @@ Double_t KVEvent::GetSum(const Char_t* KVNucleus_method,Option_t * opt)
    			mt.Execute(tmp,"",ret);
       	   fSum+=ret;
    		}
-      }
-      else if (mt.ReturnType()==TMethodCall::kDouble){
+      } else if (mt.ReturnType() == TMethodCall::kDouble) {
       	Double_t ret;
          KVNucleus *tmp;
          while ((tmp = GetNextParticle(Opt))){
@@ -399,8 +398,7 @@ KVNucleus *KVEvent::GetNextParticle(Option_t * opt)
 	Bool_t only_ok = (Opt == "OK");
    //Bool_t label = (Opt != "");
    
-   if (!fOKIter) 	//check if iterator exists i.e. if iteration is in progress
-   {
+   if (!fOKIter) { //check if iterator exists i.e. if iteration is in progress
       //fOKIter does not exist - begin new iteration
       fOKIter = new TIter(fParticles);
    }
@@ -410,8 +408,7 @@ KVNucleus *KVEvent::GetNextParticle(Option_t * opt)
    	if(only_ok){
    		if(tmp->IsOK()) 
 				return tmp;
-   	}
-      else {
+      } else {
 		//if (label){
       	if(tmp->BelongsToGroup(Opt.Data())) 
 				return tmp;
@@ -450,24 +447,6 @@ Bool_t KVEvent::IsOK()
    //This means there must be at least one particle with IsOK()=kTRUE.
 
    return (GetMult("ok") > 0);
-}
-
-//__________________________________________________________________________________________
-
-void KVEvent::ResetEnergies()
-{
-   //Used for simulated events after "detection" by some multidetector array.
-   //
-   //The passage of the event's particles through the different absorbers modifies their
-   //kinetic energies, indeed all those which are correctly identified by the detector
-   //actually stop. Calling this method will reset all the particles' energies to their
-   //initial value i.e. before they entered the first absorber.
-   //Particles which have not encountered any absorbers/detectors are left as they are.
-   KVNucleus *part = 0;
-   ResetGetNextParticle();
-   while ((part = GetNextParticle())) {
-      part->ResetEnergy();
-   }
 }
 
 //______________________________________________________________________________________________
@@ -864,7 +843,8 @@ void KVEvent::GetMasses(Double_t* mass)
    // Fill array with mass of each nucleus of event (in MeV).
    // [note: this is the mass including any excitation energy, not ground state]
    // Make sure array is dimensioned to size GetMult()!
-   KVNucleus* nuc=0; int i=0;
+   KVNucleus* nuc = 0;
+   int i = 0;
    while ( (nuc = (KVNucleus* )GetNextParticle()) ) mass[i++] = nuc->GetMass();
 }
 
@@ -872,7 +852,8 @@ void KVEvent::GetGSMasses(Double_t* mass)
 {
    // Fill array with ground state mass of each nucleus of event (in MeV).
    // Make sure array is dimensioned to size GetMult()!
-   KVNucleus* nuc=0; int i=0;
+   KVNucleus* nuc = 0;
+   int i = 0;
    while ( (nuc = (KVNucleus* )GetNextParticle()) ) mass[i++] = nuc->GetMassGS();
 }
 

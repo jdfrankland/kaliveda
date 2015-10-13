@@ -596,10 +596,6 @@ void KVMaterial::DetectParticle(KVNucleus* kvp, TVector3* norm)
 
    //set flag to say that particle has been slowed down
    kvp->SetIsDetected();
-   //If this is the first absorber that the particle crosses, we set a "reminder" of its
-   //initial energy
-   if (!kvp->GetPInitial())
-      kvp->SetE0();
 
 #ifdef DBG_TRGT
    cout << "detectparticle in material " << GetType() << " of thickness "

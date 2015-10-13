@@ -221,7 +221,7 @@ Bool_t KVSimReader_HIPSE::ReadNucleus()
          */
          nuc->SetZ(GetIntReadPar(1));
          nuc->SetA(GetIntReadPar(0));
-         nuc->GetParameters()->SetValue("proven", GetDoubleReadPar(2));
+         nuc->SetParameter("proven", GetDoubleReadPar(2));
          break;
 
       default:
@@ -258,8 +258,8 @@ Bool_t KVSimReader_HIPSE::ReadNucleus()
          return kFALSE;
 
       case 1:
-         nuc->GetParameters()->SetValue("exci", GetDoubleReadPar(0));
-         nuc->GetParameters()->SetValue("ether", GetDoubleReadPar(1));
+         nuc->SetParameter("exci", GetDoubleReadPar(0));
+         nuc->SetParameter("ether", GetDoubleReadPar(1));
          break;
 
       default:

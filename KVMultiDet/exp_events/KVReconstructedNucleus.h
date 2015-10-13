@@ -98,20 +98,24 @@ public:
       // Return pointer to the detector in which this particle stopped
       return GetDetector(0);
     }
-   Int_t GetNumDet() const {
+   Int_t GetNumDet() const
+   {
       return GetDetectorList()->GetEntries();
    }
-    Int_t GetNSegDet() const {
+   Int_t GetNSegDet() const
+   {
     	// return segmentation index of particle used by Identify() and
     	// KVGroup::AnalyseParticles
         return fNSegDet;
     }
-    void SetNSegDet(Int_t seg) {
+   void SetNSegDet(Int_t seg)
+   {
     	// set segmentation index of particle used by Identify() and
     	// KVGroup::AnalyseParticles
         fNSegDet = seg;
     }
-    void ResetNSegDet() {
+   void ResetNSegDet()
+   {
        // reset segmentation index to that of reconstruction trajectory
        SetNSegDet(fReconTraj->GetNumberOfIndependentIdentifications());
     }
@@ -183,7 +187,7 @@ public:
    virtual void SetIDCode(UShort_t s)
    {
       // Set value of parameter "IDCODE"
-      GetParameters()->SetValue("IDCODE", (Int_t)s);
+      SetParameter("IDCODE", (Int_t)s);
    }
    virtual Int_t GetIDCode() const
    {
@@ -194,7 +198,7 @@ public:
    virtual void SetECode(UChar_t s)
    {
       // Set value of parameter "ECODE"
-      GetParameters()->SetValue("ECODE", (Int_t)s);
+      SetParameter("ECODE", (Int_t)s);
    }
    virtual Int_t GetECode() const
    {
@@ -372,8 +376,14 @@ public:
    inline static UInt_t GetNUnidentifiedInGroup(KVGroup* grp);
    static void AnalyseParticlesInGroup(KVGroup* grp);
 
-    const KVReconNucTrajectory* GetReconstructionTrajectory() const { return fReconTraj; }
-    void SetReconstructionTrajectory(const KVReconNucTrajectory* t) { fReconTraj = t; }
+   const KVReconNucTrajectory* GetReconstructionTrajectory() const
+   {
+      return fReconTraj;
+   }
+   void SetReconstructionTrajectory(const KVReconNucTrajectory* t)
+   {
+      fReconTraj = t;
+   }
 
    ClassDef(KVReconstructedNucleus, 17)  //Nucleus detected by multidetector array
 };

@@ -597,7 +597,7 @@ void KVElasticScatterEvent::PropagateInTargetLayer()
    eLostInTarget -= GetNucleus("PROJ")->GetKE();
 
    //Energie perdue jusqu'au point d interaction
-   sim_evt->GetParticleWithName("PROJ")->GetParameters()->SetValue("TARGET In", eLostInTarget);
+   sim_evt->GetParticleWithName("PROJ")->SetParameter("TARGET In", eLostInTarget);
    //On modifie l'energie du projectile dans KV2Body
    //pour prendre en compte l energie deposee dans la cible
    //avant de faire le calcul de la cinematique
@@ -635,7 +635,7 @@ void KVElasticScatterEvent::SortieDeCible()
       Double_t eLostInTarget = knuc->GetKE();
       ktarget->DetectParticle(knuc, 0);
       eLostInTarget -= knuc->GetKE();
-      knuc->GetParameters()->SetValue("TARGET Out", eLostInTarget);
+      knuc->SetParameter("TARGET Out", eLostInTarget);
       knuc->SetMomentum(*knuc->GetPInitial());
    }
 

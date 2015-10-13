@@ -139,8 +139,8 @@ void KVVAMOSReconGeoNavigator::ParticleEntersNewVolume(KVNucleus* nuc)
       Delta *= TMath::Sqrt(X * X + Y * Y + Z * Z);
 
       if (fForward) {
-         nuc->GetParameters()->SetValue(Form("STEP:%s", absorber_name.Data()), GetStepSize());
-         if (is_active) nuc->GetParameters()->SetValue(Form("DPATH:%s", dname.Data()), Delta);
+         nuc->SetParameter(Form("STEP:%s", absorber_name.Data()), GetStepSize());
+         if (is_active)   nuc->SetParameter(Form("DPATH:%s", dname.Data()), Delta);
       } else {
          if (is_active) nuc->GetParameters()->SetFirstValue(Form("DPATH:%s", dname.Data()), Delta);
          nuc->GetParameters()->SetFirstValue(Form("STEP:%s", absorber_name.Data()), GetStepSize());

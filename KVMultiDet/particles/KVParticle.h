@@ -43,7 +43,6 @@ class KVParticle: public TLorentzVector {
 
 protected:
 
-   TVector3* fE0;              //the momentum of the particle before it is slowed/stopped by an absorber
    KVNameValueList fParameters;//a general-purpose list of parameters associated with this particle
 
    virtual void AddGroup_Withcondition(const Char_t*, KVParticleCondition*);
@@ -200,20 +199,6 @@ public:
       return (KVList*)&fBoosted;
    }
 
-   void SetE0(TVector3* e = 0)
-   {
-      if (!fE0)
-         fE0 = new TVector3;
-      if (!e) {
-         *fE0 = GetMomentum();
-      } else {
-         *fE0 = *e;
-      }
-   };
-   TVector3* GetPInitial() const
-   {
-      return fE0;
-   };
    void SetIsDetected()
    {
       SetBit(kIsDetected);
@@ -223,8 +208,6 @@ public:
       return TestBit(kIsDetected);
    }
    KVParticle& operator=(const KVParticle& rhs);
-
-   void ResetEnergy();
 
    const Char_t* GetName() const;
    void SetName(const Char_t* nom);
@@ -267,9 +250,13 @@ public:
    KVNameValueList* GetParameters() const
    {
       return (KVNameValueList*)&fParameters;
-   };
+   }
+   template<typename ValType> void SetParameter(const Char_t* name, ValType value) const
+   {
+      GetParameters()->SetValue(name, value);
+   }
 
-   ClassDef(KVParticle, 8)      //General base class for all massive particles
+   ClassDef(KVParticle, 9)      //General base class for all massive particles
 };
 
 #endif
