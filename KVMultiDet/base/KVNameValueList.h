@@ -14,12 +14,12 @@ class KVNameValueList : public TNamed {
 protected:
    KVHashList fList;//list of KVNamedParameter objects
 
-   virtual void SetValue_str(const Char_t* name, const Char_t* value);
-   virtual void SetValue_int(const Char_t* name, Int_t value);
-   virtual void SetValue_flt(const Char_t* name, Double_t value);
+   void SetValue_str(const Char_t* name, const Char_t* value);
+   void SetValue_int(const Char_t* name, Int_t value);
+   void SetValue_flt(const Char_t* name, Double_t value);
 
-   virtual Double_t IncValue_flt(const Char_t* name, Double_t value);
-   virtual Int_t    IncValue_int(const Char_t* name, Int_t value);
+   Double_t IncValue_flt(const Char_t* name, Double_t value);
+   Int_t    IncValue_int(const Char_t* name, Int_t value);
 
 public:
 
@@ -27,13 +27,14 @@ public:
    KVNameValueList(const Char_t* name, const Char_t* title = "");
    KVNameValueList(const KVNameValueList&);
    virtual ~KVNameValueList();
+   KVNameValueList& operator=(const KVNameValueList&);
 
    KVHashList* GetList() const;
 
-   virtual void Clear(Option_t* opt = "");
-   virtual void ClearSelection(TRegexp&);
-   virtual void Print(Option_t* opt = "") const;
-   virtual void ls(Option_t* opt = "") const
+   void Clear(Option_t* opt = "");
+   void ClearSelection(TRegexp&);
+   void Print(Option_t* opt = "") const;
+   void ls(Option_t* opt = "") const
    {
       Print(opt);
    }
@@ -74,6 +75,10 @@ public:
    {
       return GetNpar();
    }
+   Bool_t IsEmpty() const
+   {
+      return GetNpar() == 0;
+   }
 
    Int_t GetIntValue(const Char_t* name) const;
    Double_t GetDoubleValue(const Char_t* name) const;
@@ -85,9 +90,9 @@ public:
    const Char_t* GetStringValue(Int_t idx) const;
    const TString& GetTStringValue(Int_t idx) const;
 
-   virtual void ReadEnvFile(const Char_t* filename);
-   virtual KVEnv* ProduceEnvFile();
-   virtual void WriteEnvFile(const Char_t* filename);
+   void ReadEnvFile(const Char_t* filename);
+   KVEnv* ProduceEnvFile();
+   void WriteEnvFile(const Char_t* filename);
 
    void Sort(Bool_t order = kSortAscending)
    {

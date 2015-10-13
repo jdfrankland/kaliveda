@@ -71,6 +71,12 @@ KVNameValueList::~KVNameValueList()
    fList.Clear();// will delete objects in list if owner
 }
 
+KVNameValueList& KVNameValueList::operator=(const KVNameValueList& o)
+{
+   o.Copy(*this);
+   return (*this);
+}
+
 //______________________________________________
 KVHashList* KVNameValueList::GetList() const
 {
