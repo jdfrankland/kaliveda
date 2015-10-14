@@ -240,7 +240,7 @@ void KVIonRangeTableMaterial::Print(Option_t*) const
       KVNameValueList* nvl;
       while ((nvl = (KVNameValueList*)next())) {
          KVNucleus n(nvl->GetIntValue("Z"), nvl->GetIntValue("A"));
-         printf("\t\tElement: %s   Ar=%f g.   Natoms=%d", n.GetSymbol(), n.GetAtomicMass(), nvl->GetIntValue("Natoms"));
+         printf("\t\tElement: %s   Ar=%f g.   Natoms=%d", n.GetSymbol(), n.GetAtomicMass()(), nvl->GetIntValue("Natoms"));
          if (IsMixture()) printf("   Proportion=%f", nvl->GetDoubleValue("Proportion"));
          printf("\n");
       }

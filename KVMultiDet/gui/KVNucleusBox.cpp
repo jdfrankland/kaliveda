@@ -57,7 +57,8 @@ void KVNucleusBox::EnableToolTip()
 }
 
 
-KVNucleusBox::KVNucleusBox(KVNucleus* nuc, Double_t size, Bool_t owner): TBox(nuc->GetN() - size, nuc->GetZ() - size, nuc->GetN() + size, nuc->GetZ() + size)
+KVNucleusBox::KVNucleusBox(KVNucleus* nuc, Double_t size, Bool_t owner):
+   TBox((Double_t)nuc->GetN() - size, (Double_t)nuc->GetZ() - size, (Double_t)nuc->GetN() + size, (Double_t)nuc->GetZ() + size)
 {
    // Constructor with Z,N of a Nucleus
 

@@ -141,7 +141,8 @@ KVParticle::KVParticle(const KVParticle& obj) : TLorentzVector()
 }
 
 //________________________________________________________
-KVParticle::KVParticle(Double_t m, TVector3& p) : fParameters("ParticleParameters", "Parameters associated with a particle in an event")
+KVParticle::KVParticle(Mass m, Momentum p)
+   : fParameters("ParticleParameters", "Parameters associated with a particle in an event")
 {
    //create particle with given mass and momentum vector
    init();
@@ -150,7 +151,8 @@ KVParticle::KVParticle(Double_t m, TVector3& p) : fParameters("ParticleParameter
 }
 
 //________________________________________________________
-KVParticle::KVParticle(Double_t m, Double_t px, Double_t py, Double_t pz) : fParameters("ParticleParameters", "Parameters associated with a particle in an event")
+KVParticle::KVParticle(Mass m, Momentum::XComponent px, Momentum::YComponent py, Momentum::ZComponent pz)
+   : fParameters("ParticleParameters", "Parameters associated with a particle in an event")
 {
    //create particle with given mass and momentum vector
    init();
@@ -173,9 +175,7 @@ Double_t KVParticle::C()
 }
 
 //________________________________________________________
-void KVParticle::SetRandomMomentum(Double_t T, Double_t thmin,
-                                   Double_t thmax, Double_t phmin,
-                                   Double_t phmax, Option_t* opt)
+void KVParticle::SetRandomMomentum(KineticEnergy T, PolarAngle pmin, PolarAngle pmax, AzimuthalAngle amin, AzimuthalAngle amax, AngularDistributionType opt)
 {
    //Give randomly directed momentum to particle with kinetic energy T
    //Direction will be between (thmin,thmax) [degrees] limits in polar angle,
@@ -192,23 +192,23 @@ void KVParticle::SetRandomMomentum(Double_t T, Double_t thmin,
    else
       p = 0.;
 
-   TVector3 dir;
-   KVPosition pos(thmin, thmax, phmin, phmax);
-   dir = pos.GetRandomDirection(opt);   // get isotropic unit vector dir
-   if (p && dir.Mag())
-      dir.SetMag(p);            // set magnitude of vector to momentum required
-   SetMomentum(dir);            // set momentum 4-vector
+   KVPosition pos(pmin, pmax, amin, amax);
+   Direction dir = pos.GetRandomDirection(opt);   // get isotropic unit vector dir
+   Momentum P;
+   if (p && dir->Mag())
+      P->SetMagThetaPhi(p, dir->Theta(), dir->Phi());          // set magnitude of vector to momentum required
+   SetMomentum(P);            // set momentum 4-vector
 }
 
 //________________________________________________________
-void KVParticle::SetMomentum(Double_t T, TVector3 dir)
+void KVParticle::SetMomentum(KineticEnergy T, Direction dir)
 {
    //set momentum with kinetic energy t and unit direction vector d
    //(d is normalised first in case it is not a unit vector)
 
    Double_t p = (T + M()) * (T + M()) - M2();
    TVector3 pdir;
-   TVector3 unit_dir = dir.Unit();
+   TVector3 unit_dir = dir->Unit();
    if (p > 0.) {
       p = (TMath::Sqrt(p));
       pdir = p * unit_dir;
@@ -237,7 +237,7 @@ void KVParticle::Print(Option_t*) const
 }
 
 //_________________________________________________________________________________________
-void KVParticle::SetKE(Double_t ecin)
+void KVParticle::SetKE(KineticEnergy ecin)
 {
    //Change particle KE, keeping momentum direction constant
    //If momentum is zero (i.e. no direction defined) the particle will be given
@@ -248,12 +248,12 @@ void KVParticle::SetKE(Double_t ecin)
       Double_t pmod = 0;
       if (et * et > M2()) {
          pmod = TMath::Sqrt(et * et - M2());    // p**2 = E**2 - m**2
-         TVector3 newp(Px(), Py(), Pz());
-         if (pmod && newp.Mag()) {
-            newp.SetMag(pmod);
+         Momentum newp(TVector3(Px(), Py(), Pz()));
+         if (pmod && newp->Mag()) {
+            newp->SetMag(pmod);
          } else {
-            newp.SetXYZ(0, 0, 1);
-            newp.SetMag(pmod);
+            newp->SetXYZ(0, 0, 1);
+            newp->SetMag(pmod);
          }
          SetMomentum(newp);
       } else {
@@ -264,11 +264,7 @@ void KVParticle::SetKE(Double_t ecin)
 }
 
 //______________________________________________________________________________________
-#if ROOT_VERSION_CODE >= ROOT_VERSION(3,4,0)
 void KVParticle::Copy(TObject& obj) const
-#else
-void KVParticle::Copy(TObject& obj)
-#endif
 {
    //Copy this to obj
    //l'operateur d assignation est celui du TLorentzVector
@@ -336,11 +332,10 @@ KVParticle& KVParticle::operator=(const KVParticle& rhs)
 
 //___________________________________________________________________________//
 
-void KVParticle::SetName(const Char_t* nom)
+void KVParticle::SetName(Name n)
 {
    //Set Name of the particle
-   fName.Form("%s", nom);
-
+   fName = (const char*)n;
 }
 
 //___________________________________________________________________________//
@@ -351,7 +346,7 @@ const Char_t* KVParticle::GetName() const
 }
 
 //___________________________________________________________________________//
-void KVParticle::AddGroup_Withcondition(const Char_t*, KVParticleCondition*)
+void KVParticle::AddGroup_Withcondition(Name, KVParticleCondition*)
 {
    // Dummy implementation of AddGroup(const Char_t* groupname, KVParticleCondition*)
    // Does nothing. Real implementation is in KVNucleus::AddGroup_Withcondition.
@@ -359,55 +354,53 @@ void KVParticle::AddGroup_Withcondition(const Char_t*, KVParticleCondition*)
 };
 
 //___________________________________________________________________________//
-void KVParticle::AddGroup_Sanscondition(const Char_t* groupname, const Char_t* from)
+void KVParticle::AddGroup_Sanscondition(Name newgroup, Name parentgroup)
 {
-   // Implementation of AddGroup_Sansconditioncon(st Char_t*, const Char_t*)
-   // Can be overridden in child classes [instead of AddGroup(const Char_t*, const Char_t*),
+   // Implementation of AddGroup_Sanscondition(Name, Name)
+   // Can be overridden in child classes [instead of AddGroup(Name, Name),
    // which cannot]
    // if this method is overridde in child class
    // the line
    //         if (!fGroups) CreateGroups();
    // has to be included
 
-   TString sfrom(from);
-   sfrom.ToUpper();
-   TString sgroupname(groupname);
-   sgroupname.ToUpper();
+   parentgroup->ToUpper();
+   newgroup->ToUpper();
 
-   if (BelongsToGroup(sfrom.Data()) && !BelongsToGroup(sgroupname.Data())) {
-      fGroups.Add(new TObjString(sgroupname.Data()));
+   if (BelongsToGroup(parentgroup) && !BelongsToGroup(newgroup)) {
+      fGroups.Add(new TObjString(newgroup->Data()));
       if (fBoosted.GetEntries()) {
          TString inst;
-         inst.Form("\"%s\"", sgroupname.Data());
+         inst.Form("\"%s\"", newgroup->Data());
          fBoosted.Execute("AddGroup", inst.Data());
       }
    }
 }
 
 //___________________________________________________________________________//
-void KVParticle::AddGroup(const Char_t* groupname, const Char_t* from)
+void KVParticle::AddGroup(Name group, Name parent)
 {
    // Associate this particle with the given named group.
-   // Optional argument "from" allows to put a condition on the already stored
+   // Optional argument "parent" allows to put a condition on the already stored
    // group list, is set to "" by default
    //
    // Apply the method to all particles stored in fBoosted
    //Info("AddGroup","%s",groupname);
-   AddGroup_Sanscondition(groupname, from);
+   AddGroup_Sanscondition(group, parent);
 }
 
 
 //___________________________________________________________________________//
 
-void KVParticle::AddGroup(const Char_t* groupname, KVParticleCondition* cond)
+void KVParticle::AddGroup(Name group, KVParticleCondition* cond)
 {
    //define and store a group name from a condition on the particle
    //
    // Apply the method to all particles stored in fBoosted
    // SetParticleClassName has to be set before using this method if you use
-   // in the KVParticleCondistion a specific method of a derived KVNucleus class
+   // in the KVParticleCondition a specific method of a derived KVNucleus class
 
-   AddGroup_Withcondition(groupname, cond);
+   AddGroup_Withcondition(group, cond);
 }
 
 //___________________________________________________________________________//
@@ -445,37 +438,35 @@ KVUniqueNameList* KVParticle::GetGroups() const
 }
 
 //___________________________________________________________________________//
-Bool_t KVParticle::BelongsToGroup(const Char_t* groupname) const
+Bool_t KVParticle::BelongsToGroup(Name group) const
 {
    //Check if particle belong to a given group
    //return kTRUE if groupname="".
    //return kFALSE if no group has be defined
 
-   TString sgroupname(groupname);
-   sgroupname.ToUpper();
+   group->ToUpper();
    //Important for KVEvent::GetNextParticle()
-   if (sgroupname.IsNull()) return kTRUE;
+   if (group->IsNull()) return kTRUE;
    //retourne kFALSE si aucun groupe n'est defini
    if (!fGroups.GetEntries()) return kFALSE;
-   if (fGroups.FindObject(sgroupname.Data())) return kTRUE;
+   if (fGroups.FindObject(group)) return kTRUE;
    return kFALSE;
 }
 
 //___________________________________________________________________________//
-void KVParticle::RemoveGroup(const Char_t* groupname)
+void KVParticle::RemoveGroup(Name groupname)
 {
    // Remove group from list of groups
    // Apply the method to all particles stored in fBoosted
    if (!fGroups.GetEntries()) return;
-   TString sgroupname(groupname);
-   sgroupname.ToUpper();
+   groupname->ToUpper();
 
    TObjString* os = 0;
-   if ((os = (TObjString*)fGroups.FindObject(sgroupname.Data()))) {
+   if ((os = (TObjString*)fGroups.FindObject(groupname->Data()))) {
       delete fGroups.Remove(os);
       if (fBoosted.GetEntries()) {
          TString inst;
-         inst.Form("\"%s\"", sgroupname.Data());
+         inst.Form("\"%s\"", groupname->Data());
          fBoosted.Execute("RemoveGroup", inst.Data());
       }
    }
@@ -509,7 +500,7 @@ void KVParticle::ListGroups(void) const
 }
 
 //___________________________________________________________________________//
-KVParticle* KVParticle::GetFrame(const Char_t* frame)
+KVParticle* KVParticle::GetFrame(Name frame)
 {
    //Return the momentum of the particle in the Lorentz-boosted frame corresponding to the name
    //"frame" given as argument (see SetFrame() for definition of different frames).
@@ -554,8 +545,7 @@ Bool_t KVParticle::HasFrame(const Char_t* frame)
 
 //___________________________________________________________________________//
 
-void KVParticle::SetFrame(const Char_t* frame, const TVector3& boost,
-                          Bool_t beta)
+void KVParticle::SetFrame(Name frame, Velocity boost, Bool_t beta)
 {
    //Define a Lorentz-boosted frame in which to calculate the particle's momentum and energy.
    //
@@ -581,15 +571,15 @@ void KVParticle::SetFrame(const Char_t* frame, const TVector3& boost,
    if (beta) {
       tmp.Boost(boost);
    } else {
-      tmp.Boost(boost.X() / kSpeedOfLight, boost.Y() / kSpeedOfLight,
-                boost.Z() / kSpeedOfLight);
+      tmp.Boost(boost->X() / kSpeedOfLight, boost->Y() / kSpeedOfLight,
+                boost->Z() / kSpeedOfLight);
    }
    SetFrame(frame, tmp);
 }
 
 //___________________________________________________________________________//
 
-void KVParticle::SetFrame(const Char_t* frame, const TLorentzRotation& rot)
+void KVParticle::SetFrame(Name frame, const TLorentzRotation& rot)
 {
    //Define a Lorentz-rotated frame in which to calculate the particle's momentum.
    //
@@ -625,7 +615,7 @@ void KVParticle::SetFrame(const Char_t* frame, const TLorentzRotation& rot)
 
 //___________________________________________________________________________//
 
-void KVParticle::SetFrame(const Char_t* frame, const TRotation& rot)
+void KVParticle::SetFrame(Name frame, const TRotation& rot)
 {
    //Define a rotated frame in which to calculate the particle's momentum and energy.
    //
@@ -661,7 +651,7 @@ void KVParticle::SetFrame(const Char_t* frame, const TRotation& rot)
 
 //___________________________________________________________________________//
 
-void KVParticle::SetFrame(const Char_t* frame, const TVector3& boost,
+void KVParticle::SetFrame(Name frame, Velocity boost,
                           TRotation& rot, Bool_t beta)
 {
    //Define a Lorentz-boosted and rotated frame in which to calculate the particle's momentum and energy.
@@ -706,16 +696,16 @@ void KVParticle::SetFrame(const Char_t* frame, const TVector3& boost,
    if (beta) {
       tmp.Boost(boost);
    } else {
-      tmp.Boost(boost.X() / kSpeedOfLight, boost.Y() / kSpeedOfLight,
-                boost.Z() / kSpeedOfLight);
+      tmp.Boost(boost->X() / kSpeedOfLight, boost->Y() / kSpeedOfLight,
+                boost->Z() / kSpeedOfLight);
    }
    SetFrame(frame, tmp);
 }
 
 //___________________________________________________________________________//
 
-void KVParticle::SetFrame(const Char_t* newframe, const Char_t* oldframe,
-                          const TVector3& boost, Bool_t beta)
+void KVParticle::SetFrame(Name newframe, Name oldframe,
+                          Velocity boost, Bool_t beta)
 {
    GetFrame(oldframe)->SetFrame(newframe, boost, beta);
    //Duplicate the transformed particle to access by the method GetFrame("newframe")
@@ -730,7 +720,7 @@ void KVParticle::SetFrame(const Char_t* newframe, const Char_t* oldframe,
 }
 //___________________________________________________________________________//
 
-void KVParticle::SetFrame(const Char_t* newframe, const Char_t* oldframe,
+void KVParticle::SetFrame(Name newframe, Name oldframe,
                           const TLorentzRotation& rot)
 {
    GetFrame(oldframe)->SetFrame(newframe, rot);
@@ -747,7 +737,7 @@ void KVParticle::SetFrame(const Char_t* newframe, const Char_t* oldframe,
 
 //___________________________________________________________________________//
 
-void KVParticle::SetFrame(const Char_t* newframe, const Char_t* oldframe,
+void KVParticle::SetFrame(Name newframe, Name oldframe,
                           const TRotation& rot)
 {
 
@@ -765,8 +755,8 @@ void KVParticle::SetFrame(const Char_t* newframe, const Char_t* oldframe,
 
 //___________________________________________________________________________//
 
-void KVParticle::SetFrame(const Char_t* newframe, const Char_t* oldframe,
-                          const TVector3& boost, TRotation& rot, Bool_t beta)
+void KVParticle::SetFrame(Name newframe, Name oldframe,
+                          Velocity boost, TRotation& rot, Bool_t beta)
 {
 
    GetFrame(oldframe)->SetFrame(newframe, boost, rot, beta);
@@ -783,12 +773,12 @@ void KVParticle::SetFrame(const Char_t* newframe, const Char_t* oldframe,
 
 //___________________________________________________________________________//
 
-TVector3 KVParticle::GetVelocity() const
+Velocity KVParticle::GetVelocity() const
 {
    //returns velocity vector in cm/ns units
    TVector3 beta;
    if (E()) {
-      beta = GetMomentum() * (1. / E());
+      beta = (1. / E()) * GetMomentum();
    } else {
       beta.SetXYZ(0, 0, 0);
    }
@@ -797,33 +787,32 @@ TVector3 KVParticle::GetVelocity() const
 
 //___________________________________________________________________________//
 
-Double_t KVParticle::GetVperp() const
+Velocity::TransverseComponent KVParticle::GetVperp() const
 {
    //returns transverse velocity in cm/ns units
    //sign is +ve if py>=0, -ve if py<0
-   return (GetV().y() >= 0.0 ? GetV().Perp() : -(GetV().Perp()));
+   return (GetV().Y() >= 0 ? GetV().Perp() : -(GetV().Perp()));
 }
 
 //___________________________________________________________________________//
 
-void KVParticle::SetMomentum(Double_t px, Double_t py, Double_t pz,
-                             Option_t* opt)
+void KVParticle::SetMomentum(Momentum::XComponent px, Momentum::YComponent py, Momentum::ZComponent pz, MomentumComponentType opt)
 {
    // Set Momentum components (in MeV/c)
    // if option is "cart" or "cartesian" we give cartesian components (x,y,z)
    // if option is "spher" or "spherical" we give components (rho,theta,phi) in spherical system
    //   with theta, phi in DEGREES
-   if (!strcmp("spher", opt) || !strcmp("spherical", opt)) {
+   if (opt == "spher" || opt == "spherical") {
       TVector3 pvec(0., 0., 1.);
       pvec.SetMag(px);
       pvec.SetTheta(TMath::Pi() * py / 180.);
       pvec.SetPhi(TMath::Pi() * pz / 180.);
       SetVectM(pvec, M());
    } else {
-      if (strcmp("cart", opt) && strcmp("cartesian", opt)) {
-         Warning("SetMomentum(Double_t,Double_t,Double_t,Option_t*)",
+      if (opt != "cart" && opt != "cartesian") {
+         Warning("SetMomentum(MomentumComponent, MomentumComponent, MomentumComponent, MomentumComponentType)",
                  "Unkown coordinate system\n known system are :\n\t\"cartesian\" or \"cart\" (default)\n\t\"spherical\" or \"spher\"");
-         Warning("SetMomentum(Double_t,Double_t,Double_t,Option_t*)",
+         Warning("SetMomentum(MomentumComponent, MomentumComponent, MomentumComponent, MomentumComponentType)",
                  "default used.");
       }
       TVector3 pvec(px, py, pz);
@@ -831,10 +820,10 @@ void KVParticle::SetMomentum(Double_t px, Double_t py, Double_t pz,
    }
 }
 
-void KVParticle::SetVelocity(const TVector3& vel)
+void KVParticle::SetVelocity(Velocity vel)
 {
    // Set velocity of particle (in cm/ns units)
-   Double_t gamma = 1. / kSpeedOfLight / sqrt(1 - (vel.Mag2() / pow(kSpeedOfLight, 2)));
-   TVector3 p = GetMass() * gamma * vel;
+   Double_t gamma = 1. / kSpeedOfLight / sqrt(1 - (vel->Mag2() / pow(kSpeedOfLight, 2)));
+   Momentum p = GetMass() * gamma * vel;
    SetMomentum(p);
 }

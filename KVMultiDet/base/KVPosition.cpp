@@ -29,7 +29,7 @@ $Id: KVPosition.cpp,v 1.21 2008/12/17 13:01:26 franklan Exp $
       return retval; \
    }
 
-ClassImp(KVPosition);
+ClassImp(KVPosition)
 
 ////////////////////////////////////////////////////////////////////////////////
 //KVPosition
@@ -112,13 +112,12 @@ KVPosition::KVPosition()
    init();
 }
 
-KVPosition::KVPosition(Double_t thmin, Double_t thmax, Double_t phmin,
-                       Double_t phmax, Double_t dist)
+KVPosition::KVPosition(PolarAngle pmin, PolarAngle pmax, AzimuthalAngle amin, AzimuthalAngle amax, Distance d)
 {
    init();
-   SetPolarMinMax(thmin, thmax);
-   SetAzimuthalMinMax(phmin, phmax);
-   SetDistance(dist);
+   SetPolarMinMax(pmin, pmax);
+   SetAzimuthalMinMax(amin, amax);
+   SetDistance(d);
 };
 
 
@@ -180,7 +179,7 @@ void KVPosition::SetPolarWidth(Double_t pw)
 }
 
 //___________________________________________________________________________
-void KVPosition::SetPolarMinMax(Double_t min, Double_t max)
+void KVPosition::SetPolarMinMax(PolarAngle min, PolarAngle max)
 {
    //Set min and max polar angles and calculate (mean) theta
 
@@ -213,7 +212,7 @@ void KVPosition::SetAzimuthalWidth(Double_t aw)
 }
 
 //___________________________________________________________________________
-void KVPosition::SetAzimuthalMinMax(Double_t min, Double_t max)
+void KVPosition::SetAzimuthalMinMax(AzimuthalAngle min, AzimuthalAngle max)
 {
    //Set min and max azimuthal angles and calculate (mean) phi
 
@@ -228,7 +227,7 @@ void KVPosition::SetAzimuthalMinMax(Double_t min, Double_t max)
 }
 
 //___________________________________________________________________________
-TVector3 KVPosition::GetRandomDirection(Option_t* t)
+Direction KVPosition::GetRandomDirection(AngularDistributionType t)
 {
    // Returns a unit vector in a random direction corresponding to this detector.
    // Depending on the optional option string, the direction is either drawn at
@@ -248,8 +247,8 @@ TVector3 KVPosition::GetRandomDirection(Option_t* t)
    Double_t  dtor = TMath::DegToRad();
    Double_t th, ph;
    GetRandomAngles(th, ph, t);
-   TVector3 dummy;
-   dummy.SetMagThetaPhi(1.0, th * dtor, ph * dtor); // a unit vector
+   Direction dummy;
+   dummy->SetMagThetaPhi(1.0, th * dtor, ph * dtor); // a unit vector
 
    return dummy;
 }

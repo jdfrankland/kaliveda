@@ -338,7 +338,7 @@ void KVFlowTensor::Fill(KVNucleus* n)
    if (IsOptionGiven("DOUBLE")) W *= 2.;
    for (int i = 0; i < 3; i++) {
       for (int j = i; j < 3; j++) {
-         Double_t xx = W * frame->GetMomentum()[i] * frame->GetMomentum()[j];
+         Double_t xx = W * frame->GetMomentum()->operator()(i) * frame->GetMomentum()->operator()(j);
          fTensor(i, j) += xx;
          if (i != j) fTensor(j, i) += xx;
       }

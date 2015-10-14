@@ -769,9 +769,9 @@ void KVEvent::FillArraysV(Int_t& mult, Int_t* Z, Int_t* A, Double_t* vx, Double_
       nuc = (KVNucleus*)nuc->GetFrame(frame);
 		Z[i] = nuc->GetZ();
 		A[i] = nuc->GetA();
-		vx[i] = nuc->GetVelocity().X();
-		vy[i] = nuc->GetVelocity().Y();
-		vz[i] = nuc->GetVelocity().Z();
+      vx[i] = nuc->GetVelocity()->X();
+      vy[i] = nuc->GetVelocity()->Y();
+      vz[i] = nuc->GetVelocity()->Z();
 		i++;
 	}
    mult = i;

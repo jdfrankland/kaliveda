@@ -6,10 +6,10 @@ NamespaceImp(KVUnits)
 // BEGIN_HTML <!--
 /* -->
 <h2>KVUnits</h2>
-<h4>Standard units of length, mass, volume, and pressure, and their conversion factors</h4>
+<h4>Standard units of length, mass, volume, pressure, energy, and their conversion factors</h4>
 <pre><span class="keyword"></span>namespace KVUnits {<br> // lengths<br>const Double_t cm = 1.0;<br>const Double_t um = 1.e-4;<br>const Double_t mm = 1.e-1;<br>const Double_t m = 1.e+2;<br> // masses<br>const Double_t g = 1.0;<br>const Double_t kg = 1.e+3;<br>const Double_t mg = 1.e-3;<br>const Double_t ug = 1.e-6;<br> // pressures<br>const Double_t torr = 1.0;<br>const Double_t atm = 760.;<br>const Double_t Pa = atm/101325.;<br>const Double_t mbar = 100.*Pa;<br>   // volumes<br>const long double cc = 1.0l;<br>const long double litre = 1.e+3l;<br>const long double cl = 10.l*cc;<br>const long double ml = cc;<br>};<br><br></pre>
 This is a set of numerical constants used to define and convert units
-of length, mass, and pressure. The standard unit defined for each
+of length, mass, volume, pressure and energy. The standard unit defined for each
 quantity is as follows:<br>
 <br>
 <div style="margin-left: 40px;">standard mass unit : grammes

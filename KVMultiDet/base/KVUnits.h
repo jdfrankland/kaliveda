@@ -10,6 +10,7 @@ namespace KVUnits {
    //   [M]  g
    //   [P]   Torr
    //   [V]   cc/ml
+   //   [E]   MeV
    // lengths
    const long double cm = 1.0l;
    const long double um = 1.e-4l;
@@ -30,6 +31,11 @@ namespace KVUnits {
    const long double litre = 1.e+3l;
    const long double cl = 10.l* cc;
    const long double ml = cc;
+   // energies
+   const long double MeV = 1.0l;
+   const long double GeV = 1.e+3l;
+   const long double keV = 1.e-3l;
+   const long double eV = 1.e-3l * keV;
+   const long double TeV = 1.e+3 * GeV;
 };
-
 #endif

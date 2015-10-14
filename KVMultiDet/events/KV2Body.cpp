@@ -320,9 +320,9 @@ Double_t KV2Body::GetQGroundStates() const
    }
    Double_t QGG =
       GetNucleus(1)->GetMassExcess() +
-      (GetNucleus(2) ? GetNucleus(2)->GetMassExcess() : 0.)
+      (GetNucleus(2) ? GetNucleus(2)->GetMassExcess() : Mass(0))
       - GetNucleus(3)->GetMassExcess() -
-      (GetNucleus(4) ? GetNucleus(4)->GetMassExcess() : 0.);
+      (GetNucleus(4) ? GetNucleus(4)->GetMassExcess() : Mass(0));
    return QGG;
 }
 
@@ -333,7 +333,7 @@ Double_t KV2Body::GetCMEnergy() const
    //Return available kinetic energy in centre of mass
 
    return WCT - (GetNucleus(1)->GetMass() +
-                 (GetNucleus(2) ? GetNucleus(2)->GetMass() : 0.));
+                 (GetNucleus(2) ? GetNucleus(2)->GetMass() : Mass(0.)));
 }
 
 //_____________________________________________________________________________
@@ -407,7 +407,7 @@ Double_t KV2Body::GetLabGrazingAngle(Int_t i) const
    Double_t CT = RT * (1. - TMath::Power(1. / RT, 2.));
    Double_t RINT = CP + CT + 4.49 - (CT + CP) / 6.35;
    Double_t BAR =
-      1.44 * GetNucleus(1)->GetZ() * GetNucleus(2)->GetZ() / RINT;
+      1.44 * (GetNucleus(1)->GetZ() * GetNucleus(2)->GetZ()) / RINT;
    if (GetCMEnergy() < BAR) {
       //below Coulomb barrier
       switch (i) {
@@ -426,9 +426,7 @@ Double_t KV2Body::GetLabGrazingAngle(Int_t i) const
    Double_t GR = 2. * TMath::ASin(U);
    Double_t GPART = TMath::Pi() - GR;
    Double_t ARAZ =
-      TMath::Sin(GR) / (TMath::Cos(GR) +
-                        GetNucleus(1)->GetA() / (1.0 *
-                              GetNucleus(2)->GetA()));
+      TMath::Sin(GR) / (TMath::Cos(GR) + GetNucleus(1)->GetA()() / (1.0 * GetNucleus(2)->GetA()()));
    Double_t GRAZ = TMath::ATan(ARAZ);
    if (GRAZ <= 0.)
       GRAZ += TMath::Pi();
@@ -503,17 +501,17 @@ void KV2Body::CalculateKinematics()
    WC[1] = Nuc1->GetFrame("CM")->E();
    //kinetic energy proj in CM
    EC[1] = Nuc1->GetFrame("CM")->GetKE();
-   VC[1] = Nuc1->GetFrame("CM")->GetVelocity().Mag();
+   VC[1] = Nuc1->GetFrame("CM")->GetVelocity()->Mag();
    K[1] = VCM.Mag() / VC[1];
    if (Nuc2) {
       WC[2] = Nuc2->GetFrame("CM")->E();
       EC[2] = Nuc2->GetFrame("CM")->GetKE();
-      VC[2] = Nuc2->GetFrame("CM")->GetVelocity().Mag();
+      VC[2] = Nuc2->GetFrame("CM")->GetVelocity()->Mag();
       K[2] = VCM.Mag() / VC[2];
    }
 
    Double_t AM3 = GetNucleus(3)->GetMass();
-   Double_t AM4 = (GetNucleus(4) ? GetNucleus(4)->GetMass() : 0.0);
+   Double_t AM4 = (GetNucleus(4) ? GetNucleus(4)->GetMass() : Mass(0.));
    //total cm energy of nucleus 3 (quasiproj)
    WC[3] = (WCT - GetEDiss()) / 2. + (AM3 - AM4) * (AM3 + AM4)
            / (2. * (WCT - GetEDiss()));
@@ -593,10 +591,8 @@ void KV2Body::Print(Option_t* opt) const
    }
    cout << endl;
    cout << " AVAILABLE ENERGY IN C.M. : ECM = " << GetCMEnergy() <<
-        " MEV  (" << GetCMEnergy() / (GetNucleus(1)->GetA() +
-                                      (GetNucleus(2) ? GetNucleus(2)->
-                                       GetA() : 0.)) << " MEV/A)" << endl;
-   cout << " PROJECTILE VELOCITY IN LAB " << GetNucleus(1)->GetV().Mag()
+        " MEV  (" << GetCMEnergy() / (GetNucleus(1)->GetA() + (GetNucleus(2) ? GetNucleus(2)-> GetA() : MassNumber(0))) << " MEV/A)" << endl;
+   cout << " PROJECTILE VELOCITY IN LAB " << GetNucleus(1)->GetV()->Mag()
         << " CM/NS  ( " << GetNucleus(1)->Beta() << " * C )" << endl;
    cout << " VELOCITY OF C.M.           " << GetCMVelocity().
         Mag() << " CM/NS" << endl;
@@ -883,7 +879,7 @@ Double_t KV2Body::XSecRuthCM(Double_t* x, Double_t* par)
       return 0.;
    }
    Double_t PB =
-      1.44 * GetNucleus(1)->GetZ() * GetNucleus(2)->GetZ() /
+      1.44 * (GetNucleus(1)->GetZ() * GetNucleus(2)->GetZ()) /
       GetCMEnergy();
    // get projectile CM angle from lab angle of nucleus par[0]
    Double_t TCM = GetMinThetaCMFromThetaLab(1, x[0], par[0]);
@@ -921,7 +917,7 @@ Double_t KV2Body::XSecRuthCMVsThetaCM(Double_t* x, Double_t* par)
       return 0.;
    }
    Double_t PB =
-      1.44 * GetNucleus(1)->GetZ() * GetNucleus(2)->GetZ() /
+      1.44 * (GetNucleus(1)->GetZ() * GetNucleus(2)->GetZ()) /
       GetCMEnergy();
    Double_t TCM = x[0] * TMath::DegToRad();
    Int_t OfNucleus = (Int_t)par[0];
@@ -1081,7 +1077,7 @@ Double_t KV2Body::KoxReactionXSec(Double_t* eproj, Double_t*)
    const Double_t c1 = 0.6 - 30 * c0;
 
    KVNucleus* proj = (KVNucleus*)fNuclei[1];
-   proj->SetEnergy(eproj[0]*proj->GetA());
+   proj->SetEnergy(eproj[0]*proj->GetA()());
    CalculateKinematics();
    Double_t ECM = GetCMEnergy();
 
@@ -1196,7 +1192,7 @@ Double_t KV2Body::EqbmChargeState(Double_t* t, Double_t*)
 
    KVNucleus* proj = (KVNucleus*)fNuclei[1];
    Double_t Zp = proj->GetZ();
-   proj->SetEnergy(t[0]*proj->GetA());
+   proj->SetEnergy(t[0]*proj->GetA()());
    Double_t beta = proj->Beta();
    Double_t vp = beta * KVParticle::C();
    Double_t Zt = ((KVNucleus*)fNuclei[2])->GetZ();

@@ -489,7 +489,7 @@ void KVGeoNavigator::PropagateParticle(KVNucleus* part, TVector3* TheOrigin)
    else fGeometry->SetCurrentPoint(0., 0., 0.);
 
    // unit vector in direction of particle's momentum
-   TVector3 v = part->GetMomentum().Unit();
+   TVector3 v = part->GetMomentum()->Unit();
    // use particle's momentum direction
    fGeometry->SetCurrentDirection(v.x(), v.y(), v.z());
    fGeometry->FindNode();

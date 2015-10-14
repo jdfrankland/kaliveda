@@ -6,11 +6,15 @@ project(KaliVeda)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}  ${PROJECT_SOURCE_DIR}/cmake)
 
 #--look for ROOT & all essential libraries
-find_package(ROOT
+find_package(ROOT 6.02
 	REQUIRED Rint Graf Geom Spectrum Proof ProofPlayer Physics Hist
 	RIO Tree MathCore Matrix Gpad Gui Net
    OPTIONAL_COMPONENTS RGL RooFit RooFitCore Html Minuit)
 	
+if(NOT ROOT_FOUND)
+   message(FATAL_ERROR "You need ROOT6 (at least v6.02) in order to build this version of KaliVeda")
+endif(NOT ROOT_FOUND)
+
 #--optional support for OpenGL
 if(ROOT_opengl_FOUND)
 	set(WITH_OPENGL yes)

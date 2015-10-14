@@ -400,7 +400,7 @@ Double_t KVTarget::GetTotalEffectiveThickness(KVParticle* part)
    //If no particle is given, effective thicknesses are calculated as for
    //particles travelling in the beam direction.
 
-   TVector3 p = (part ? part->GetMomentum() : TVector3(0, 0, 1));
+   TVector3 p = (part ? (TVector3)part->GetMomentum() : TVector3(0, 0, 1));
    return GetTotalEffectiveThickness(p);
 }
 

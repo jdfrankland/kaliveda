@@ -23,8 +23,11 @@ $Id: KVPosition.h,v 1.20 2009/01/19 14:36:57 ebonnet Exp $
 #include "KVBase.h"
 #include "TVector3.h"
 #include "TRotation.h"
+#include "KVArgType.h"
 class TGeoHMatrix;
 class TGeoBBox;
+
+using namespace KVArgType;
 
 class KVPosition {
 private:
@@ -43,20 +46,20 @@ private:
 
 public:
    KVPosition();
-   KVPosition(Double_t thmin, Double_t thmax, Double_t phmin, Double_t phmax, Double_t dist = 0.0);
+   KVPosition(PolarAngle pmin, PolarAngle pmax, AzimuthalAngle amin, AzimuthalAngle amax, Distance = 0.0);
    void init();
    virtual ~KVPosition();
    virtual void SetAzimuthalAngle(Double_t ph);
    virtual void SetPolarAngle(Double_t th);
    virtual void SetPolarWidth(Double_t pw);
-   virtual void SetPolarMinMax(Double_t min, Double_t max);
+   virtual void SetPolarMinMax(PolarAngle min, PolarAngle max);
    virtual void SetAzimuthalWidth(Double_t aw);
-   virtual void SetAzimuthalMinMax(Double_t min, Double_t max);
+   virtual void SetAzimuthalMinMax(AzimuthalAngle min, AzimuthalAngle max);
    void SetPhiMinMax(Double_t min, Double_t max)
    {
       SetAzimuthalMinMax(min, max);
    };
-   TVector3 GetRandomDirection(Option_t* t = "isotropic");
+   Direction GetRandomDirection(AngularDistributionType t = "isotropic");
    TRotation GetRandomIsotropicRotation();
    void GetRandomAngles(Double_t& th, Double_t& ph, Option_t* t = "isotropic");
    TVector3 GetDirection();
@@ -71,55 +74,55 @@ public:
    inline Double_t GetPhiMin() const
    {
       return fPhi_min;
-   };
+   }
    inline Double_t GetPhiMax() const
    {
       return fPhi_max;
-   };
+   }
    inline Double_t GetThetaMin() const
    {
       return fTheta_min;
-   };
+   }
    inline Double_t GetThetaMax() const
    {
       return fTheta_max;
-   };
+   }
    Double_t GetAzimuthalWidth(Double_t phmin = -1., Double_t phimax =
                                  -1.) const;
    Double_t GetTheta() const
    {
       return fTheta;
-   };
+   }
    Double_t GetSinTheta() const
    {
       return TMath::Sin(fTheta * TMath::DegToRad());
-   };
+   }
    Double_t GetCosTheta() const
    {
       return TMath::Cos(fTheta * TMath::DegToRad());
-   };
+   }
    Double_t GetPhi()
    {
       if (fPhi >= 360.0)
          fPhi -= 360.;
       return fPhi;
-   };
+   }
    void SetTheta(Double_t t)
    {
       SetPolarAngle(t);
-   };
+   }
    void SetPhi(Double_t p)
    {
       SetAzimuthalAngle(p);
-   };
-   void SetDistance(Double_t d)
+   }
+   void SetDistance(Distance d)
    {
       fDistance = d;
-   };
+   }
    Double_t GetDistance(void) const
    {
       return fDistance;
-   };
+   }
    void GetCornerCoordinates(TVector3*, Double_t /*depth*/ = 0);
    void GetCornerCoordinatesInOwnFrame(TVector3*, Double_t /*depth*/ = 0);
    void GetWidthsFromDimension(Double_t lin_dim);

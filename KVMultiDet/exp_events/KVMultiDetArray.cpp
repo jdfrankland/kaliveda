@@ -1907,7 +1907,7 @@ TGraph* KVMultiDetArray::DrawPunchThroughEsurAVsZ(const Char_t* detector, Int_t 
    nuc.SetMassFormula(massform);
    for (int Z = 1; Z <= 92; Z++) {
       nuc.SetZ(Z);
-      punch->SetPoint(Z - 1, Z, GetPunchThroughEnergy(detector, nuc.GetZ(), nuc.GetA()) / nuc.GetA());
+      punch->SetPoint(Z - 1, Z, GetPunchThroughEnergy(detector, nuc.GetZ(), nuc.GetA()) / (Double_t)nuc.GetA());
    }
    return punch;
 }

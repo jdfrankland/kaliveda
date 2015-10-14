@@ -231,16 +231,16 @@ void KVNuclearChart::ShowNucleusInfo(KVNucleus* nuc)
 
    fShownNucleus = nuc;
    fInfo->Clear();
-   fInfo->AddText(Form("Z = %d  N = %d", nuc->GetZ(), nuc->GetN()));
+   fInfo->AddText(Form("Z = %d  N = %d", (int)nuc->GetZ(), (int)nuc->GetN()));
    if (nuc->GetLifeTime() > 1.e+30) fInfo->AddText("T_{1/2} > 1.00e+30 s");
-   else fInfo->AddText(Form("T_{1/2} = %3.2e s", nuc->GetLifeTime()));
+   else fInfo->AddText(Form("T_{1/2} = %3.2e s", nuc->GetLifeTime()()));
    if (!fOwnHisto && fHisto) {
       TAxis* ax = fHisto->GetXaxis();
-      Int_t xmin = ax->FindBin(nuc->GetN() - 0.5);
-      Int_t xmax = ax->FindBin(nuc->GetN() + 0.5);
+      Int_t xmin = ax->FindBin((double)nuc->GetN() - 0.5);
+      Int_t xmax = ax->FindBin((double)nuc->GetN() + 0.5);
       ax = fHisto->GetYaxis();
-      Int_t ymin = ax->FindBin(nuc->GetZ() - 0.5);
-      Int_t ymax = ax->FindBin(nuc->GetZ() + 0.5);
+      Int_t ymin = ax->FindBin((double)nuc->GetZ() - 0.5);
+      Int_t ymax = ax->FindBin((double)nuc->GetZ() + 0.5);
       Int_t M = fHisto->Integral(xmin, xmax, ymin, ymax);
       fInfo->AddText(Form("M = %d", M));
    }
@@ -248,7 +248,7 @@ void KVNuclearChart::ShowNucleusInfo(KVNucleus* nuc)
    fInfo->Draw("same");
 
    TString symbText = nuc->GetSymbol();
-   symbText.ReplaceAll(Form("%d", nuc->GetA()), Form("^{%d}", nuc->GetA()));
+   symbText.ReplaceAll(Form("%d", (int)nuc->GetA()), Form("^{%d}", (int)nuc->GetA()));
 //  symbText += Form("_{%d}", nuc->GetN());
 
    if ((!fSymbol) || (!fInfo)) return;

@@ -87,7 +87,8 @@ set(soversion FALSE)
 
 #---set ROOT module include path depending on major version
 if(${ROOT_VERSION} VERSION_LESS 6)
-	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/root5)
+   message(FATAL_ERROR "ROOT6 (at least v6.02) required [${ROOT_VERSION} found]")
+#	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/root5)
 #	set(ROOT_USE_FILE ${PROJECT_SOURCE_DIR}/cmake/root5/ROOTUseFile.cmake)
 else()
 	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/root6)
@@ -106,6 +107,7 @@ find_package_handle_standard_args(
 	ROOT_BINARY_DIR
 	VERSION_VAR ROOT_VERSION
 	HANDLE_COMPONENTS
+   FAIL_MESSAGE "You need ROOT6 (at least v6.02) in order to build this version of KaliVeda"
 )
 
 mark_as_advanced(ROOT_CONFIG_EXECUTABLE)

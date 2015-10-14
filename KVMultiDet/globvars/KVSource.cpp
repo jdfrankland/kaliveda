@@ -208,15 +208,15 @@ Double_t KVSource::getvalue_int(Int_t i)
          break;
 
       case 3:
-         rval = fSource.GetV().Z();
+         rval = fSource.GetV()->Z();
          break;
 
       case 4:
-         rval = fSource.GetV().X();
+         rval = fSource.GetV()->X();
          break;
 
       case 5:
-         rval = fSource.GetV().Y();
+         rval = fSource.GetV()->Y();
          break;
 
       case 6:

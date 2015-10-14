@@ -30,6 +30,10 @@ $Id: KVParticle.h,v 1.41 2008/05/21 13:19:56 ebonnet Exp $
 #include "TObjString.h"
 #include "KVNameValueList.h"
 
+#include <KVArgType.h>
+
+using namespace KVArgType;
+
 class KVList;
 class KVParticleCondition;
 
@@ -45,8 +49,8 @@ protected:
 
    KVNameValueList fParameters;//a general-purpose list of parameters associated with this particle
 
-   virtual void AddGroup_Withcondition(const Char_t*, KVParticleCondition*);
-   virtual void AddGroup_Sanscondition(const Char_t* groupname, const Char_t* from = "");
+   virtual void AddGroup_Withcondition(Name, KVParticleCondition*);
+   virtual void AddGroup_Sanscondition(Name newgroup, Name parentgroup = "");
    void CreateGroups();
    void SetGroups(KVUniqueNameList* un);
    void AddGroups(KVUniqueNameList* un);
@@ -70,129 +74,118 @@ public:
    static Double_t C();
 
    KVParticle();
-   KVParticle(Double_t m, TVector3& p);
-   KVParticle(Double_t m, Double_t px, Double_t py, Double_t pz);
+   KVParticle(Mass, Momentum);
+   KVParticle(Mass, Momentum::XComponent, Momentum::YComponent, Momentum::ZComponent);
    KVParticle(const KVParticle&);
    virtual ~ KVParticle();
    void init();
-#if ROOT_VERSION_CODE >= ROOT_VERSION(3,4,0)
    virtual void Copy(TObject&) const;
-#else
-   virtual void Copy(TObject&);
-#endif
    virtual void Clear(Option_t* opt = "");
 
-   virtual void SetMass(Double_t m)
+   virtual void SetMass(Mass m)
    {
       SetXYZM(Px(), Py(), Pz(), m);
-   };
-   Double_t GetMass() const
+   }
+   Mass GetMass() const
    {
       return M();
-   };
-   void SetMomentum(const TVector3& v)
-   {
-      SetXYZM(v(0), v(1), v(2), M());
-   };
-   void SetMomentum(const TVector3* v)
-   {
-      SetXYZM((*v)(0), (*v)(1), (*v)(2), M());
-   };
-   void SetMomentum(Double_t px, Double_t py, Double_t pz, Option_t* opt =
-                       "cart");
-   void SetMomentum(Double_t T, TVector3 dir);
-   void SetRandomMomentum(Double_t T, Double_t thmin, Double_t thmax,
-                          Double_t phmin, Double_t phmax,
-                          Option_t* opt = "isotropic");
-   virtual void Print(Option_t* t = "") const;
-   void Set4Mom(const TLorentzVector& p)
-   {
-      SetVect(p.Vect());
-      SetT(p.E());
    }
-   void SetE(Double_t a)
+   void SetMomentum(Momentum v)
+   {
+      SetXYZM(v->X(), v->Y(), v->Z(), M());
+   }
+   void SetMomentum(Momentum::XComponent, Momentum::YComponent, Momentum::ZComponent, MomentumComponentType = "cart");
+   void SetMomentum(KineticEnergy T, Direction dir);
+   void SetRandomMomentum(KineticEnergy T, PolarAngle pmin, PolarAngle pmax, AzimuthalAngle amin, AzimuthalAngle amax, AngularDistributionType = "isotropic");
+   virtual void Print(Option_t* t = "") const;
+   void Set4Mom(FourMomentum p)
+   {
+      SetVect(p->Vect());
+      SetT(p->E());
+   }
+   void SetE(KineticEnergy a)
    {
       SetKE(a);
-   };
-   void SetKE(Double_t ecin);
-   void SetEnergy(Double_t e)
+   }
+   void SetKE(KineticEnergy ecin);
+   void SetEnergy(KineticEnergy e)
    {
       SetKE(e);
-   };
-   void SetVelocity(const TVector3&);
-   TVector3 GetMomentum() const
+   }
+   void SetVelocity(Velocity);
+   Momentum GetMomentum() const
    {
       return Vect();
-   };
-   Double_t GetKE() const
+   }
+   KineticEnergy GetKE() const
    {
       Double_t e =  E();
       Double_t m = M();
       //return (E() - M());
       return e - m;
-   };
-   Double_t GetEnergy() const
+   }
+   KineticEnergy GetEnergy() const
    {
       return GetKE();
-   };
-   Double_t GetTransverseEnergy() const
+   }
+   KineticEnergy GetTransverseEnergy() const
    {
       Double_t etran = TMath::Sin(Theta());
       etran = TMath::Power(etran, 2.0);
       etran *= GetKE();
       return etran;
-   };
-   Double_t GetEtran() const
+   }
+   KineticEnergy GetEtran() const
    {
       return GetTransverseEnergy();
-   };
-   Double_t GetRTransverseEnergy() const
+   }
+   KineticEnergy GetRTransverseEnergy() const
    {
       Double_t etran = Mt() - GetMass();
       return etran;
-   };
-   Double_t GetREtran() const
+   }
+   KineticEnergy GetREtran() const
    {
       return GetRTransverseEnergy();
-   };
-   Double_t GetE() const
+   }
+   KineticEnergy GetE() const
    {
       return GetKE();
-   };
-   TVector3 GetVelocity() const;
-   TVector3 GetV() const
+   }
+   Velocity GetVelocity() const;
+   Velocity GetV() const
    {
       return GetVelocity();
-   };
-   Double_t GetVpar() const
+   }
+   Velocity::ZComponent GetVpar() const
    {
-      return GetV().z();
-   };
-   Double_t GetVperp() const;
-   Double_t GetTheta() const
+      return GetV()->Z();
+   }
+   Velocity::TransverseComponent GetVperp() const;
+   PolarAngle GetTheta() const
    {
       return TMath::RadToDeg() * Theta();
-   };
-   Double_t GetPhi() const
+   }
+   AzimuthalAngle GetPhi() const
    {
       Double_t phi = TMath::RadToDeg() * Phi();
       return (phi < 0 ? 360. + phi : phi);
-   };
-   void SetTheta(Double_t theta)
+   }
+   void SetTheta(PolarAngle theta)
    {
       TLorentzVector::SetTheta(TMath::DegToRad() * theta);
    }
-   void SetPhi(Double_t phi)
+   void SetPhi(AzimuthalAngle phi)
    {
       TLorentzVector::SetPhi(TMath::DegToRad() * phi);
-   };
+   }
 
    virtual Bool_t IsOK();
    void SetIsOK(Bool_t flag = kTRUE);
    void ResetIsOK()
    {
       ResetBit(kIsOKSet);
-   };
+   }
 
    KVList* GetListOfFrames(void)
    {
@@ -202,7 +195,7 @@ public:
    void SetIsDetected()
    {
       SetBit(kIsDetected);
-   };
+   }
    Bool_t IsDetected()
    {
       return TestBit(kIsDetected);
@@ -210,41 +203,34 @@ public:
    KVParticle& operator=(const KVParticle& rhs);
 
    const Char_t* GetName() const;
-   void SetName(const Char_t* nom);
+   void SetName(Name);
 
-   void AddGroup(const Char_t* groupname, const Char_t* from = "");
-   void AddGroup(const Char_t* groupname, KVParticleCondition*);
+   void AddGroup(Name group, Name parent = "");
+   void AddGroup(Name group, KVParticleCondition*);
 
-   Bool_t BelongsToGroup(const Char_t* groupname) const;
-   void RemoveGroup(const Char_t* groupname);
+   Bool_t BelongsToGroup(Name group) const;
+   void RemoveGroup(Name groupname);
    void RemoveAllGroups();
    void ListGroups(void) const;
 
-   void SetFrame(const Char_t* frame, const TVector3& boost, Bool_t beta =
-                    kFALSE);
-   void SetFrame(const Char_t* frame, const TLorentzRotation& rot);
-   void SetFrame(const Char_t* frame, const TRotation& rot);
-   void SetFrame(const Char_t* frame, const TVector3& boost, TRotation& rot,
-                 Bool_t beta = kFALSE);
+   void SetFrame(Name frame, Velocity boost, Bool_t beta = kFALSE);
+   void SetFrame(Name frame, const TLorentzRotation& rot);
+   void SetFrame(Name frame, const TRotation& rot);
+   void SetFrame(Name frame, Velocity boost, TRotation& rot, Bool_t beta = kFALSE);
+   void SetFrame(Name newframe, Name oldframe, Velocity boost, Bool_t beta = kFALSE);
+   void SetFrame(Name newframe, Name oldframe, const TLorentzRotation& rot);
+   void SetFrame(Name newframe, Name oldframe, const TRotation& rot);
+   void SetFrame(Name newframe, Name oldframe, Velocity boost, TRotation& rot, Bool_t beta = kFALSE);
 
-   void SetFrame(const Char_t* newframe, const Char_t* oldframe,
-                 const TVector3& boost, Bool_t beta = kFALSE);
-   void SetFrame(const Char_t* newframe, const Char_t* oldframe,
-                 const TLorentzRotation& rot);
-   void SetFrame(const Char_t* newframe, const Char_t* oldframe,
-                 const TRotation& rot);
-   void SetFrame(const Char_t* newframe, const Char_t* oldframe,
-                 const TVector3& boost, TRotation& rot, Bool_t beta = kFALSE);
+   KVParticle* GetFrame(Name frame);
 
-   KVParticle* GetFrame(const Char_t* frame);
-
-   const Char_t* GetFrameName(void) const
+   Name GetFrameName(void) const
    {
       return fFrameName;
    }
-   void SetFrameName(const Char_t* framename)
+   void SetFrameName(Name framename)
    {
-      fFrameName = framename;
+      fFrameName = framename->Data();
    }
 
    KVNameValueList* GetParameters() const

@@ -123,7 +123,7 @@ Double_t KVDBSystem::GetPtot() const
    //Units are MeV/c
    KV2Body* kin = const_cast < KVDBSystem* >(this)->GetKinematics();
    if (!kin) return 0.;
-   return (kin->GetNucleus(1)->GetMomentum().Z());
+   return (kin->GetNucleus(1)->GetMomentum()->Z());
 }
 
 //_____________________________________________________________________________

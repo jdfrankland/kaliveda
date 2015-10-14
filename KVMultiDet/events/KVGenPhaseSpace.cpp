@@ -173,7 +173,7 @@ Bool_t KVGenPhaseSpace::CheckBreakUpChannel()
    Int_t atot = (Int_t)fEvent->GetSum("GetA");
    if (ztot != fCompound.GetZ() || atot != fCompound.GetA()) {
       Warning("CheckBreakUpChannel", "Compound has (Z,A)=(%d,%d), break-up channel has (Z,A)=(%d,%d)",
-              fCompound.GetZ(), fCompound.GetA(), ztot, atot);
+              (int)fCompound.GetZ(), (int)fCompound.GetA(), ztot, atot);
       return kFALSE;
    }
 

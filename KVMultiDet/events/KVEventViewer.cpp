@@ -94,7 +94,11 @@ void KVEventViewer::DrawNucleus(KVNucleus* nucleus, const Char_t* frame)
    Int_t N = nucleus->GetN();
    Int_t Z = nucleus->GetZ();
 
-   TVector3 V = (fMomentumSpace ? nucleus->GetFrame(frame)->GetMomentum() : nucleus->GetFrame(frame)->GetV());
+   TVector3 V;
+   if (fMomentumSpace)
+      V = nucleus->GetFrame(frame)->GetMomentum();
+   else
+      V = nucleus->GetFrame(frame)->GetVelocity();
 
    Bool_t Highlight = SetHighlight(nucleus);
 
@@ -155,8 +159,8 @@ void KVEventViewer::DrawEvent(KVEvent* event, const Char_t* frame)
    if (fMomentumSpace) fScaleFactor = 1.e-2;
    else fScaleFactor = 1.;
    while ((nuc = event->GetNextParticle("ok"))) {
-      Double_t v = fScaleFactor * (fMomentumSpace ? nuc->GetFrame(frame)->GetMomentum().Mag() :
-                                   nuc->GetFrame(frame)->GetV().Mag());
+      Double_t v = fScaleFactor * (fMomentumSpace ? nuc->GetFrame(frame)->GetMomentum()->Mag() :
+                                   nuc->GetFrame(frame)->GetV()->Mag());
       if (v > maxV) maxV = v;
       if (nuc->GetZ() > maxZ) maxZ = nuc->GetZ();
    }

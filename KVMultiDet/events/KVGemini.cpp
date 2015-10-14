@@ -60,7 +60,7 @@ void KVGemini::DecaySingleNucleus(KVSimNucleus& toDecay, KVSimEvent* decayProduc
    CNucleus CN(toDecay.GetZ(), toDecay.GetA(), toDecay.GetExcitEnergy(),
                toDecay.GetAngMom().Mag());
    // set velocity
-   CN.setVelocityCartesian(toDecay.GetVelocity().X(), toDecay.GetVelocity().Y(), toDecay.GetVelocity().Z());
+   CN.setVelocityCartesian(toDecay.GetVelocity()->X(), toDecay.GetVelocity()->Y(), toDecay.GetVelocity()->Z());
 
    // set angle of spin axis
    CAngle ang(toDecay.GetAngMom().Theta(), toDecay.GetAngMom().Phi());
