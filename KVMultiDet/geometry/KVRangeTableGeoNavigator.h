@@ -5,6 +5,7 @@
 #define __KVRANGETABLEGEONAVIGATOR_H
 
 #include "KVGeoNavigator.h"
+
 class KVIonRangeTable;
 
 class KVRangeTableGeoNavigator : public KVGeoNavigator {
@@ -15,9 +16,13 @@ public:
    KVRangeTableGeoNavigator(TGeoManager*, KVIonRangeTable*);
    virtual ~KVRangeTableGeoNavigator();
 
-   void SetCutOffKEForPropagation(Double_t e)
+   void SetCutOffKEForPropagation(Double_t cutoff)
    {
-      fCutOffEnergy = e;
+      fCutOffEnergy = cutoff;
+   }
+   Double_t GetCutOffKEForPropagation() const
+   {
+      return fCutOffEnergy;
    }
 
    virtual void ParticleEntersNewVolume(KVNucleus*);

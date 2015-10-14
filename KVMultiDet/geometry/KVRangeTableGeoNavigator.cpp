@@ -92,10 +92,11 @@ ClassImp(KVRangeTableGeoNavigator)
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-KVRangeTableGeoNavigator::KVRangeTableGeoNavigator(TGeoManager* g, KVIonRangeTable* r) : KVGeoNavigator(g)
+KVRangeTableGeoNavigator::KVRangeTableGeoNavigator(TGeoManager* g, KVIonRangeTable* r)
+   : KVGeoNavigator(g), fRangeTable(r), fCutOffEnergy(0.)
 {
-   fRangeTable = r;
-   fCutOffEnergy = 1.e-3;
+   // Default constructor
+   // Sets energy cut-off to 0 MeV
 }
 
 KVRangeTableGeoNavigator::~KVRangeTableGeoNavigator()

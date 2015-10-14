@@ -9,23 +9,18 @@
 #include "KVEvent.h"
 #include "KVDetectorEvent.h"
 #include "KVTarget.h"
+#include "KVRangeTableGeoNavigator.h"
 
 class KVDetectionSimulator : public KVBase {
+
 private:
    KVMultiDetArray* fArray;//           array used for detection
-   KVDetectorEvent fHitGroups;//       list of hit groups in simulation
-   Bool_t fCalcTargELoss;//              whether to include energy loss in target, if defined
-   const Double_t fMinKECutOff;//       particles with KE below cut off are considered stopped
+   KVDetectorEvent fHitGroups;//        used to reset hit detectors in between events
+   Bool_t fCalcTargELoss;//             whether to include energy loss in target, if defined
 
 public:
-   KVDetectionSimulator() : KVBase(), fArray(nullptr), fCalcTargELoss(kTRUE), fMinKECutOff(1.e-3) {}
-   KVDetectionSimulator(KVMultiDetArray* a) :
-      KVBase(Form("DetectionSimulator_%s", a->GetName()),
-             Form("Simulate detection of particles or events in detector array %s", a->GetTitle())),
-      fArray(a), fCalcTargELoss(kTRUE), fMinKECutOff(1.e-3)
-   {
-      a->SetSimMode(kTRUE);
-   }
+   KVDetectionSimulator() : KVBase(), fArray(nullptr), fCalcTargELoss(kTRUE) {}
+   KVDetectionSimulator(KVMultiDetArray* a, Double_t cut_off = 1.e-3);
    virtual ~KVDetectionSimulator() {}
 
    void SetArray(KVMultiDetArray* a)
@@ -50,13 +45,16 @@ public:
    }
    Double_t GetMinKECutOff() const
    {
-      return fMinKECutOff;
+      return static_cast<KVRangeTableGeoNavigator*>(GetArray()->GetNavigator())->GetCutOffKEForPropagation();
+   }
+   void SetMinKECutOff(Double_t cutoff)
+   {
+      static_cast<KVRangeTableGeoNavigator*>(GetArray()->GetNavigator())->SetCutOffKEForPropagation(cutoff);
    }
 
    void DetectEvent(KVEvent* event, const Char_t* detection_frame = "");
    KVNameValueList DetectParticle(KVNucleus*);
    KVNameValueList DetectParticleIn(const Char_t* detname, KVNucleus* kvp);
-
 
    ClassDef(KVDetectionSimulator, 0) //Simulate detection of particles or events in a detector array
 };

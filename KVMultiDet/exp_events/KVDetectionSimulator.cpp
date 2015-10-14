@@ -15,6 +15,18 @@ ClassImp(KVDetectionSimulator)
 // --> END_HTML
 ////////////////////////////////////////////////////////////////////////////////
 
+KVDetectionSimulator::KVDetectionSimulator(KVMultiDetArray* a, Double_t e_cut_off) :
+   KVBase(Form("DetectionSimulator_%s", a->GetName()),
+          Form("Simulate detection of particles or events in detector array %s", a->GetTitle())),
+   fArray(a), fCalcTargELoss(kTRUE)
+{
+   // Initialise a detection simulator
+   // The detector array is put into simulation mode, and the minimum cut-off energy
+   // for propagation of particles is set
+   a->SetSimMode(kTRUE);
+   static_cast<KVRangeTableGeoNavigator*>(a->GetNavigator())->SetCutOffKEForPropagation(e_cut_off);
+}
+
 void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_frame)
 {
    //Simulate detection of event by multidetector array.
@@ -50,7 +62,7 @@ void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_f
    //         this correponds to status=3 or idcode=5 in INDRA data
    //
 
-   //Clear the multidetector before a new detection simulation
+   // Reset detectors in array hit by any previous events
    fHitGroups.Clear();
 
    event->ResetGetNextParticle();
@@ -102,6 +114,9 @@ void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_f
                part->AddGroup("UNDETECTED");
                part->AddGroup("DEAD ZONE");
 
+            } else {
+               part->AddGroup("DETECTED");
+               det_stat.SetValue("DETECTED", "OK");
             }
          }
       }
@@ -142,13 +157,14 @@ KVNameValueList KVDetectionSimulator::DetectParticle(KVNucleus* part)
    fArray->GetNavigator()->PropagateParticle(part);
 
    // particle missed all detectors
-   if (!part->GetParameters()->GetNpar()) return KVNameValueList();
+   if (part->GetParameters()->IsEmpty()) return KVNameValueList();
 
    // list of energy losses in active layers of detectors
    KVNameValueList NVL;
 
    // find detectors in array hit by particle
    // and set their energies
+   KVDetector* last_detector = nullptr;
    TIter next(part->GetParameters()->GetList());
    KVNamedParameter* param;
    while ((param = (KVNamedParameter*)next())) {
@@ -161,7 +177,7 @@ KVNameValueList KVDetectionSimulator::DetectParticle(KVNucleus* part)
          KVString det_name = pn3.Next();
          if (pn3.End() || pn3.Next().BeginsWith("ACTIVE")) {
             // energy loss in active layer of detector
-            KVDetector* curDet = fArray->GetDetector(det_name);
+            KVDetector* curDet = last_detector = fArray->GetDetector(det_name);
             if (!curDet) {
                Error("DetectParticle",
                      "Cannot find detector %s corresponding to particle energy loss %s",
@@ -176,6 +192,9 @@ KVNameValueList KVDetectionSimulator::DetectParticle(KVNucleus* part)
          }
       }
    }
+
+   // add hit group to list if not already in it
+   if (last_detector) fHitGroups.AddGroup(last_detector->GetGroup());
 
    return NVL;
 }
