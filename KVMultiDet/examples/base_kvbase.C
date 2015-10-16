@@ -7,8 +7,8 @@
 // To execute this function, either do
 //
 // $ kaliveda
-// root[0] .L base_kvbase.C+
-// root[1] kvbase_example()
+// kaliveda[0] .L base_kvbase.C+
+// kaliveda[1] kvbase_example()
 //
 // or
 //
