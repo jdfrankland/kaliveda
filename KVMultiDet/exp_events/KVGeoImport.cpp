@@ -141,7 +141,7 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
    Info("ImportGeometry",
         "Importing geometry in angular ranges : Theta=[%f,%f:%f] Phi=[%f,%f:%f]", ThetaMin, ThetaMax, dTheta, PhiMin, PhiMax, dPhi);
    Int_t count = 0;
-   std::cout << "\xd" << "Info in <KVImportGeometry::ImportGeometry>: tested " << count << " directions" << std::flush;
+   std::cout << "\xd" << "Info in <KVGeoImport::ImportGeometry>: tested " << count << " directions" << std::flush;
    for (theta = ThetaMin; theta <= ThetaMax; theta += dTheta) {
       for (phi = PhiMin; phi <= PhiMax; phi += dPhi) {
          nuc->SetTheta(theta);
@@ -150,19 +150,19 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
          fLastDetector = 0;
          PropagateEvent(evt);
          count++;
-         std::cout << "\xd" << "Info in <KVImportGeometry::ImportGeometry>: tested " << count << " directions" << std::flush;
+         std::cout << "\xd" << "Info in <KVGeoImport::ImportGeometry>: tested " << count << " directions" << std::flush;
       }
    }
    std::cout << std::endl;
 
-    Info("ImportGeometry",
-         "Imported %d detectors into array", fArray->GetDetectors()->GetEntries()-ndets0);
+   Info("ImportGeometry",
+        "Imported %d detectors into array", fArray->GetDetectors()->GetEntries() - ndets0);
    // make sure detector nodes are correct
    TIter next(fArray->GetDetectors());
    KVDetector* d;
    while ((d = (KVDetector*)next())) d->GetNode()->RehashLists();
    // set up all detector node trajectories
-    fArray->CalculateTrajectories();
+   fArray->CalculateTrajectories();
 
    if (fCreateArray) {
       fArray->SetGeometry(GetGeometry());
@@ -173,8 +173,8 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
          nav->SetStructureNameFormat(fmt->GetName(), fmt->GetString());
       }
       nav->SetNameCorrespondanceList(fDetStrucNameCorrespList);
-        fArray->DeduceIdentificationTelescopesFromGeometry();
-        fArray->CalculateReconstructionTrajectories();
+      fArray->DeduceIdentificationTelescopesFromGeometry();
+      fArray->CalculateReconstructionTrajectories();
    }
 }
 
