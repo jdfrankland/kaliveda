@@ -2,11 +2,6 @@ NOTE: look at inconsistencies between KVParticle::Copy and operator= ? (and copy
 
 NEW: separate class for event reconstruction
 
-NEW: separate class for simulated event detection
-   virtual base class ? KVVirtualDetectionSimulator ?
-     requires: event to detect (KVEvent*  not KVSimEvent*) or particle (KVNucleus* not KVSimNucleus*)
-               multidetector (KVMultiDetArray*)
-
 TO BE REMOVED:
 ==============
 KVTelescope
