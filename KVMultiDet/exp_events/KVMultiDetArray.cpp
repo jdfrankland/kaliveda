@@ -7,8 +7,6 @@
 #include "TROOT.h"
 #include "KVDetector.h"
 #include "KVDetectorEvent.h"
-#include "KVReconstructedEvent.h"
-#include "KVReconstructedNucleus.h"
 #include "KVACQParam.h"
 #include "KVRList.h"
 #include "KVEvent.h"
@@ -98,7 +96,6 @@ void KVMultiDetArray::init()
 
     // all trajectories belong to us
     fTrajectories.SetOwner();
-    fReconTraj.SetOwner();
 }
 
 //___________________________________________________________________________________
@@ -424,136 +421,90 @@ void KVMultiDetArray::CalculateReconstructionTrajectories()
    // Calculate all possible (sub-)trajectories
    // for particle reconstruction (GetReconTrajectories())
 
-   fReconTraj.Clear();
-   TIter next_traj(GetTrajectories());
-   KVGeoDNTrajectory* traj;
-   Int_t count = 0;
-   Info("CalculateReconstructionTrajectories", "Calculating...");
-   std::cout << "\xd" << " -- calculated " << count << " trajectories" << std::flush;
-   while( (traj = (KVGeoDNTrajectory*)next_traj()) ){   // loop over all trajectories
-
-      traj->IterateFrom();   // from furthest-out to closest-in detector
-
-      KVGeoDetectorNode* N;
-      while( (N = traj->GetNextNode()) ){
-         fReconTraj.Add( new KVReconNucTrajectory(traj,N) );
-         std::cout << "\xd" << " -- calculated " << ++count << " trajectories" << std::flush;
+   smart_pointer<KVSeqCollection> groups = GetStructureTypeList("GROUP");
+   TIter it(groups);
+   KVGroup* group;
+   while ((group = (KVGroup*)it())) group->CalculateReconstructionTrajectories();
       }
-   }
-
-   // There may be trajectories with different names but identical titles
-   // (=physically same trajectories)
-   // We find the duplicates, delete them, and set up a map between the names of the
-   // duplicates and the name of the one remaining trajectory in the list
-   TList toRemove;
-   KVUniqueNameList unique_trajectories(kFALSE);//no replace
-   unique_trajectories.SetOwner();
-   fReconTrajMap.Clear();
-   TIter nxtRT(GetReconTrajectories());
-   KVReconNucTrajectory* rnt;
-   while ((rnt = (KVReconNucTrajectory*)nxtRT())) {
-
-      TNamed* n = new TNamed(rnt->GetTitle(), rnt->GetName());
-      unique_trajectories.Add(n);
-      TNamed* orig = n;
-      if (!unique_trajectories.ObjectAdded()) {
-         orig = (TNamed*)unique_trajectories.FindObject(rnt->GetTitle());
-         toRemove.Add(rnt);
-         delete n;
-         std::cout << "\xd" << " -- calculated " << --count << " trajectories" << std::flush;
-      }
-      // set up mapping from duplicate trajectory name to orginal trajectory name
-      fReconTrajMap.SetValue(rnt->GetName(), orig->GetTitle());
-
-   }
-   std::cout << std::endl;
-
-   // now remove & delete the duplicates
-   TIter nxtDel(&toRemove);
-   while ((rnt = (KVReconNucTrajectory*)nxtDel())) {
-      fReconTraj.Remove(rnt);
-      delete rnt;
-   }
-}
 
 //__________________________________________________________________________________
 
-Int_t KVMultiDetArray::FilteredEventCoherencyAnalysis(Int_t round, KVReconstructedEvent* rec_event)
-{
-   // Perform multi-hit and coherency analysis of filtered event.
-   // round=1,2,... depending on number of times method has been called
-   // Returns number of particles whose status were changed.
-   // When this becomes zero, the coherency analysis is finished
+//Int_t KVMultiDetArray::FilteredEventCoherencyAnalysis(Int_t round, KVReconstructedEvent* rec_event)
+//{
+//   // Perform multi-hit and coherency analysis of filtered event.
+//   // round=1,2,... depending on number of times method has been called
+//   // Returns number of particles whose status were changed.
+//   // When this becomes zero, the coherency analysis is finished
 
-   Int_t nchanged = 0;
-   KVReconstructedNucleus* recon_nuc;
+//   Int_t nchanged = 0;
+//   KVReconstructedNucleus* recon_nuc;
 
-   while ((recon_nuc = rec_event->GetNextParticle())) {
-      if (!recon_nuc->IsIdentified()) {
-         int dethits = recon_nuc->GetStoppingDetector()->GetHits()->GetEntries() ;
-             KVIDTelescope* idtelstop = ((KVIDTelescope*)recon_nuc->GetReconstructionTrajectory()->GetIDTelescopes()->First());
-         Bool_t pileup = kFALSE;
-         if (dethits > 1) {
-            // if any of the other particles also stopped in the same detector, we assume identification
-            // will be so false as to reject particle
-            for (int j = 0; j < dethits; j++) {
-               KVReconstructedNucleus* n = (KVReconstructedNucleus*)recon_nuc->GetStoppingDetector()->GetHits()->At(j);
-               if (n != recon_nuc && n->GetStoppingDetector() == recon_nuc->GetStoppingDetector()) pileup = kTRUE;
-            }
-         }
-         if (pileup) {
-            nchanged++;
-            recon_nuc->SetIsIdentified();//to stop looking anymore & to allow identification of other particles in same group
-            if (idtelstop) idtelstop->SetIDCode(recon_nuc, idtelstop->GetBadIDCode());
-            else recon_nuc->SetIsOK(kFALSE);
-         } else if (recon_nuc->GetStatus() == 3) {
-            //stopped in first member
-            recon_nuc->SetIsIdentified();
-            nchanged++;
-         } else if (recon_nuc->GetStatus() == 2) {
-            // pile-up in first stage of telescopes
-            recon_nuc->SetIsIdentified();
-            if (idtelstop) idtelstop->SetIDCode(recon_nuc, idtelstop->GetMultiHitFirstStageIDCode());
-            else recon_nuc->SetIsOK(kFALSE);
-            nchanged++;
-         } else if (recon_nuc->GetStatus() == 0) {
-            // try to "identify" the particle
-                 TIter nxtidt(recon_nuc->GetReconstructionTrajectory()->GetIDTelescopes());
-            idtelstop = (KVIDTelescope*)nxtidt();
-            while (idtelstop) {
-               if (idtelstop->CanIdentify(recon_nuc->GetZ(), recon_nuc->GetA())) {
-                  nchanged++;
-                  // if this is not the first round, this particle has been 'identified' after
-                  // dealing with other particles in the group
-                  if (round > 1) idtelstop->SetIDCode(recon_nuc, idtelstop->GetCoherencyIDCode());
-                  recon_nuc->SetIsIdentified();
-                  recon_nuc->SetIsCalibrated();
-                  recon_nuc->SetZMeasured();
-                  recon_nuc->SetAMeasured();
-                  break;
-               } else {
-                  Int_t nseg = recon_nuc->GetNSegDet();
-                  recon_nuc->SetNSegDet(TMath::Max(nseg - 1, 0));
-                  //if there are other unidentified particles in the group and NSegDet is < 2
-                  //then exact status depends on segmentation of the other particles : reanalyse
-                  if (recon_nuc->GetNSegDet() < 2 &&
-                        KVReconstructedNucleus::GetNUnidentifiedInGroup(recon_nuc->GetGroup()) > 1) {
-                     nchanged++;
-                     break;
-                  }
-                  //if NSegDet = 0 it's hopeless
-                  if (!recon_nuc->GetNSegDet()) {
-                     nchanged++;
-                     break;
-                  }
-               }
-               idtelstop = (KVIDTelescope*)nxtidt();
-            }
-         }
-      }
-   }
-   return nchanged;
-}
+//   while ((recon_nuc = rec_event->GetNextParticle())) {
+//      if (!recon_nuc->IsIdentified()) {
+//         int dethits = recon_nuc->GetStoppingDetector()->GetHits()->GetEntries() ;
+//         KVIDTelescope* idtelstop = ((KVIDTelescope*)recon_nuc->GetReconstructionTrajectory()->GetIDTelescopes()->First());
+//         Bool_t pileup = kFALSE;
+//         if (dethits > 1) {
+//            // if any of the other particles also stopped in the same detector, we assume identification
+//            // will be so false as to reject particle
+//            for (int j = 0; j < dethits; j++) {
+//               KVReconstructedNucleus* n = (KVReconstructedNucleus*)recon_nuc->GetStoppingDetector()->GetHits()->At(j);
+//               if (n != recon_nuc && n->GetStoppingDetector() == recon_nuc->GetStoppingDetector()) pileup = kTRUE;
+//            }
+//         }
+//         if (pileup) {
+//            nchanged++;
+//            recon_nuc->SetIsIdentified();//to stop looking anymore & to allow identification of other particles in same group
+//            if (idtelstop) idtelstop->SetIDCode(recon_nuc, idtelstop->GetBadIDCode());
+//            else recon_nuc->SetIsOK(kFALSE);
+//         } else if (recon_nuc->GetStatus() == 3) {
+//            //stopped in first member
+//            recon_nuc->SetIsIdentified();
+//            nchanged++;
+//         } else if (recon_nuc->GetStatus() == 2) {
+//            // pile-up in first stage of telescopes
+//            recon_nuc->SetIsIdentified();
+//            if (idtelstop) idtelstop->SetIDCode(recon_nuc, idtelstop->GetMultiHitFirstStageIDCode());
+//            else recon_nuc->SetIsOK(kFALSE);
+//            nchanged++;
+//         } else if (recon_nuc->GetStatus() == 0) {
+//            // try to "identify" the particle
+//            TIter nxtidt(recon_nuc->GetReconstructionTrajectory()->GetIDTelescopes());
+//            idtelstop = (KVIDTelescope*)nxtidt();
+//            while (idtelstop) {
+//               if (idtelstop->CanIdentify(recon_nuc->GetZ(), recon_nuc->GetA())) {
+//                  nchanged++;
+//                  // if this is not the first round, this particle has been 'identified' after
+//                  // dealing with other particles in the group
+//                  if (round > 1) idtelstop->SetIDCode(recon_nuc, idtelstop->GetCoherencyIDCode());
+//                  recon_nuc->SetIsIdentified();
+//                  recon_nuc->SetIsCalibrated();
+//                  recon_nuc->SetZMeasured();
+//                  recon_nuc->SetAMeasured();
+//                  break;
+//               } else {
+//                  Int_t nseg = recon_nuc->GetNSegDet();
+//                  recon_nuc->SetNSegDet(TMath::Max(nseg - 1, 0));
+//                  //if there are other unidentified particles in the group and NSegDet is < 2
+//                  //then exact status depends on segmentation of the other particles : reanalyse
+//                  if (recon_nuc->GetNSegDet() < 2 &&
+//                        KVReconstructedNucleus::GetNUnidentifiedInGroup(recon_nuc->GetGroup()) > 1) {
+//                     nchanged++;
+//                     break;
+//                  }
+//                  //if NSegDet = 0 it's hopeless
+//                  if (!recon_nuc->GetNSegDet()) {
+//                     nchanged++;
+//                     break;
+//                  }
+//               }
+//               idtelstop = (KVIDTelescope*)nxtidt();
+//            }
+//         }
+//      }
+//   }
+//   return nchanged;
+//}
 
 //void KVMultiDetArray::DetectEvent(KVEvent* event, KVReconstructedEvent* rec_event, const Char_t* detection_frame)
 //{
@@ -1300,99 +1251,18 @@ void KVMultiDetArray::GetDetectorEvent(KVDetectorEvent* detev, TSeqCollection* f
       }
    } else {
       //loop over groups
-      TSeqCollection* fGroups = GetStructures()->GetSubListWithType("GROUP");
-
+      smart_pointer<KVSeqCollection> fGroups = GetStructureTypeList("GROUP");
       TIter next_grp(fGroups);
       KVGroup* grp;
       while ((grp = (KVGroup*) next_grp())) {
          if (grp->Fired()) {
-            //if (!fHitGroups->FindObject(grp))
-            // grp->Print();
             //add new group to list of hit groups
             detev->AddGroup(grp);
          }
       }
-      delete fGroups;
    }
 }
 
-void KVMultiDetArray::ReconstructEvent(KVReconstructedEvent* recev, KVDetectorEvent* kvde)
-{
-   // Use the KVDetectorEvent (list of hit groups) in order to fill the
-   // KVReconstructedEvent with reconstructed nuclei
-   //
-   // See KVReconstructedEvent::AnalyseTrajectory for details of particle reconstruction
-
-   KVGroup* grp_tch;
-   TIter nxt_grp(kvde->GetGroups());
-   // loop over hit groups
-   while ((grp_tch = (KVGroup*) nxt_grp())) {
-
-      TIter nxt_traj(grp_tch->GetTrajectories());
-      KVGeoDNTrajectory* traj;
-      // loop over trajectories
-      while( (traj = (KVGeoDNTrajectory*)nxt_traj()) ){
-
-         // Work our way along the trajectory, starting from furthest detector from target,
-         // start reconstruction of new detected particle from first fired detector.
-         //
-         // More precisely: If detector has fired*,
-         // making sure fired detector hasn't already been used to reconstruct
-         // a particle, then we create and fill a new detected particle.
-         //
-         // *change condition by calling SetPartSeedCond("any"): in this case,
-         // particles will be reconstructed starting from detectors with at least 1 fired parameter.
-
-         traj->IterateFrom();
-         KVGeoDetectorNode* node;
-         while( (node = traj->GetNextNode()) ){
-
-            KVDetector* d = node->GetDetector();
-            /*
-                  If detector has fired,
-                  making sure fired detector hasn't already been used to reconstruct
-                  a particle, then we create and fill a new detected particle.
-              */
-            if ( (d->Fired( recev->GetPartSeedCond() ) && !d->IsAnalysed()) ) {
-
-               KVReconstructedNucleus *kvdp = recev->AddParticle();
-               //add all active detector layers in front of this one
-               //to the detected particle's list
-               ReconstructParticle(kvdp,traj,node);
-
-               //set detector state so it will not be used again
-               d->SetAnalysed(kTRUE);
-   }
-}
-
-      }
-
-      KVReconstructedNucleus::AnalyseParticlesInGroup(grp_tch);
-   }
-}
-
-void KVMultiDetArray::ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node)
-{
-   // Reconstruction of a detected nucleus from the successive energy losses
-   // measured in a series of detectors/telescopes along a given trajectory
-
-   const KVReconNucTrajectory* Rtraj = gMultiDetArray->GetTrajectoryForReconstruction(traj,node);
-   part->SetReconstructionTrajectory(Rtraj);
-   node->GetDetector()->GetGroup()->AddHit(part);
-
-   Rtraj->IterateFrom();// iterate over trajectory
-   KVGeoDetectorNode* n;
-   while( (n = Rtraj->GetNextNode()) ){
-
-      KVDetector *d = n->GetDetector();
-      part->AddDetector(d);
-      d->AddHit(part);  // add particle to list of particles hitting detector
-      d->SetAnalysed(kTRUE);   //cannot be used to seed another particle
-
-   }
-
-   part->ResetNSegDet();
-}
 
 //_________________________________________________________________________________
 
@@ -1886,28 +1756,6 @@ void KVMultiDetArray::PrintCalibStatusOfDetectors()
 
 //_________________________________________________________________________________
 
-Double_t KVMultiDetArray::GetTargetEnergyLossCorrection(KVReconstructedNucleus* ion)
-{
-   // Calculate the energy loss in the current target of the multidetector
-   // for the reconstructed charged particle 'ion', assuming that the current
-   // energy and momentum of this particle correspond to its state on
-   // leaving the target.
-   //
-   // WARNING: for this correction to work, the target must be in the right 'state':
-   //
-   //      gMultiDetArray->GetTarget()->SetIncoming(kFALSE);
-   //      gMultiDetArray->GetTarget()->SetOutgoing(kTRUE);
-   //
-   // (see KVTarget::GetParticleEIncFromERes).
-   //
-   // The returned value is the energy lost in the target in MeV.
-   // The energy/momentum of 'ion' are not affected.
-
-   if (fTarget && ion) return (fTarget->GetParticleEIncFromERes(ion) - ion->GetEnergy());
-   return 0;
-}
-
-//_________________________________________________________________________________
 
 TGeoManager* KVMultiDetArray::GetGeometry() const
 {
@@ -2129,12 +1977,12 @@ void KVMultiDetArray::PrepareModifGroup(KVGroup* grp, KVDetector* dd)
       //Info("PrepareModif","On retire les detecteurs alignes pour %s",det->GetName());
       //REIMPLEMENT det->ResetAlignedDetectors(KVGroup::kForwards);
       //det->ResetAlignedDetectors(KVGroup::kBackwards);
-      Int_t ntel = det->GetIDTelescopes()->GetEntries();
+      Int_t ntel ;//= det->GetIDTelescopes()->GetEntries();
       for (Int_t ii = 0; ii < ntel; ii += 1) {
-         id = (KVIDTelescope*)det->GetIDTelescopes()->At(0);
+         //id = (KVIDTelescope*)det->GetIDTelescopes()->At(0);
          if (id->GetDetectors()->FindObject(dd)) {
             nv.SetValue(id->GetName(), "");
-            det->GetIDTelescopes()->RemoveAt(0);
+            // det->GetIDTelescopes()->RemoveAt(0);
          }
       }
    }

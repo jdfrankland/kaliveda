@@ -138,12 +138,11 @@ void KVIDZAGrid::RemoveLine(Int_t Z, Int_t A)
       if ((tmpline = GetZALine(Z, A, toto))) RemoveIdentifier((KVIDentifier*)tmpline);
    } else {
       if (!IsOnlyZId()) {
-         KVList* tmplist = (KVList*)fIdentifiers->GetSubListWithMethod(Form("%d", Z), "GetZ");
+         smart_pointer<KVSeqCollection> tmplist = fIdentifiers->GetSubListWithMethod(Form("%d", Z), "GetZ");
          TIter next_id(tmplist);
          while ((tmpline = (KVIDZALine*)next_id())) {
             if (tmpline) RemoveIdentifier((KVIDentifier*)tmpline);
          }
-         delete tmplist;
       } else if ((tmpline = GetZLine(Z, toto))) RemoveIdentifier((KVIDentifier*)tmpline);
    }
 }

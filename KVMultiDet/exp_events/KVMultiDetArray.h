@@ -10,17 +10,14 @@
 #include "TGeoManager.h"
 #include "KVNucleus.h"
 #include "KVDetector.h"
-#include "KVReconNucTrajectory.h"
 class KVIDGraph;
 class KVTarget;
 class KVIDTelescope;
 class KVACQParam;
-class KVReconstructedEvent;
 class KVDetectorEvent;
 class KVGroup;
 class KVEvent;
 class KVNameValueList;
-class KVReconstructedNucleus;
 class KVList;
 class KVGeoNavigator;
 class KVRangeTableGeoNavigator;
@@ -61,8 +58,6 @@ protected:
    KVRangeTableGeoNavigator* fNavigator;//! for propagating particles through array geometry
 
     KVHashList fTrajectories;//! list of all possible trajectories through detectors of array
-    KVHashList fReconTraj;//! list of all possible trajectories for reconstructed particles
-   KVNameValueList fReconTrajMap; //! map names of duplicate trajectories for reconstructed particles
 
    virtual void MakeListOfDetectors();
    virtual void SetACQParams();
@@ -127,11 +122,8 @@ public:
    };
    virtual void SetArrayACQParams();
 
-    virtual void ReconstructEvent(KVReconstructedEvent*,KVDetectorEvent*);
-    virtual void ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
-
    //virtual void DetectEvent(KVEvent* event, KVReconstructedEvent* rec_event, const Char_t* detection_frame = "");
-   virtual Int_t FilteredEventCoherencyAnalysis(Int_t round, KVReconstructedEvent* rec_event);
+   //virtual Int_t FilteredEventCoherencyAnalysis(Int_t round, KVReconstructedEvent* rec_event);
    virtual void GetDetectorEvent(KVDetectorEvent* detev, TSeqCollection* fired_params = 0);
 
    KVIDTelescope* GetIDTelescope(const Char_t* name) const;
@@ -149,9 +141,7 @@ public:
    KVTarget* GetTarget()
    {
       return fTarget;
-   };
-
-   virtual Double_t GetTargetEnergyLossCorrection(KVReconstructedNucleus*);
+   }
 
    Bool_t IsRemoving()
    {
@@ -238,17 +228,6 @@ public:
    {
        // Get list of all possible trajectories for particles traversing array
        return &fTrajectories;
-    }
-   const TSeqCollection* GetReconTrajectories() const
-   {
-       // Get list of all possible trajectories for particle reconstruction in array
-       return &fReconTraj;
-    }
-    const KVReconNucTrajectory* GetTrajectoryForReconstruction(const KVGeoDNTrajectory* t, const KVGeoDetectorNode* n) const
-    {
-      TString mapped_name = fReconTrajMap.GetStringValue(Form("%s_%s", t->GetName(), n->GetName()));
-      const KVReconNucTrajectory* tr = (const KVReconNucTrajectory*)fReconTraj.FindObject(mapped_name);
-       return tr;
     }
 
     ClassDef(KVMultiDetArray,7)//Base class for multidetector arrays    

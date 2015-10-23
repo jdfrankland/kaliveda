@@ -1158,7 +1158,7 @@ void KVIDGridEditor::MakeTransformation()
 
 
          for (int Z = zmin; Z <= zmax; Z++) {
-            KVList* tmpl = (KVList*)TheGrid->GetIdentifiers()->GetSubListWithMethod(Form("%d", Z), "GetZ");
+            smart_pointer<KVSeqCollection> tmpl = TheGrid->GetIdentifiers()->GetSubListWithMethod(Form("%d", Z), "GetZ");
             TIter it(tmpl);
             line = 0;
             while ((line = (KVIDZALine*)it())) {
@@ -1186,7 +1186,6 @@ void KVIDGridEditor::MakeTransformation()
                   continue;
                }
             }
-            delete tmpl;
          }
       }
    }
@@ -2451,7 +2450,7 @@ void KVIDGridEditor::ChangeMasses(const Char_t* Zl, Int_t dA)
    ZL.Begin();
    while (!ZL.End()) {
       Int_t Z = ZL.Next();
-      KVList* ll = (KVList*) TheGrid->GetIdentifiers()->GetSubListWithMethod(Form("%d", Z), "GetZ");
+      smart_pointer<KVSeqCollection> ll = TheGrid->GetIdentifiers()->GetSubListWithMethod(Form("%d", Z), "GetZ");
       Info("ChangeMasses", "%d lines found for Z=%d", ll->GetSize(), Z);
 
       KVIDentifier* id = 0;
@@ -2460,7 +2459,6 @@ void KVIDGridEditor::ChangeMasses(const Char_t* Zl, Int_t dA)
          Info("ChangeMasses", "A=%d -> A=%d", id->GetA(), id->GetA() + dA);
          id->SetA(id->GetA() + dA);
       }
-      delete ll;
    }
 }
 
@@ -2474,7 +2472,7 @@ void KVIDGridEditor::ChangeCharges(const Char_t* Zl, Int_t dZ)
 
    for (int i = n - 1; i > 0; i--) {
       Int_t Z = ztab[i];
-      KVList* ll = (KVList*) TheGrid->GetIdentifiers()->GetSubListWithMethod(Form("%d", Z), "GetZ");
+      smart_pointer<KVSeqCollection> ll = TheGrid->GetIdentifiers()->GetSubListWithMethod(Form("%d", Z), "GetZ");
       Info("ChangeMasses", "%d lines found for Z=%d", ll->GetSize(), Z);
 
       KVIDentifier* id = 0;
@@ -2483,7 +2481,6 @@ void KVIDGridEditor::ChangeCharges(const Char_t* Zl, Int_t dZ)
          Info("ChangeMasses", "Z=%d -> Z=%d", id->GetZ(), id->GetZ() + dZ);
          id->SetZ(id->GetZ() + dZ);
       }
-      delete ll;
 
    }
 }

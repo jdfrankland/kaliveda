@@ -4,6 +4,7 @@
 #ifndef __KVGEOSTRUCELEMENT_H
 #define __KVGEOSTRUCELEMENT_H
 
+#include "smart_pointer.h"
 #include "KVBase.h"
 #include "KVUniqueNameList.h"
 #include "KVDetector.h"
@@ -76,7 +77,7 @@ public:
    }
    KVGeoStrucElement* GetStructure(const Char_t* type, Int_t num) const;
    KVGeoStrucElement* GetStructure(const Char_t* type, const Char_t* name) const;
-   KVSeqCollection* GetStructureTypeList(const Char_t* type) const;
+   smart_pointer<KVSeqCollection> GetStructureTypeList(const Char_t* type) const;
    KVDetector* GetDetector(const Char_t* name) const
    {
       // Return detector in this structure with given name

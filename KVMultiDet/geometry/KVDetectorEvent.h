@@ -34,7 +34,7 @@ public:
    {
       return (fHitGroups.FindObject(grp->GetName()) != nullptr);
    }
-   virtual UInt_t GetMult() const
+   virtual Int_t GetMult() const
    {
       return fHitGroups.GetEntries();
    }

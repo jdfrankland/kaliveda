@@ -749,9 +749,8 @@ void KVIDGridManagerGUI::CreateAndFillTabs()
       cf->AddFrame(fIDGridList, new TGLayoutHints(kLHintsLeft | kLHintsTop |
                    kLHintsExpandX | kLHintsExpandY, 30,
                    10, 10, 10));
-      KVList* grids = gIDGridManager->GetGridsForIDTelescope(lab);
+      smart_pointer<KVSeqCollection> grids = gIDGridManager->GetGridsForIDTelescope(lab);
       fIDGridList->Display(grids);
-      delete grids;
    }
 
 }
@@ -851,9 +850,8 @@ void KVIDGridManagerGUI::UpdateTabs()
          cf->AddFrame(fIDGridList, new TGLayoutHints(kLHintsLeft | kLHintsTop |
                       kLHintsExpandX | kLHintsExpandY, 30,
                       10, 10, 10));
-         KVList* grids = gIDGridManager->GetGridsForIDTelescope(lab);
+         smart_pointer<KVSeqCollection> grids = gIDGridManager->GetGridsForIDTelescope(lab);
          fIDGridList->Display(grids);
-         delete grids;
          fGridListTabs->MapSubwindows();
          fGridListTabs->Layout();
          fGridListTabs->SetTab(fGridListTabs->GetNumberOfTabs() - 1, kTRUE);
@@ -869,14 +867,11 @@ void KVIDGridManagerGUI::UpdateTabs()
             //  cout << "DEBUG: KVIDGridManagerGUI::UpdateTabs() : recup element '" << el->GetName() << "'..." << endl;
             fIDGridList = (KVListView*)el->fFrame;
             //  cout << "DEBUG: KVIDGridManagerGUI::UpdateTabs() : recup view list '" << fIDGridList->GetName() << "'..." << endl;
-            KVList* grids = gIDGridManager->GetGridsForIDTelescope(lab);
+            smart_pointer<KVSeqCollection> grids = gIDGridManager->GetGridsForIDTelescope(lab);
             //  cout << "DEBUG: KVIDGridManagerGUI::UpdateTabs() : recup list de telescope'" << grids->GetName() << "'..." << endl;
             //grids->ls();
             fIDGridList->Display(grids);
             //  cout << "DEBUG: KVIDGridManagerGUI::UpdateTabs() : display list of grids in the viewerlist..." << endl;
-
-            if (grids) delete grids;
-            //  cout << "DEBUG: KVIDGridManagerGUI::UpdateTabs() : deleting the list..." << endl;
          }
       }
    }
@@ -900,9 +895,8 @@ void KVIDGridManagerGUI::RemoveEmptyTabs()
       //get name of tab
       KVString lab = fGridListTabs->GetTabTab(itab)->GetString();
       //get grids for this tab (if any)
-      KVList* grids = gIDGridManager->GetGridsForIDTelescope(lab);
+      smart_pointer<KVSeqCollection> grids = gIDGridManager->GetGridsForIDTelescope(lab);
       Int_t ngrids = grids->GetEntries();
-      delete grids;
       if (!ngrids) {
          //empty tab! remove it!
          //delete the KVListView

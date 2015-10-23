@@ -283,3 +283,6 @@ KVTreeAnalyzer.PROOFSelections:     off
 KVBatchSystemGUI.AutoUpdate:       no
 KVBatchSystemGUI.RefreshInterval:    300
 
+# Plugins for event reconstruction
+Plugin.KVGroupReconstructor:   KVGroupReconstructor KVGroupReconstructor KVMultiDetexp_events "KVGroupReconstructor()"
+Plugin.KVGeoDNTrajectory: KVReconNucTrajectory KVReconNucTrajectory KVMultiDetexp_events "KVReconNucTrajectory(const KVGeoDNTrajectory*, const KVGeoDetectorNode*)"

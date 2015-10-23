@@ -3,6 +3,8 @@
 
 #include "KVGeoDNTrajectory.h"
 
+#include <TPluginManager.h>
+
 ClassImp(KVGeoDNTrajectory)
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -65,13 +67,15 @@ KVGeoDNTrajectory::KVGeoDNTrajectory() : fNodes(3, 0), fIDTelescopes(kFALSE), fA
 }
 //______________________
 KVGeoDNTrajectory::KVGeoDNTrajectory(KVGeoDetectorNode* node) : fNodes(3, 0), fIDTelescopes(kFALSE), fAddToNodes(kTRUE)
+
 {
    // Create a new trajectory starting from node
    AddFirst(node);
    init();
 }
 //______________________
-KVGeoDNTrajectory::KVGeoDNTrajectory(const KVGeoDNTrajectory& obj) : KVBase(), fNodes(3, 0), fIDTelescopes(kFALSE), fAddToNodes(kTRUE)
+KVGeoDNTrajectory::KVGeoDNTrajectory(const KVGeoDNTrajectory& obj)
+   : KVBase(), fNodes(3, 0), fIDTelescopes(kFALSE), fAddToNodes(kTRUE)
 {
    //copy ctor
    obj.Copy(*this);
@@ -83,7 +87,18 @@ KVGeoDNTrajectory::~KVGeoDNTrajectory()
    // Destructor
 }
 
-//________________________________________________________________
+KVGeoDNTrajectory* KVGeoDNTrajectory::Factory(const char* plugin, const KVGeoDNTrajectory* t, const KVGeoDetectorNode* n)
+{
+   // Instantiate & return object of class corresponding to plugin
+
+   TPluginHandler* ph = LoadPlugin("KVGeoDNTrajectory", plugin);
+   if (ph) {
+
+      return (KVGeoDNTrajectory*)ph->ExecPlugin(2, t, n);
+   }
+   return (KVGeoDNTrajectory*)nullptr;
+}
+
 void KVGeoDNTrajectory::init()
 {
    fIter_idx = fIter_idx_sav = -1;
@@ -116,6 +131,7 @@ void KVGeoDNTrajectory::Copy(TObject& obj) const
    KVGeoDetectorNode* node;
    while ((node = (KVGeoDetectorNode*)next())) CastedObj.AddLast(node);
    CastedObj.fAddToNodes = fAddToNodes;
+   fIDTelescopes.Copy(CastedObj.fIDTelescopes);
 }
 
 KVGeoDNTrajectory& KVGeoDNTrajectory::operator=(const KVGeoDNTrajectory& t)

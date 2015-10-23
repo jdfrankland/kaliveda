@@ -46,15 +46,14 @@ public:
    inline KVReconstructedNucleus* GetParticle(const Char_t* group_name) const;
    inline KVReconstructedNucleus* GetNextParticle(Option_t* opt = "");
 
-   virtual const Char_t *GetPartSeedCond() const{
+   virtual const Char_t* GetPartSeedCond() const
+   {
       return fPartSeedCond;
    }
    virtual void SetPartSeedCond(const Char_t* cond)
    {
       fPartSeedCond = cond;
    }
-   virtual void IdentifyEvent();
-   virtual void CalibrateEvent();
 
    virtual void Print(Option_t* t = "") const;
 

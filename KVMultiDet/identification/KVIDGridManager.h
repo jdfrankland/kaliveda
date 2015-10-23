@@ -62,13 +62,12 @@ public:
       Emit("Modified()");
    };                           // *SIGNAL*
 
-   KVList* GetGridsForIDTelescope(const Char_t* label)
+   smart_pointer<KVSeqCollection> GetGridsForIDTelescope(const Char_t* label)
    {
       // Returns list of ID grids associated to ID telescopes of type 'label'
       // (note: 'type' is actually value of KVIDTelescope::GetLabel)
-      // DELETE LIST AFTER USE !!!
 
-      return (KVList*)fGrids->GetSubListWithMethod(label, "GetIDTelescopeLabel");
+      return fGrids->GetSubListWithMethod(label, "GetIDTelescopeLabel");
       //N.B. cast to (KVList*) is valid as long as fGrids is a KVList
    };
    void GetListOfIDTelescopeLabels(KVString&);

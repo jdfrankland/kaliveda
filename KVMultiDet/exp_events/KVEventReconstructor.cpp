@@ -2,6 +2,9 @@
 //Author: John Frankland,,,
 
 #include "KVEventReconstructor.h"
+#include "KVDetectorEvent.h"
+#include "KVGroupReconstructor.h"
+#include "KVTarget.h"
 
 ClassImp(KVEventReconstructor)
 
@@ -12,9 +15,23 @@ ClassImp(KVEventReconstructor)
 <h4>Base class for handling event reconstruction</h4>
 <!-- */
 // --> END_HTML
+// Event reconstruction begins with a KVMultiDetArray containing hit
+// detectors (either following the simulated detection of a simulated event,
+// or after reading some experimental data corresponding to an experimental
+// event) and ends with a KVReconstructedEvent object filled with
+// KVReconstructedNucleus objects corresponding to the reconstructed
+// (and possibly identfied & calibrated) particles.
+//
+// 1. Get list of hit groups (KVDetectorEvent)
+// 2. For each hit group, perform reconstruction/identification/ etc. in the group
+//    using a KVGroupReconstructor-derived object (uses plugins)
+// 3. Merge together the different event fragments into the output reconstructed
+//    event object
 ////////////////////////////////////////////////////////////////////////////////
 
-KVEventReconstructor::KVEventReconstructor()
+KVEventReconstructor::KVEventReconstructor(KVMultiDetArray* a, KVReconstructedEvent* e)
+   : KVBase("KVEventReconstructor", Form("Reconstruction of events in array %s", a->GetName())),
+     fArray(a), fEvent(e), fGroupReconstructor(nullptr)
 {
    // Default constructor
 }
@@ -22,6 +39,7 @@ KVEventReconstructor::KVEventReconstructor()
 KVEventReconstructor::~KVEventReconstructor()
 {
    // Destructor
+
 }
 
 //________________________________________________________________
@@ -39,82 +57,109 @@ void KVEventReconstructor::Copy(TObject& obj) const
    //KVEventReconstructor& CastedObj = (KVEventReconstructor&)obj;
 }
 
-void KVEventReconstructor::ReconstructEvent(KVReconstructedEvent* recev, KVDetectorEvent* kvde)
+void KVEventReconstructor::SetGroupReconstructorPlugin(const char* p)
 {
-   // Use the KVDetectorEvent (list of hit groups) in order to fill the
-   // KVReconstructedEvent with reconstructed nuclei
+   // Set up TClonesArray of group reconstructors for detector array
+
+   KVGroupReconstructor* gr = KVGroupReconstructor::Factory(p);
+   TClass* plugin_class = gr->IsA();
+   delete gr;
+   smart_pointer<KVSeqCollection> groups = GetArray()->GetStructureTypeList("GROUP");
+   Int_t N = groups->GetEntries();
+   fGroupReconstructor = new TClonesArray(plugin_class, N);
+   for (int i = 0; i < N; ++i) {
+      KVGroupReconstructor* grec = (KVGroupReconstructor*)fGroupReconstructor->ConstructedAt(i);
+      grec->SetReconEventClass(GetEvent()->IsA());
+      grec->SetEventReconstructor(this);
+   }
+}
+
+void KVEventReconstructor::ReconstructEvent(TSeqCollection* fired)
+{
+   // Reconstruct current event based on state of detectors in array
    //
-   // See KVReconstructedEvent::AnalyseTrajectory for details of particle reconstruction
+   // The list pointer, if given, can be used to supply a list of fired
+   // acquisition parameters to KVMultiDetArray::GetDetectorEvent
 
-   KVGroup* grp_tch;
-   TIter nxt_grp(kvde->GetGroups());
-   // loop over hit groups
-   while ((grp_tch = (KVGroup*) nxt_grp())) {
+   KVDetectorEvent detev;
+   GetArray()->GetDetectorEvent(&detev, fired);
 
-      TIter nxt_traj(grp_tch->GetTrajectories());
-      KVGeoDNTrajectory* traj;
-      // loop over trajectories
-      while ((traj = (KVGeoDNTrajectory*)nxt_traj())) {
+   fGroupReconstructor->Clear();
+   fNGrpRecon = 0;
 
-         // Work our way along the trajectory, starting from furthest detector from target,
-         // start reconstruction of new detected particle from first fired detector.
-         //
-         // More precisely: If detector has fired*,
-         // making sure fired detector hasn't already been used to reconstruct
-         // a particle, then we create and fill a new detected particle.
-         //
-         // *change condition by calling SetPartSeedCond("any"): in this case,
-         // particles will be reconstructed starting from detectors with at least 1 fired parameter.
+   KVGroup* g;
+   TIter it(detev.GetGroups());
+   while ((g = (KVGroup*)it())) {
 
-         traj->IterateFrom();
-         KVGeoDetectorNode* node;
-         while ((node = traj->GetNextNode())) {
+      KVGroupReconstructor* Grec = (KVGroupReconstructor*)fGroupReconstructor->ConstructedAt(fNGrpRecon++);
+      Grec->SetGroup(g);
+      Grec->Reconstruct();
 
-            KVDetector* d = node->GetDetector();
-            /*
-                  If detector has fired,
-                  making sure fired detector hasn't already been used to reconstruct
-                  a particle, then we create and fill a new detected particle.
-              */
-            if ((d->Fired(recev->GetPartSeedCond()) && !d->IsAnalysed())) {
-
-               KVReconstructedNucleus* kvdp = recev->AddParticle();
-               //add all active detector layers in front of this one
-               //to the detected particle's list
-               ReconstructParticle(kvdp, traj, node);
-
-               //set detector state so it will not be used again
-               d->SetAnalysed(kTRUE);
-            }
-         }
-
-      }
-
-      KVReconstructedNucleus::AnalyseParticlesInGroup(grp_tch);
    }
+
 }
 
-void KVEventReconstructor::ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node)
+void KVEventReconstructor::IdentifyEvent()
 {
-   // Reconstruction of a detected nucleus from the successive energy losses
-   // measured in a series of detectors/telescopes along a given trajectory
+   // Identify current event based on state of detectors in array
 
-   const KVReconNucTrajectory* Rtraj = gMultiDetArray->GetTrajectoryForReconstruction(traj, node);
-   part->SetReconstructionTrajectory(Rtraj);
-   node->GetDetector()->GetGroup()->AddHit(part);
+   for (int i = 0; i < fNGrpRecon; i++) {
 
-   Rtraj->IterateFrom();// iterate over trajectory
-   KVGeoDetectorNode* n;
-   while ((n = Rtraj->GetNextNode())) {
-
-      KVDetector* d = n->GetDetector();
-      part->AddDetector(d);
-      d->AddHit(part);  // add particle to list of particles hitting detector
-      d->SetAnalysed(kTRUE);   //cannot be used to seed another particle
+      ((KVGroupReconstructor*)(*fGroupReconstructor)[i])->Identify();
 
    }
 
-   part->ResetNSegDet();
 }
 
-//_________________________________________________________________________________
+void KVEventReconstructor::CalibrateEvent()
+{
+   // Calibrate current event based on state of detectors in array
+
+
+   if (GetArray()->GetTarget()) {
+      GetArray()->GetTarget()->SetIncoming(kFALSE);
+      GetArray()->GetTarget()->SetOutgoing(kTRUE);
+   }
+   for (int i = 0; i < fNGrpRecon; i++) {
+
+      ((KVGroupReconstructor*)(*fGroupReconstructor)[i])->Calibrate();
+
+   }
+
+}
+
+void KVEventReconstructor::MergeGroupEventFragments()
+{
+   // After processing has finished in groups, call this method to produce
+   // a final merged event containing particles from all groups
+
+   TList to_merge;
+   for (int i = 0; i < fNGrpRecon; i++) {
+
+      to_merge.Add(((KVGroupReconstructor*)(*fGroupReconstructor)[i])->GetEventFragment());
+
+   }
+   GetEvent()->MergeEventFragments(&to_merge);
+}
+
+Double_t KVEventReconstructor::GetTargetEnergyLossCorrection(KVReconstructedNucleus* ion)
+{
+   // Calculate the energy loss in the current target of the multidetector
+   // for the reconstructed charged particle 'ion', assuming that the current
+   // energy and momentum of this particle correspond to its state on
+   // leaving the target.
+   //
+   // WARNING: for this correction to work, the target must be in the right 'state':
+   //
+   //      gMultiDetArray->GetTarget()->SetIncoming(kFALSE);
+   //      gMultiDetArray->GetTarget()->SetOutgoing(kTRUE);
+   //
+   // (see KVTarget::GetParticleEIncFromERes).
+   //
+   // The returned value is the energy lost in the target in MeV.
+   // The energy/momentum of 'ion' are not affected.
+
+   if (!GetArray()->GetTarget() || !ion) return 0.0;
+   return (GetArray()->GetTarget()->GetParticleEIncFromERes(ion) - ion->GetEnergy());
+}
+

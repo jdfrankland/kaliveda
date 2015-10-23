@@ -139,7 +139,6 @@ void KVIDTelescope::AddDetector(KVDetector* d)
 
    if (d) {
       fDetectors->Add(d);
-      d->AddIDTelescope(this);
       if (GetSize() > 1)
          SetName(Form("ID_%s_%s", GetDetector(1)->GetName(), GetDetector(2)->GetName()));
       else SetName(Form("ID_%s", GetDetector(1)->GetName()));

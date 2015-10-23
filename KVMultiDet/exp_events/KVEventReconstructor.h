@@ -5,20 +5,43 @@
 #define __KVEVENTRECONSTRUCTOR_H
 
 #include "KVBase.h"
+#include "KVMultiDetArray.h"
+#include "KVReconstructedEvent.h"
 
 class KVEventReconstructor : public KVBase {
 
+   KVMultiDetArray*       fArray;//!       Array for which events are to be reconstructed
+   KVReconstructedEvent*  fEvent;//!       The reconstructed event
+   TClonesArray*   fGroupReconstructor;//! array of group reconstructors
+   Int_t           fNGrpRecon;//!          number of group reconstructors for current event
+
+protected:
+   KVMultiDetArray* GetArray()
+   {
+      return fArray;
+   }
+
 public:
-   KVEventReconstructor();
+   KVEventReconstructor(KVMultiDetArray*, KVReconstructedEvent*);
    virtual ~KVEventReconstructor();
 
    void Copy(TObject& obj) const;
 
-   virtual void ReconstructEvent(KVReconstructedEvent*, KVDetectorEvent*);
-   virtual void ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
-   virtual void AnalyseParticlesInGroup(KVGroup* grp);
+   void SetGroupReconstructorPlugin(const char* p);
 
-   ClassDef(KVEventReconstructor, 1) //Base class for handling event reconstruction
+   void ReconstructEvent(TSeqCollection* = nullptr);
+   void IdentifyEvent();
+   void CalibrateEvent();
+
+   void MergeGroupEventFragments();
+
+   KVReconstructedEvent* GetEvent()
+   {
+      return fEvent;
+   }
+   Double_t GetTargetEnergyLossCorrection(KVReconstructedNucleus*);
+
+   ClassDef(KVEventReconstructor, 0) //Base class for handling event reconstruction
 };
 
 #endif

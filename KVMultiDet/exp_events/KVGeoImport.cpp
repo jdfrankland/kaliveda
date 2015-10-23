@@ -135,7 +135,8 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
 
    // note that ImportGeometry can be called for a KVMultiDetArray
    // which already contains detectors, groups and id telescopes
-   fGroupNumber = fArray->GetStructureTypeList("GROUP")->GetEntries();
+   smart_pointer<KVSeqCollection> groups = fArray->GetStructureTypeList("GROUP");
+   fGroupNumber = groups->GetEntries();
    Int_t ndets0 = fArray->GetDetectors()->GetEntries();
 
    Info("ImportGeometry",

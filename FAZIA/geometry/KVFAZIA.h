@@ -53,7 +53,7 @@ public:
    virtual void Build(Int_t run = -1);
    void SortIDTelescopes();
 
-   void GetDetectorEvent(KVDetectorEvent* detev, TSeqCollection* fired_params);
+   void GetDetectorEvent(KVDetectorEvent* detev, TSeqCollection* fired_params = 0);
    Int_t GetNumberOfBlocks() const
    {
       return fNblocks;

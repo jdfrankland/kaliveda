@@ -136,9 +136,8 @@ KVGeoStrucElement* KVGeoStrucElement::GetStructure(const Char_t* type, Int_t num
 {
    // Get structure with type and number
 
-   KVSeqCollection* typelist = GetStructureTypeList(type);
+   smart_pointer<KVSeqCollection> typelist = GetStructureTypeList(type);
    KVGeoStrucElement* elem = (KVGeoStrucElement*)typelist->FindObjectByNumber(num);
-   delete typelist;
    return elem;
 }
 
@@ -148,13 +147,12 @@ KVGeoStrucElement* KVGeoStrucElement::GetStructure(const Char_t* type, const Cha
    return (KVGeoStrucElement*)fStructures.FindObjectWithNameAndType(name, type);
 }
 
-KVSeqCollection* KVGeoStrucElement::GetStructureTypeList(const Char_t* type) const
+smart_pointer<KVSeqCollection> KVGeoStrucElement::GetStructureTypeList(const Char_t* type) const
 {
    // Create and fill a list with all structures of given type which are daughters
    // of this structure.
-   // DELETE LIST AFTER USE
 
-   return fStructures.GetSubListWithType(type);
+   return smart_pointer<KVSeqCollection>(fStructures.GetSubListWithType(type));
 }
 
 KVSeqCollection* KVGeoStrucElement::GetDetectorTypeList(const Char_t* type) const

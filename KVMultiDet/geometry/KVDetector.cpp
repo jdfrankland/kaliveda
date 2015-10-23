@@ -97,13 +97,12 @@ void KVDetector::init()
    //default initialisations
    fCalibrators = 0;
    fACQParams = 0;
-   fParticles = 0;
+   fParticles.SetOwner(kFALSE);
+   fParticles.SetCleanup();
    fGain = 1.;
    fCalWarning = 0;
    fAbsorbers = new KVList;
    fActiveLayer = 0;
-   fIDTelescopes = new KVList(kFALSE);
-   fIDTelescopes->SetCleanup(kTRUE);
    fIdentP = fUnidentP = 0;
    fFiredMask.Set("0");
    fELossF = fEResF = fRangeF = 0;
@@ -112,7 +111,7 @@ void KVDetector::init()
    fPresent = kTRUE;
    fDetecting = kTRUE;
    fParentStrucList.SetCleanup();
-    fNode.SetDetector(this);
+   fNode.SetDetector(this);
 }
 
 KVDetector::KVDetector()
@@ -174,10 +173,7 @@ void KVDetector::Copy(TObject& obj)
 //_______________________________________________________________
 KVDetector::~KVDetector()
 {
-   fIDTelescopes->Clear();
-   SafeDelete(fIDTelescopes);
    SafeDelete(fCalibrators);
-   SafeDelete(fParticles);
    delete fAbsorbers;
    SafeDelete(fACQParams);
    SafeDelete(fELossF);
@@ -370,13 +366,9 @@ void KVDetector::Print(Option_t* opt) const
             cout << " #################### " << endl;
       }
       cout << option << "Gain:      " << GetGain() << endl;
-      if (fParticles) {
+      if (fParticles.GetEntries()) {
          cout << option << " --- Detected particles:" << endl;
-         fParticles->Print();
-      }
-      if (fIDTelescopes) {
-         cout << option << " --- Detector belongs to the following Identification Telescopes:" << endl;
-         fIDTelescopes->ls();
+         fParticles.Print();
       }
    } else {
       //just print name
@@ -590,14 +582,6 @@ void KVDetector::RemoveCalibrators()
    //Removes all calibrations associated to this detector: in other words, we delete all
    //the KVCalibrator objects in list fCalibrators.
    if (fCalibrators) fCalibrators->Delete();
-}
-
-//___________________________________________________________________________//
-
-void KVDetector::AddIDTelescope(TObject* idt)
-{
-   //Add ID telescope to list of telescopes to which detector belongs
-   fIDTelescopes->Add(idt);
 }
 
 //______________________________________________________________________________//

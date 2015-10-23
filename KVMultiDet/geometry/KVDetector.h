@@ -45,7 +45,6 @@ private:
    KVGeoDetectorNode fNode;//positioning information relative to other detectors
    static Int_t fDetCounter;
    Short_t fActiveLayer;        //The active absorber in the detector
-   KVList* fIDTelescopes;       //->list of ID telescopes to which detector belongs
 
    enum {
       kIsAnalysed = BIT(14),    //for reconstruction of particles
@@ -84,7 +83,7 @@ protected:
    TString fFName;              //!dynamically generated full name of detector
    KVList* fCalibrators;        //list of associated calibrator objects
    KVList* fACQParams;          //list of raw data parameters read from coders
-   KVList* fParticles;         //!list of particles hitting detector in an event
+   KVList fParticles;          //!list of particles hitting detector in an event
    KVList* fAbsorbers;          //->list of absorbers making up the detector
    Double_t fGain;               //gain of amplifier
    Int_t fCalWarning;           //!just a counter so that missing calibrator warning is given only once
@@ -147,7 +146,7 @@ public:
       // Calculate and return the total thickness in centimetres of ALL absorbers making up the detector,
       // not just the active layer (value returned by GetThickness()).
 
-        Double_t fTotThickness=0;
+      Double_t fTotThickness = 0;
       TIter next(fAbsorbers);
       KVMaterial* mat;
       while ((mat = (KVMaterial*)next())) fTotThickness += mat->GetThickness();
@@ -229,37 +228,33 @@ public:
    {
       // Add to the list of particles hitting this detector in an event
 
-      if (!fParticles) {
-         fParticles = new KVList(kFALSE);
-         fParticles->SetCleanup();
-      }
-      fParticles->Add(part);
-   };
+      fParticles.Add(part);
+   }
 
    // Return the list of particles hitting this detector in an event
-   KVList* GetHits() const
+   const KVList* GetHits() const
    {
-      return fParticles;
-   };
+      return &fParticles;
+   }
    void ClearHits()
    {
       // clear the list of particles hitting this detector in an event
-      if (fParticles) fParticles->Clear();
-   };
+      fParticles.Clear();
+   }
    // Return the number of particles hitting this detector in an event
    Int_t GetNHits() const
    {
-      return (fParticles ? fParticles->GetEntries() : 0);
-   };
+      return fParticles.GetEntries();
+   }
 
    Bool_t IsAnalysed()
    {
       return TestBit(kIsAnalysed);
-   };
+   }
    void SetAnalysed(Bool_t b = kTRUE)
    {
       SetBit(kIsAnalysed, b);
-   };
+   }
    inline virtual Bool_t Fired(Option_t* opt = "any");
    inline virtual Bool_t FiredP(Option_t* opt = "any");
 
@@ -267,33 +262,26 @@ public:
    virtual void SetCalibrators();
    virtual void RemoveCalibrators();
 
-   virtual void AddIDTelescope(TObject* idt);
-   KVList* GetIDTelescopes()
-   {
-      //Return list of IDTelescopes to which detector belongs
-      return fIDTelescopes;
-    }
-
    inline void IncrementUnidentifiedParticles(Int_t n = 1)
    {
       fUnidentP += n;
       fUnidentP = (fUnidentP > 0) * fUnidentP;
       SetBit(kUnidentifiedParticle, (Bool_t)(fUnidentP > 0));
-   };
+   }
    inline void IncrementIdentifiedParticles(Int_t n = 1)
    {
       fIdentP += n;
       fIdentP = (fIdentP > 0) * fIdentP;
       SetBit(kIdentifiedParticle, (Bool_t)(fIdentP > 0));
-   };
+   }
    Bool_t BelongsToUnidentifiedParticle() const
    {
       return TestBit(kUnidentifiedParticle);
-   };
+   }
    Bool_t BelongsToIdentifiedParticle() const
    {
       return TestBit(kIdentifiedParticle);
-   };
+   }
 
    static KVDetector* MakeDetector(const Char_t* name, Float_t thick);
    const TVector3& GetNormal();
@@ -396,7 +384,7 @@ public:
       return (fPresent && fDetecting);
    }
 
-   virtual void DeduceACQParameters(Int_t /*zz*/ = -1, Int_t /*aa*/ = -1) {};
+   virtual void DeduceACQParameters(Int_t /*zz*/ = -1, Int_t /*aa*/ = -1) {}
 
    KVGroup* GetGroup() const;
    UInt_t GetGroupNumber();
@@ -420,7 +408,7 @@ public:
       return fEWPosition;
    }
 
-    ClassDef(KVDetector, 10)      //Base class for the description of detectors in multidetector arrays
+   ClassDef(KVDetector, 10)      //Base class for the description of detectors in multidetector arrays
 };
 
 inline KVCalibrator* KVDetector::GetCalibrator(const Char_t* name,

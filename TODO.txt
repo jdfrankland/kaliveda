@@ -1,6 +1,6 @@
 NOTE: look at inconsistencies between KVParticle::Copy and operator= ? (and copy ctor?)
 
-NEW: separate class for event reconstruction
+NEW: separate class for event reconstruction/identification/calibration
 
 TO BE REMOVED:
 ==============
@@ -30,6 +30,10 @@ KVReconstructedNucleus:
    AddDetector: calculation of NSegDet in initial reconstruction => DONE
    Reconstruct => DONE
    Identify => DONE
+   Calibrate => DONE
+
+KVReconstructedEvent:
+   Streamer
 
 KVIDTelescope:
    MakeIDLine

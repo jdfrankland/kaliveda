@@ -47,7 +47,7 @@ void KVDetectorEvent::Print(Option_t*) const
    cout << "\n";
    if (GetMult()) {
       KVGroup* g;
-      for (UInt_t i = 0; i < GetMult(); i++) {
+      for (Int_t i = 0; i < GetMult(); i++) {
          g = (KVGroup*) fHitGroups.At(i);
          g->Print("fired");
       }

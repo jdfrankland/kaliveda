@@ -11,6 +11,10 @@
 
 class KVGeoDNTrajectory : public KVBase {
 
+   friend class KVGroup;
+
+   static KVGeoDNTrajectory* Factory(const char* plugin, const KVGeoDNTrajectory*, const KVGeoDetectorNode*);
+
    void init();
 
    TObjArray fNodes;
@@ -217,6 +221,10 @@ public:
    {
       // Modifiable list of identification telescopes on trajectory
       return &fIDTelescopes;
+   }
+   Int_t GetNumberOfIdentifications() const
+   {
+      return fIDTelescopes.GetEntries();
    }
 
    ClassDef(KVGeoDNTrajectory, 1) //Path taken by particles through multidetector geometry

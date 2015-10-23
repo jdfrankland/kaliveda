@@ -90,10 +90,9 @@ void KVReconstructedEvent::Streamer(TBuffer& R__b)
                par->GetAnglesFromStoppingDetector("mean");
             else
                par->GetAnglesFromStoppingDetector("random");
-            //reconstruct fAnalStatus information for KVReconstructedNucleus
-            if (par->GetStatus() == 99)        //AnalStatus has not been set for particles in group
-               if (par->GetGroup())
-                  KVReconstructedNucleus::AnalyseParticlesInGroup(par->GetGroup());
+            //REIMPLEMENT??? reconstruct fAnalStatus information for KVReconstructedNucleus
+            //if (par->GetStatus() == 99)        //AnalStatus has not been set for particles in group
+            //if (par->GetGroup())KVReconstructedNucleus::AnalyseParticlesInGroup( par->GetGroup() );
          }
       }
    } else {
@@ -125,68 +124,4 @@ void KVReconstructedEvent::Print(Option_t* option) const
 
 }
 
-//____________________________________________________________________________
-
-void KVReconstructedEvent::IdentifyEvent()
-{
-   //All particles which have not been previously identified (IsIdentified=kFALSE), and which
-   //may be identified independently of all other particles in their group according to the 1st
-   //order coherency analysis (KVReconstructedNucleus::GetStatus=0), will be identified.
-   //Particles stopping in first member of a telescope (KVReconstructedNucleus::GetStatus=3) will
-   //have their Z estimated from the energy loss in the detector (if calibrated).
-
-   KVReconstructedNucleus* d;
-   while ((d = GetNextParticle())) {
-      if (!d->IsIdentified()) {
-         if (d->GetStatus() == KVReconstructedNucleus::kStatusOK) {
-            // identifiable particles
-            d->Identify();
-         } else if (d->GetStatus() == KVReconstructedNucleus::kStatusStopFirstStage) {
-            // particles stopped in first member of a telescope
-            // estimation of Z (minimum) from energy loss (if detector is calibrated)
-            UInt_t zmin = d->GetStoppingDetector()->FindZmin(-1., d->GetMassFormula());
-            if (zmin) {
-               d->SetZ(zmin);
-               d->SetIsIdentified();
-               // "Identifying" telescope is taken from list of ID telescopes
-               // to which stopping detector belongs
-               d->SetIdentifyingTelescope((KVIDTelescope*)d->GetStoppingDetector()->GetIDTelescopes()->At(0));
-            }
-         }
-      }
-   }
-}
-
-//_____________________________________________________________________________
-
-void KVReconstructedEvent::CalibrateEvent()
-{
-   // Calculate and set energies of all identified particles in event.
-   //
-   // This will call the KVReconstructedNucleus::Calibrate() method of each
-   // uncalibrated particle (those for which KVReconstructedNucleus::IsCalibrated()
-   // returns kFALSE).
-   //
-   // In order to make sure that target energy loss corrections are correctly
-   // calculated, we first set the state of the target in the current multidetector
-
-   KVTarget* t = gMultiDetArray->GetTarget();
-   if (t) {
-      t->SetIncoming(kFALSE);
-      t->SetOutgoing(kTRUE);
-   }
-
-   KVReconstructedNucleus* d;
-
-   while ((d = GetNextParticle())) {
-
-      if (d->IsIdentified() && !d->IsCalibrated()) {
-         d->Calibrate();
-      }
-
-   }
-
-}
-
-////////////////////////////////////////////////////////////////////////////////////////
 

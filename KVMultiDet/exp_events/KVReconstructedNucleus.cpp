@@ -126,9 +126,10 @@ void KVReconstructedNucleus::Streamer(TBuffer& R__b)
             // trajectory used to reconstruct the particle
             TString traj_t = fDetNames.Strip(TString::kLeading,'/');
             //fReconTraj = GetStoppingDetector()->GetNode()->FindTrajectory(traj_t);
-            if( R__v < 16 ) { ResetNSegDet(); } // fNSegDet/fAnalStatus non-persistent before v.16
+         if (R__v < 16) {
+            ResetNSegDet();   // fNSegDet/fAnalStatus non-persistent before v.16
+         }
 
-         if (GetGroup()) GetGroup()->AddHit(this);
          fIDTelescope = 0;
          if (fIDTelName != "") fIDTelescope = gMultiDetArray->GetIDTelescope(fIDTelName.Data());
          TIter next_det(&fDetList);
@@ -290,155 +291,6 @@ void KVReconstructedNucleus::AddDetector(KVDetector* det)
    }
 }
 
-//_____________________________________________________________________________________
-
-void KVReconstructedNucleus::Identify()
-{
-   // Try to identify this nucleus by calling the Identify() function of each
-   // ID telescope crossed by it, starting with the telescope where the particle stopped, in order
-   //      -  only attempt identification in ID telescopes containing the stopping detector.
-   //      -  only telescopes which have been correctly initialised for the current run are used,
-   //         i.e. those for which KVIDTelescope::IsReadyForID() returns kTRUE.
-   // This continues until a successful identification is achieved or there are no more ID telescopes to try.
-   // The identification code corresponding to the identifying telescope is set as the identification code of the particle.
-
-
-   const KVSeqCollection *idt_list = GetReconstructionTrajectory()->GetIDTelescopes();
-
-   if (idt_list->GetEntries() > 0) {
-
-      KVIDTelescope* idt;
-      TIter next(idt_list);
-      Int_t idnumber = 1;
-      Int_t n_success_id = 0;//number of successful identifications
-      while ((idt = (KVIDTelescope*) next())) {
-
-         KVIdentificationResult* IDR = GetIdentificationResult(idnumber++);
-
-         if (idt->IsReadyForID()) { // is telescope able to identify for this run ?
-
-            IDR->IDattempted = kTRUE;
-            idt->Identify(IDR);
-
-            if (IDR->IDOK) n_success_id++;
-         } else
-            IDR->IDattempted = kFALSE;
-
-         if (n_success_id < 1 &&
-               ((!IDR->IDattempted) || (IDR->IDattempted && !IDR->IDOK))) {
-            // the particle is less identifiable than initially thought
-            // we may have to wait for secondary identification
-            Int_t nseg = GetNSegDet();
-            SetNSegDet(TMath::Max(nseg - 1, 0));
-            //if there are other unidentified particles in the group and NSegDet is < 2
-            //then exact status depends on segmentation of the other particles : reanalyse
-            if (GetNSegDet() < 2 && GetNUnidentifiedInGroup(GetGroup()) > 1) {
-               AnalyseParticlesInGroup(GetGroup());
-               return;
-            }
-            //if NSegDet = 0 it's hopeless
-            if (!GetNSegDet()) {
-               AnalyseParticlesInGroup(GetGroup());
-               return;
-            }
-         }
-
-
-      }
-
-   }
-
-}
-
-//______________________________________________________________________________________________//
-
-void KVReconstructedNucleus::AnalyseParticlesInGroup(KVGroup* grp)
-{
-   if (GetNUnidentifiedInGroup(grp) > 1)  //if there is more than one unidentified particle in the group
-   {
-
-      UShort_t n_nseg_1 = 0;
-      if (!grp->GetParticles()) {
-         ::Error("KVReconstructedNucleus::AnalyseParticlesInGroup", "No particles in group ?");
-         return;
-      }
-      TIter next(grp->GetParticles());
-      KVReconstructedNucleus* nuc;
-      //loop over particles counting up different cases
-      while ((nuc = (KVReconstructedNucleus*) next())) {
-         //ignore identified particles
-         if (nuc->IsIdentified())
-            continue;
-
-         if (nuc->GetNSegDet() >= 2) {
-            //all part.s crossing 2 or more independent detectors are fine
-            nuc->SetStatus(KVReconstructedNucleus::kStatusOK);
-         } else if (nuc->GetNSegDet() == 1) {
-            //only 1 independent detector hit => depends on what's in the rest
-            //of the group
-            n_nseg_1++;
-         } else {
-            //part.s crossing 0 independent detectors (i.E. arret ChIo)
-            //can not be reconstructed
-            nuc->SetStatus(KVReconstructedNucleus::kStatusStopFirstStage);
-         }
-      }
-      next.Reset();
-      //loop again, setting status
-      while ((nuc = (KVReconstructedNucleus*) next())) {
-         if (nuc->IsIdentified())
-            continue;           //ignore identified particles
-
-         if (nuc->GetNSegDet() == 1) {
-            if (n_nseg_1 == 1) {
-               //just the one ? then we can get it no problem
-               //after identifying the others and subtracting their calculated
-               //energy losses from the "dependent"/"non-segmented" detector
-               //(i.E. the ChIo)
-               nuc->SetStatus(KVReconstructedNucleus::kStatusOKafterSub);
-            } else {
-               //more than one ? then we can make some wild guess by sharing the
-               //"non-segmented" (i.e. ChIo) contribution between them, but
-               //I wouldn't trust it as far as I can spit
-               nuc->SetStatus(KVReconstructedNucleus::kStatusOKafterShare);
-            }
-            //one possibility remains: the particle may actually have stopped e.g.
-            //in the DE detector of a DE-E telescope, in which case AnalStatus = 3
-            if (nuc->GetIDTelescopes()->GetSize() == 0) {
-               //no ID telescopes with which to identify particle
-               nuc->SetStatus(KVReconstructedNucleus::kStatusStopFirstStage);
-            }
-         }
-      }
-   } else if (GetNUnidentifiedInGroup(grp) == 1) {
-      //only one unidentified particle in group: if NSegDet>=1 then it's OK
-
-      //loop over particles looking for the unidentified one
-      TIter next(grp->GetParticles());
-      KVReconstructedNucleus* nuc;
-      while ((nuc = (KVReconstructedNucleus*) next()))
-         if (!nuc->IsIdentified())
-            break;
-
-      if (nuc->GetNSegDet() > 0) {
-         //OK no problem
-         nuc->SetStatus(KVReconstructedNucleus::kStatusOK);
-      } else {
-         //dead in the water
-         nuc->SetStatus(KVReconstructedNucleus::kStatusStopFirstStage);
-      }
-      //one possibility remains: the particle may actually have stopped e.g. in the 1st member
-      //of a telescope, in which case AnalStatus = 3
-      if (nuc->GetIDTelescopes()->GetSize() == 0) {
-         //no ID telescopes with which to identify particle
-         nuc->SetStatus(KVReconstructedNucleus::kStatusStopFirstStage);
-      }
-   }
-#ifdef KV_DEBUG
-   Info("AnalyseGroups", "OK after analysis of particles in groups");
-#endif
-}
-
 //___________________________________________________________________________
 
 void KVReconstructedNucleus::GetAnglesFromStoppingDetector(Option_t* opt)
@@ -478,41 +330,6 @@ void KVReconstructedNucleus::GetAnglesFromStoppingDetector(Option_t* opt)
       //middle of telescope
       TVector3 dir = angle_det->GetDirection();
       SetMomentum(GetEnergy(), dir);
-   }
-}
-
-//_________________________________________________________________________________
-
-void KVReconstructedNucleus::Calibrate()
-{
-   //Calculate and set the energy of a (previously identified) reconstructed particle,
-   //including an estimate of the energy loss in the target.
-   //
-   //Starting from the detector in which the particle stopped, we add up the
-   //'corrected' energy losses in all of the detectors through which it passed.
-   //Whenever possible, for detectors which are not calibrated or not working,
-   //we calculate the energy loss. Measured & calculated energy losses are also
-   //compared for each detector, and may lead to new particles being seeded for
-   //subsequent identification. This is done by KVIDTelescope::CalculateParticleEnergy().
-   //
-   //For particles whose energy before hitting the first detector in their path has been
-   //calculated after this step we then add the calculated energy loss in the target,
-   //using gMultiDetArray->GetTargetEnergyLossCorrection().
-
-   KVIDTelescope* idt = GetIdentifyingTelescope();
-   idt->CalculateParticleEnergy(this);
-   if (idt->GetCalibStatus() != KVIDTelescope::kCalibStatus_NoCalibrations) {
-      SetIsCalibrated();
-      //add correction for target energy loss - moving charged particles only!
-      Double_t E_targ = 0.;
-      if (GetZ() && GetEnergy() > 0) {
-         E_targ = gMultiDetArray->GetTargetEnergyLossCorrection(this);
-         SetTargetEnergyLoss(E_targ);
-      }
-      Double_t E_tot = GetEnergy() + E_targ;
-      SetEnergy(E_tot);
-      // set particle momentum from telescope dimensions (random)
-      GetAnglesFromStoppingDetector();
    }
 }
 
