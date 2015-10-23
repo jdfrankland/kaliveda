@@ -592,18 +592,16 @@ TObject* KVSeqCollection::FindObjectAny(const Char_t* att, const Char_t* keys, B
    return 0;
 }
 
-KVSeqCollection* KVSeqCollection::GetSubListWithClass(const TClass* _class) const
+smart_pointer<KVSeqCollection> KVSeqCollection::GetSubListWithClass(const TClass* _class) const
 {
    // Create and fill a (sub)list with objects in this list of the given class.
    // This new list will be of the same kind as this one.
    // The objects in the sublist do not belong to the sublist.
-   //
-   //  *** WARNING *** : DELETE the KVSeqCollection returned by this method after using it !!!
 
    KVSeqCollection* sublist = NewCollectionLikeThisOne();
    sublist->SetOwner(kFALSE);
    _GetSubListWithClass(sublist, fCollection, _class);
-   return sublist;
+   return smart_pointer<KVSeqCollection>(sublist);
 }
 
 void KVSeqCollection::_GetSubListWithClass(KVSeqCollection* outputList, TCollection* Col, const TClass* _class) const
@@ -620,21 +618,19 @@ void KVSeqCollection::_GetSubListWithClass(KVSeqCollection* outputList, TCollect
 }
 
 //_______________________________________________________________________________
-KVSeqCollection* KVSeqCollection::GetSubListWithClass(const Char_t* class_name) const
+smart_pointer<KVSeqCollection> KVSeqCollection::GetSubListWithClass(const Char_t* class_name) const
 {
    // Recursively create and fill a (sub)list with objects in this list (and any sublists) of the given class.
    // This new list will be of the same kind as this one.
    // The objects in the sublist do not belong to the sublist.
-   //
-   //  *** WARNING *** : DELETE the KVList returned by this method after using it !!!
 
    if (class_name) {
       return GetSubListWithClass(TClass::GetClass(class_name));
-   } else return NULL;
+   } else return smart_pointer<KVSeqCollection>(nullptr);
 }
 
 //_______________________________________________________________________________
-KVSeqCollection* KVSeqCollection::GetSubListWithMethod(const Char_t* retvalue, const Char_t* method) const
+smart_pointer<KVSeqCollection> KVSeqCollection::GetSubListWithMethod(const Char_t* retvalue, const Char_t* method) const
 {
    // Recursively create and fill a (sub)list with objects in this list (and any sublists) for which the
    // given method returns the given return value:
@@ -643,7 +639,6 @@ KVSeqCollection* KVSeqCollection::GetSubListWithMethod(const Char_t* retvalue, c
    //
    // This new list will be of the same kind as this one.
    // The objects in the sublist do not belong to the sublist.
-   //  *** WARNING *** : DELETE the list returned by this method after using it !!!
    //
    // For each object of the list, the existence of the given method is checked using TMethodCall::IsValid()
    // if the method is valid and the return value is equal to the input one (retvalue) object is added to the subKVList
@@ -652,7 +647,7 @@ KVSeqCollection* KVSeqCollection::GetSubListWithMethod(const Char_t* retvalue, c
    KVSeqCollection* sublist = NewCollectionLikeThisOne();
    sublist->SetOwner(kFALSE);
    _GetSubListWithMethod(sublist, fCollection, retvalue, method);
-   return sublist;
+   return smart_pointer<KVSeqCollection>(sublist);
 }
 
 void KVSeqCollection::_GetSubListWithMethod(KVSeqCollection* outputList, TCollection* Col, const Char_t* retvalue, const Char_t* method) const
@@ -696,52 +691,44 @@ void KVSeqCollection::_GetSubListWithMethod(KVSeqCollection* outputList, TCollec
 }
 
 //_______________________________________________________________________________
-KVSeqCollection* KVSeqCollection::GetSubListWithName(const Char_t* retvalue) const
+smart_pointer<KVSeqCollection> KVSeqCollection::GetSubListWithName(const Char_t* retvalue) const
 {
    // Create and fill a (sub)list with all objects in this list whose name
    // (i.e. string returned by GetName()) is "retvalue"
    // This new list will be of the same kind as this one.
    // The objects in the sublist do not belong to the sublist.
-   //
-   //  *** WARNING *** : DELETE the KVList returned by this method after using it !!!
 
    return GetSubListWithMethod(retvalue, "GetName");
 }
 
 //_______________________________________________________________________________
-KVSeqCollection* KVSeqCollection::GetSubListWithLabel(const Char_t* retvalue) const
+smart_pointer<KVSeqCollection> KVSeqCollection::GetSubListWithLabel(const Char_t* retvalue) const
 {
    // Create and fill a (sub)list with all objects in this list whose label
    // (i.e. string returned by GetLabel()) is "retvalue"
    // This new list will be of the same kind as this one.
    // The objects in the sublist do not belong to the sublist.
-   //
-   //  *** WARNING *** : DELETE the KVList returned by this method after using it !!!
 
    return GetSubListWithMethod(retvalue, "GetLabel");
 }
 
 //_______________________________________________________________________________
-KVSeqCollection* KVSeqCollection::GetSubListWithType(const Char_t* retvalue) const
+smart_pointer<KVSeqCollection> KVSeqCollection::GetSubListWithType(const Char_t* retvalue) const
 {
    // Create and fill a (sub)list with all objects in this list whose type
    // (i.e. string returned by GetType()) is "retvalue"
    // This new list will be of the same kind as this one.
    // The objects in the sublist do not belong to the sublist.
-   //
-   //  *** WARNING *** : DELETE the KVList returned by this method after using it !!!
 
    return GetSubListWithMethod(retvalue, "GetType");
 }
 
-KVSeqCollection* KVSeqCollection::MakeListFromFile(TFile* file)
+smart_pointer<KVSeqCollection> KVSeqCollection::MakeListFromFile(TFile* file)
 {
    //Static method create a list containing all objects contain of a file
    //The file can be closed after this method, objects stored in the
    //list still remains valid
    //if file=NULL, the current directory is considered
-   //
-   //  *** WARNING *** : DELETE the KVSeqCollection returned by this method after using it !!!
 
    KVSeqCollection* ll = new KVSeqCollection("TList");
    ll->SetOwner(kFALSE);
@@ -755,54 +742,45 @@ KVSeqCollection* KVSeqCollection::MakeListFromFile(TFile* file)
       while ((key = (TKey*) next_ps())) ll->Add(key->ReadObj());
 
    }
-   return ll;
+   return smart_pointer<KVSeqCollection>(ll);
 }
 
 //_______________________________________________________________________________
-KVSeqCollection* KVSeqCollection::MakeListFromFileWithMethod(TFile* file, const Char_t* retvalue, const Char_t* method)
+smart_pointer<KVSeqCollection> KVSeqCollection::MakeListFromFileWithMethod(TFile* file, const Char_t* retvalue, const Char_t* method)
 {
    //Static method create a list containing all objects whose "method" returns "retvalue" in a file
    //WARNING list has to be empty with KVSeqCollection::Clear() method before closing file
    //if file=NULL, the current directory is considered
-   //
-   //  *** WARNING *** : DELETE the KVList returned by this method after using it !!!
 
-   KVSeqCollection* l1 = MakeListFromFile(file);
-   KVSeqCollection* l2 = l1->GetSubListWithMethod(retvalue, method);
+   smart_pointer<KVSeqCollection> l1 = MakeListFromFile(file);
+   smart_pointer<KVSeqCollection> l2 = l1->GetSubListWithMethod(retvalue, method);
    l1->Clear();
-   delete l1;
    return l2;
 }
 
 //_______________________________________________________________________________
-KVSeqCollection* KVSeqCollection::MakeListFromFileWithClass(TFile* file, const TClass* _class)
+smart_pointer<KVSeqCollection> KVSeqCollection::MakeListFromFileWithClass(TFile* file, const TClass* _class)
 {
    //Static method create a list containing all objects of given class in a file
    //WARNING list has to be empty with KVList::Clear() method before closing file
    //if file=NULL, the current directory is considered
-   //
-   //  *** WARNING *** : DELETE the KVList returned by this method after using it !!!
 
-   KVSeqCollection* l1 = MakeListFromFile(file);
-   KVSeqCollection* l2 = l1->GetSubListWithClass(_class);
+   smart_pointer<KVSeqCollection> l1 = MakeListFromFile(file);
+   smart_pointer<KVSeqCollection> l2 = l1->GetSubListWithClass(_class);
    l1->Clear();
-   delete l1;
    return l2;
 }
 
 //_______________________________________________________________________________
-KVSeqCollection* KVSeqCollection::MakeListFromFileWithClass(TFile* file, const Char_t* class_name)
+smart_pointer<KVSeqCollection> KVSeqCollection::MakeListFromFileWithClass(TFile* file, const Char_t* class_name)
 {
    //Static method create a list containing all objects of given class in a file
    //WARNING list has to be empty with KVList::Clear() method before closing file
    //if file=NULL, the current directory is considered
-   //
-   //  *** WARNING *** : DELETE the KVList returned by this method after using it !!!
 
-   KVSeqCollection* l1 = MakeListFromFile(file);
-   KVSeqCollection* l2 = l1->GetSubListWithClass(class_name);
+   smart_pointer<KVSeqCollection> l1 = MakeListFromFile(file);
+   smart_pointer<KVSeqCollection> l2 = l1->GetSubListWithClass(class_name);
    l1->Clear();
-   delete l1;
    return l2;
 }
 

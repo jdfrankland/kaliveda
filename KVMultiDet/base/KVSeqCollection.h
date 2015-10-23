@@ -8,6 +8,7 @@
 #include <RQ_OBJECT.h>
 #include "TFile.h"
 #include "KVConfig.h"
+#include "smart_pointer.h"
 
 class KVSeqCollection : public TSeqCollection {
    RQ_OBJECT("KVSeqCollection")
@@ -210,19 +211,19 @@ public:
                         Int_t* error = 0);
    virtual void Execute(TMethod* method, TObjArray* params,
                         Int_t* error = 0);
-   virtual KVSeqCollection* GetSubListWithMethod(const Char_t* retvalue, const Char_t* method) const;
+   virtual smart_pointer<KVSeqCollection> GetSubListWithMethod(const Char_t* retvalue, const Char_t* method) const;
 
-   KVSeqCollection* GetSubListWithClass(const TClass* _class) const;
-   KVSeqCollection* GetSubListWithClass(const Char_t* class_name) const;
+   smart_pointer<KVSeqCollection> GetSubListWithClass(const TClass* _class) const;
+   smart_pointer<KVSeqCollection> GetSubListWithClass(const Char_t* class_name) const;
 
-   virtual KVSeqCollection* GetSubListWithName(const Char_t* retvalue) const;
-   virtual KVSeqCollection* GetSubListWithLabel(const Char_t* retvalue) const;
-   virtual KVSeqCollection* GetSubListWithType(const Char_t* retvalue) const;
+   virtual smart_pointer<KVSeqCollection> GetSubListWithName(const Char_t* retvalue) const;
+   virtual smart_pointer<KVSeqCollection> GetSubListWithLabel(const Char_t* retvalue) const;
+   virtual smart_pointer<KVSeqCollection> GetSubListWithType(const Char_t* retvalue) const;
 
-   static KVSeqCollection* MakeListFromFile(TFile* file);
-   static KVSeqCollection* MakeListFromFileWithMethod(TFile* file, const Char_t* retvalue, const Char_t* method);
-   static KVSeqCollection* MakeListFromFileWithClass(TFile* file, const TClass* _class);
-   static KVSeqCollection* MakeListFromFileWithClass(TFile* file, const Char_t* class_name);
+   static smart_pointer<KVSeqCollection> MakeListFromFile(TFile* file);
+   static smart_pointer<KVSeqCollection> MakeListFromFileWithMethod(TFile* file, const Char_t* retvalue, const Char_t* method);
+   static smart_pointer<KVSeqCollection> MakeListFromFileWithClass(TFile* file, const TClass* _class);
+   static smart_pointer<KVSeqCollection> MakeListFromFileWithClass(TFile* file, const Char_t* class_name);
 
    virtual Bool_t IsSortable() const
    {
