@@ -2135,3 +2135,14 @@ void KVMultiDetArray::FillListOfIDTelescopes(KVIDGraph* gr) const
       }
    }
 }
+
+void KVMultiDetArray::CalculateIdentificationGrids()
+{
+   // For each IDtelescope in array, calculate an identification grid
+   TIter nxtid(GetListOfIDTelescopes());
+   KVIDTelescope* idt;
+   while ((idt = (KVIDTelescope*) nxtid())) {
+      //Info("SetGridsInTelescopes","%s %s",idt->GetName(),idt->ClassName());
+      idt->CalculateDeltaE_EGrid("1-92", 0, 20);
+   }
+}

@@ -229,6 +229,7 @@ public:
        // Get list of all possible trajectories for particles traversing array
        return &fTrajectories;
     }
+   void CalculateIdentificationGrids();
 
     ClassDef(KVMultiDetArray,7)//Base class for multidetector arrays    
 };
