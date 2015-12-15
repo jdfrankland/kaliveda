@@ -127,6 +127,7 @@ kaliveda [8] ecr.GetDetector("SI_0201").mean_energy
 ////////////////////////////////////////////////////////////////////////////////
 KVElasticCountRates::KVElasticCountRates(Double_t theta_min, Double_t theta_max, Double_t phi_min, Double_t phi_max):
    fAngularRange(theta_min, theta_max, phi_min, phi_max),
+   fDetSim(),
    fBeamDirection(0, 0, 1)
 {
    //Default constructor
@@ -145,6 +146,10 @@ KVElasticCountRates::KVElasticCountRates(Double_t theta_min, Double_t theta_max,
       gMultiDetArray->SetSimMode(kTRUE);
       gMultiDetArray->SetFilterType(KVMultiDetArray::kFilterType_GeoThresh);
       gMultiDetArray->InitializeIDTelescopes();
+
+      fDetSim.SetArray(gMultiDetArray);
+      fDetSim.SetIncludeTargetEnergyLoss(kFALSE);
+      fDetSim.SetMinKECutOff(1.e-3);
    } else {
       Warning("KVElasticCountRates", "gMultiDetArray does not refer to a valid multidetector array");
       printf("Define it before using this class, and put it in simulation mode : gMultiDetArray->SetSimMode(kTRUE)");
@@ -175,7 +180,6 @@ void KVElasticCountRates::SetRun(Int_t run)
    //Set detector parameters, target, etc. for run
    gMultiDetArray->SetParameters(run);
    gMultiDetArray->InitializeIDTelescopes();
-   gMultiDetArray->SetROOTGeometry();
    fTarget = gMultiDetArray->GetTarget();
    fAtomicDensity = fTarget->GetAtomsPerCM2() * 1.e-24; //in barn^-1 units
    fTarget->SetRandomized();
@@ -325,10 +329,10 @@ void KVElasticCountRates::CalculateScattering(Int_t N)
       fTarget->SetOutgoing();
       fTarget->DetectParticle(fProj);
       //now detect particle in array
-      KVNameValueList* detectors = gMultiDetArray->DetectParticle(fProj);
+      KVNameValueList detectors = fDetSim.DetectParticle(fProj);
       //fill histograms
       fDepth->Fill(IP.z());
-      FillHistograms(detectors);
+      FillHistograms(&detectors);
       fProj->GetParameters()->Clear();
       fProj->SetEnergy(fEnergy);
       fProj->SetTheta(0);

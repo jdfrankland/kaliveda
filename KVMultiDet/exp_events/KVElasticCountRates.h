@@ -11,6 +11,7 @@
 #include "KVNucleus.h"
 #include "KV2Body.h"
 #include "KVTarget.h"
+#include "KVDetectionSimulator.h"
 #include <map>
 
 struct KVElasticCountRate {
@@ -38,6 +39,8 @@ class KVElasticCountRates {
    KVPosition fAngularRange;    //angular range in which to scatter
 
    KV2Body* fKinematics;        //kinematics calculation
+
+   KVDetectionSimulator fDetSim;//calculate energy losses in array
 
    KVTarget* fTarget;           //target for current run
    Double_t fAtomicDensity;     //number of atoms per barn (10^-24 cm2) in target
