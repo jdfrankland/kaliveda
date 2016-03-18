@@ -73,7 +73,7 @@ KVNameValueList::~KVNameValueList()
 
 KVNameValueList& KVNameValueList::operator=(const KVNameValueList& o)
 {
-   o.Copy(*this);
+   if (&o != this) o.Copy(*this);
    return (*this);
 }
 
