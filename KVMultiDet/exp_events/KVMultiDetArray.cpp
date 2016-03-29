@@ -42,6 +42,8 @@
 #include <TGLViewer.h>
 #include <TVirtualPad.h>
 #endif
+
+
 using namespace std;
 
 KVMultiDetArray* gMultiDetArray = 0x0;
@@ -623,8 +625,10 @@ void KVMultiDetArray::DetectEvent(KVEvent* event, KVReconstructedEvent* rec_even
          Error("DetectEvent", "ROOT geometry is requested, but has not been set: gGeoManager=0x0");
          return;
       }
-      // set up geometry navigator
-      if (!fNavigator) fNavigator = new KVRangeTableGeoNavigator(gGeoManager, KVMaterial::GetRangeTable());
+      if (!fNavigator) {
+         Error("DetectEvent", "Using ROOT geometry, but no navigator exists");
+         return;
+      }
       if (fNavigator->IsTracking()) {
          // clear any tracks created by last event
          gGeoManager->ClearTracks();
@@ -1436,19 +1440,16 @@ void KVMultiDetArray::GetDetectorEvent(KVDetectorEvent* detev, TSeqCollection* f
       }
    } else {
       //loop over groups
-      TSeqCollection* fGroups = GetStructures()->GetSubListWithType("GROUP");
+      unique_ptr<KVSeqCollection> fGroups(GetStructures()->GetSubListWithType("GROUP"));
 
-      TIter next_grp(fGroups);
+      TIter next_grp(fGroups.get());
       KVGroup* grp;
       while ((grp = (KVGroup*) next_grp())) {
          if (grp->Fired()) {
-            //if (!fHitGroups->FindObject(grp))
-            // grp->Print();
             //add new group to list of hit groups
             detev->AddGroup(grp);
          }
       }
-      delete fGroups;
    }
 }
 
@@ -2714,5 +2715,17 @@ void KVMultiDetArray::AssociateTrajectoriesAndNodes()
    while ((tr = (KVGeoDNTrajectory*)it())) {
       tr->AddToNodes();
       tr->GetNodeAt(0)->GetDetector()->GetGroup()->AddTrajectory(tr);
+   }
+}
+
+
+void KVMultiDetArray::CalculateIdentificationGrids()
+{
+   // For each IDtelescope in array, calculate an identification grid
+
+   TIter nxtid(GetListOfIDTelescopes());
+   KVIDTelescope* idt;
+   while ((idt = (KVIDTelescope*) nxtid())) {
+      idt->CalculateDeltaE_EGrid("1-92", 0, 20);
    }
 }
