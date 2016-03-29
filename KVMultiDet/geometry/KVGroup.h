@@ -86,7 +86,7 @@ public:
    const KVGeoDNTrajectory* GetTrajectoryForReconstruction(const KVGeoDNTrajectory* t, const KVGeoDetectorNode* n) const
    {
       if (t && n) {
-         TString mapped_name = fReconTrajMap.GetStringValue(Form("%s_%s", t->GetTitle(), n->GetName()));
+         TString mapped_name = fReconTrajMap.GetStringValue(Form("%s_%s", t->GetTrajectoryName(), n->GetName()));
          const KVGeoDNTrajectory* tr = (const KVGeoDNTrajectory*)fReconTraj.FindObject(mapped_name);
          return tr;
       }

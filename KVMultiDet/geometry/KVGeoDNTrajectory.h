@@ -92,7 +92,7 @@ public:
 
    void ls(Option_t* = "") const
    {
-      std::cout << GetName() << " : " << GetTitle() << std::endl;
+      std::cout << GetTrajectoryName() << " : " << GetPathString() << std::endl;
    }
 
    Bool_t EndsAt(const Char_t* node_name) const
@@ -239,6 +239,12 @@ public:
       // Returns string containing path of trajectory
       if (fPathInTitle) return GetTitle();
       return GetName();
+   }
+   const Char_t* GetTrajectoryName() const
+   {
+      // Returns string containing name of trajectory
+      if (fPathInTitle) return GetName();
+      return GetTitle();
    }
    void SetPathInTitle(Bool_t intitle = kTRUE)
    {
