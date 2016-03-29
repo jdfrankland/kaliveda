@@ -6,6 +6,11 @@
 #include "KVGroupReconstructor.h"
 #include "KVTarget.h"
 
+// for parallelisation
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 ClassImp(KVEventReconstructor)
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -89,14 +94,24 @@ void KVEventReconstructor::ReconstructEvent(TSeqCollection* fired)
 
    KVGroup* g;
    TIter it(detev.GetGroups());
+   // set up group reconstructors for this event
+   int j = 0;
    while ((g = (KVGroup*)it())) {
+      ((KVGroupReconstructor*)(*fGroupReconstructor)[j++])->SetGroup(g);
+   }
+   // perform reconstruction in groups - in parallel if OpenMP is enabled
+//#ifdef _OPENMP
+//#pragma omp parallel for
+//#endif
+   for (int i = 0; i < fNGrpRecon; i++) {
 
-      KVGroupReconstructor* Grec = (KVGroupReconstructor*)fGroupReconstructor->ConstructedAt(fNGrpRecon++);
-      Grec->SetGroup(g);
-      Grec->Reconstruct();
+      ((KVGroupReconstructor*)(*fGroupReconstructor)[i])->Reconstruct();
+      ((KVGroupReconstructor*)(*fGroupReconstructor)[i])->Identify();
 
    }
 
+   // merge resulting event fragments
+   MergeGroupEventFragments();
 }
 
 void KVEventReconstructor::IdentifyEvent()
