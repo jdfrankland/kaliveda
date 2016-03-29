@@ -57,7 +57,6 @@ void KVDetectorEvent::init()
 
 KVDetectorEvent::~KVDetectorEvent()
 {
-   Clear();
    delete fHitGroups;
    fHitGroups = 0;
 }
