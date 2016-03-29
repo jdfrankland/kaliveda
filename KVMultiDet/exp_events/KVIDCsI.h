@@ -19,6 +19,7 @@ public:
       // For CsI Rapide-Lente detectors, identification is typically possible up to Z=4
       return (Z < 5);
    }
+   virtual void Initialize(void);
 
    ClassDef(KVIDCsI, 1) //A generic 1-member CsI fast-slow identification telescope
 };

@@ -303,6 +303,20 @@ TGraph* KVIDTelescope::MakeIDLine(KVNucleus* nuc, Double_t Emin,
    return tmp;
 }
 
+void KVIDTelescope::Initialize()
+{
+   // Default initialization method
+   // If telescope has two detectors (dE & E) and at least 1 grid
+   // then it is ready to identify particles, after we initialise
+   // the grid
+
+   if (GetDetectors()->GetEntries() == 2 && GetIDGrid()) {
+      GetIDGrid()->Initialize();
+      SetBit(kReadyForID);
+   } else
+      ResetBit(kReadyForID);
+}
+
 //____________________________________________________________________________________
 
 Bool_t KVIDTelescope::Identify(KVIdentificationResult*, Double_t, Double_t)
@@ -878,6 +892,8 @@ KVIDGrid* KVIDTelescope::CalculateDeltaE_EGrid(const Char_t* Zrange, Int_t delta
          }
       }
    }
+
+   idgrid->SetRunList("1-10000");
 
    return idgrid;
 

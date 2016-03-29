@@ -104,13 +104,7 @@ public:
    virtual TGraph* MakeIDLine(KVNucleus* nuc, Double_t Emin, Double_t Emax,
                               Double_t Estep = 0.0);
 
-   virtual void Initialize(void)
-   {
-      // Default initialisation for ID telescopes. kReadyForID is set to kFALSE.
-      // To implement identification, make a class derived from KVIDTelescope
-      // and set kReadyForID to kTRUE in Initialize() method of derived class.
-      ResetBit(kReadyForID);
-   };
+   virtual void Initialize(void);
 
    virtual Bool_t Identify(KVIdentificationResult*, Double_t x = -1., Double_t y = -1.);
 
