@@ -77,7 +77,7 @@ void KVGroupReconstructor::Reconstruct()
 
    // loop over trajectories
    while ((traj = (KVGeoDNTrajectory*)nxt_traj())) {
-      cout << "on trajectory:" << traj->GetTitle() << endl;
+      //cout << "on trajectory:" << traj->GetTitle() << endl;
 
       // Work our way along the trajectory, starting from furthest detector from target,
       // start reconstruction of new detected particle from first fired detector.
@@ -98,7 +98,7 @@ void KVGroupReconstructor::Reconstruct()
          // node of several trajectories, reconstruct particle
          if ((d->Fired(GetEventFragment()->GetPartSeedCond()) && !d->IsAnalysed()
                && !(traj->EndsAt(node) && node->GetBackwardTrajectories()->GetEntries() > 1))) {
-            cout << d->GetName() << " fired: reconstructing particle" << endl;
+            //cout << d->GetName() << " fired: reconstructing particle" << endl;
 
             KVReconstructedNucleus* kvdp = GetEventFragment()->AddParticle();
             //add all active detector layers in front of this one
@@ -136,13 +136,13 @@ void KVGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* part, con
    }
 
    part->ResetNSegDet();
-   cout << "part->ResetNSegDet()=" << part->GetNSegDet() << endl;
-   cout << "independent = " << Rtraj->GetNumberOfIndependentIdentifications() << endl;
+   //cout << "part->ResetNSegDet()=" << part->GetNSegDet() << endl;
+   //cout << "independent = " << Rtraj->GetNumberOfIndependentIdentifications() << endl;
 }
 
 void KVGroupReconstructor::AnalyseParticles()
 {
-   cout << "GetNUnidentifiedInGroup()=" << GetNUnidentifiedInGroup() << endl;
+   //cout << "GetNUnidentifiedInGroup()=" << GetNUnidentifiedInGroup() << endl;
 
    if (GetNUnidentifiedInGroup() > 1) { //if there is more than one unidentified particle in the group
 
@@ -199,7 +199,7 @@ void KVGroupReconstructor::AnalyseParticles()
       while ((nuc = GetEventFragment()->GetNextParticle())) {
          if (!nuc->IsIdentified()) break;
       }
-      cout << "nuc->GetNSegDet()=" << nuc->GetNSegDet() << endl;
+      //cout << "nuc->GetNSegDet()=" << nuc->GetNSegDet() << endl;
       if (nuc->GetReconstructionTrajectory()->GetNumberOfIdentifications()) {
          //OK no problem
          nuc->SetStatus(KVReconstructedNucleus::kStatusOK);
