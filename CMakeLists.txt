@@ -26,11 +26,6 @@ endif(ROOT_Html_LIBRARY)
 
 include(${ROOT_USE_FILE})
 
-#--check for g++ -fopenmp flag - for parallel builds
-if(CMAKE_COMPILER_IS_GNUCXX)
-   CHECK_CXX_COMPILER_FLAG("-fopenmp" CXX_HAS_OPENMP)
-endif()
-
 #--check for BOOST - minimum version corresponds progress_display
 set(WITH_BOOST)
 find_package(Boost 1.9)
@@ -83,13 +78,14 @@ endif(gnuinstall)
 #--- Enable parallelisation of code using OpenMP
 option(USE_PARALLEL_MODE "Enable parallelisation of code using OpenMP" OFF)
 if(USE_PARALLEL_MODE)
-   #---check if g++ -fopenmp option is available
-   if(NOT CXX_HAS_OPENMP)
-      message(STATUS "g++ with OpenMP support required to use this option")
+#--check for OpenMP
+   find_package(OpenMP)
+   if(OPENMP_FOUND)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+   else(OPENMP_FOUND)
+      message(STATUS "OpenMP support required to use this option - parallelisation disabled")
       set(USE_PARALLEL_MODE OFF CACHE BOOL "" FORCE)
-   else()
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-   endif()
+   endif(OPENMP_FOUND)
 endif()
 add_feature_info(parallel USE_PARALLEL_MODE "Enable parallelisation of code using OpenMP")
 
