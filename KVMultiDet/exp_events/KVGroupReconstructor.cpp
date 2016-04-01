@@ -129,13 +129,13 @@ void KVGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* part, con
    while ((n = Rtraj->GetNextNode())) {
 
       KVDetector* d = n->GetDetector();
-      part->AddDetector(d);
+      //part->AddDetector(d);
       d->AddHit(part);  // add particle to list of particles hitting detector
       d->SetAnalysed(kTRUE);   //cannot be used to seed another particle
 
    }
 
-   part->ResetNSegDet();
+   //part->ResetNSegDet();
    //cout << "part->ResetNSegDet()=" << part->GetNSegDet() << endl;
    //cout << "independent = " << Rtraj->GetNumberOfIndependentIdentifications() << endl;
 }

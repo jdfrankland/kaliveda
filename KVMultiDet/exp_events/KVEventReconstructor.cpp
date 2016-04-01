@@ -6,11 +6,6 @@
 #include "KVGroupReconstructor.h"
 #include "KVTarget.h"
 
-// for parallelisation
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
 ClassImp(KVEventReconstructor)
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,7 +39,10 @@ KVEventReconstructor::KVEventReconstructor(KVMultiDetArray* a, KVReconstructedEv
 KVEventReconstructor::~KVEventReconstructor()
 {
    // Destructor
-
+   if (fGroupReconstructor) {
+      fGroupReconstructor->Delete();
+      delete fGroupReconstructor;
+   }
 }
 
 //________________________________________________________________
@@ -72,7 +70,7 @@ void KVEventReconstructor::SetGroupReconstructorPlugin(const char* p)
    unique_ptr<KVSeqCollection> groups(GetArray()->GetStructureTypeList("GROUP"));
    Int_t N = groups->GetEntries();
    fGroupReconstructor = new TClonesArray(plugin_class, N);
-   for (int i = 0; i < N; ++i) {
+   for (int i = 0; i < N; i++) {
       KVGroupReconstructor* grec = (KVGroupReconstructor*)fGroupReconstructor->ConstructedAt(i);
       grec->SetReconEventClass(GetEvent()->IsA());
       grec->SetEventReconstructor(this);
@@ -89,29 +87,19 @@ void KVEventReconstructor::ReconstructEvent(TSeqCollection* fired)
    KVDetectorEvent detev;
    GetArray()->GetDetectorEvent(&detev, fired);
 
-   fGroupReconstructor->Clear();
-   fNGrpRecon = 0;
+   fNGrpRecon = detev.GetGroups()->GetEntries();
 
-   KVGroup* g;
-   TIter it(detev.GetGroups());
-   // set up group reconstructors for this event
-   int j = 0;
-   while ((g = (KVGroup*)it())) {
-      ((KVGroupReconstructor*)(*fGroupReconstructor)[j++])->SetGroup(g);
-   }
-   // perform reconstruction in groups - in parallel if OpenMP is enabled
-//#ifdef _OPENMP
-//#pragma omp parallel for
-//#endif
    for (int i = 0; i < fNGrpRecon; i++) {
 
-      ((KVGroupReconstructor*)(*fGroupReconstructor)[i])->Reconstruct();
-      ((KVGroupReconstructor*)(*fGroupReconstructor)[i])->Identify();
+      KVGroupReconstructor* grec = (KVGroupReconstructor*)fGroupReconstructor->ConstructedAt(i);
+      grec->SetGroup((KVGroup*)detev.GetGroups()->At(i));
+      grec->Reconstruct();
 
    }
 
+   fGroupReconstructor->Clear();
    // merge resulting event fragments
-   MergeGroupEventFragments();
+   //MergeGroupEventFragments();
 }
 
 void KVEventReconstructor::IdentifyEvent()
@@ -154,6 +142,7 @@ void KVEventReconstructor::MergeGroupEventFragments()
       to_merge.Add(((KVGroupReconstructor*)(*fGroupReconstructor)[i])->GetEventFragment());
 
    }
+   GetEvent()->Clear();
    GetEvent()->MergeEventFragments(&to_merge);
 }
 

@@ -17,7 +17,7 @@ class KVGeoDNTrajectory : public KVBase {
 
    void init();
 
-   TObjArray fNodes;
+   TObjArray fNodes;//! list of nodes on trajectory
    static Int_t fGDNTrajNumber;
    mutable Int_t fIter_idx;//! index for iteration
    mutable Int_t fIter_limit;//! last index for iteration
@@ -25,13 +25,13 @@ class KVGeoDNTrajectory : public KVBase {
    mutable Int_t fIter_idx_sav;//! index for iteration
    mutable Int_t fIter_limit_sav;//! last index for iteration
    mutable Int_t fIter_delta_sav;//! increment/decrement for each iteration
-   KVUniqueNameList fIDTelescopes;// list of id telescopes on this trajectory
+   KVUniqueNameList fIDTelescopes;//! list of id telescopes on this trajectory
    Bool_t fPathInTitle;// true if path is in title, false if path is in name
 
    void rebuild_title();
 
 protected:
-   Bool_t fAddToNodes;//! if kTRUE, add trajectory to node's list
+   Bool_t fAddToNodes;// if kTRUE, add trajectory to node's list
 
 public:
    KVGeoDNTrajectory();

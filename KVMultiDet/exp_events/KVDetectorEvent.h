@@ -39,21 +39,21 @@ public:
    void AddGroup(KVGroup* grp)
    {
       fHitGroups->Add(grp);
-   };
+   }
    virtual void Clear(Option_t* opt = "");
    virtual void Print(Option_t* t = "") const;
    KVUniqueNameList* GetGroups()
    {
       return fHitGroups;
-   };
+   }
    Bool_t ContainsGroup(KVGroup* grp)
    {
       return (fHitGroups->FindObject(grp->GetName()) != 0);
-   };
+   }
    virtual UInt_t GetMult() const
    {
       return fHitGroups->GetSize();
-   };
+   }
 
    ClassDef(KVDetectorEvent, 2) // List of hit groups in a multidetector array
 };

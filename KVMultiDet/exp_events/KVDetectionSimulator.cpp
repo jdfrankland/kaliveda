@@ -63,7 +63,7 @@ void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_f
    //
 
    // Reset detectors in array hit by any previous events
-   fHitGroups.Clear();
+   ClearHitGroups();
 
    event->ResetGetNextParticle();
    KVNucleus* part;

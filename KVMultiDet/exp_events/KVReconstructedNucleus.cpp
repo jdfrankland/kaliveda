@@ -273,7 +273,6 @@ void KVReconstructedNucleus::AddDetector(KVDetector* det)
    //Add a detector to the list of those through which the particle passed.
    //Put reference to detector into fDetectors array, increase number of detectors by one.
    //As this is only used in initial particle reconstruction, we add 1 unidentified particle to the detector.
-   // Creates KVHashList fDetList in case it does not exist.
 
    //add name of detector to fDetNames
    fDetNames += det->GetName();
@@ -288,6 +287,16 @@ void KVReconstructedNucleus::AddDetector(KVDetector* det)
    }
 
 }
+
+void KVReconstructedNucleus::SetReconstructionTrajectory(const KVReconNucTrajectory* t)
+{
+   fReconTraj = t;
+   fNSegDet = t->GetNumberOfIndependentIdentifications();
+   t->IterateFrom();
+   KVGeoDetectorNode* n;
+   while ((n = t->GetNextNode())) n->GetDetector()->IncrementUnidentifiedParticles();
+}
+
 
 //______________________________________________________________________________________________//
 

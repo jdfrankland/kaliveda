@@ -390,10 +390,7 @@ public:
    {
       return fReconTraj;
    }
-   void SetReconstructionTrajectory(const KVReconNucTrajectory* t)
-   {
-      fReconTraj = t;
-   }
+   void SetReconstructionTrajectory(const KVReconNucTrajectory* t);
 
    ClassDef(KVReconstructedNucleus, 17)  //Nucleus detected by multidetector array
 };

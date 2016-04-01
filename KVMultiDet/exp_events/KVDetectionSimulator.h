@@ -56,6 +56,12 @@ public:
    KVNameValueList DetectParticle(KVNucleus*);
    KVNameValueList DetectParticleIn(const Char_t* detname, KVNucleus* kvp);
 
+   void ClearHitGroups()
+   {
+      // Reset any detectors/groups hit by previous detection
+      fHitGroups.Clear();
+   }
+
    ClassDef(KVDetectionSimulator, 0) //Simulate detection of particles or events in a detector array
 };
 

@@ -1,8 +1,8 @@
 //Created by KVClassFactory on Thu Oct  8 10:52:39 2015
 //Author: John Frankland,,,
 
-#include "KVIDTelescope.h"
 #include "KVReconNucTrajectory.h"
+#include "KVIDTelescope.h"
 
 ClassImp(KVReconNucTrajectory)
 
@@ -84,4 +84,5 @@ void KVReconNucTrajectory::ls(Option_t*) const
       std::cout << "\t" << idt->GetName() << " (" << idt->IsIndependent() << ")" << std::endl;
    }
 }
+
 
