@@ -87,19 +87,19 @@ void KVEventReconstructor::ReconstructEvent(TSeqCollection* fired)
    KVDetectorEvent detev;
    GetArray()->GetDetectorEvent(&detev, fired);
 
-   fNGrpRecon = detev.GetGroups()->GetEntries();
+   fNGrpRecon = 0;
 
-   for (int i = 0; i < fNGrpRecon; i++) {
-
-      KVGroupReconstructor* grec = (KVGroupReconstructor*)fGroupReconstructor->ConstructedAt(i);
-      grec->SetGroup((KVGroup*)detev.GetGroups()->At(i));
+   TIter it(detev.GetGroups());
+   KVGroup* group;
+   while ((group = (KVGroup*)it())) {
+      KVGroupReconstructor* grec = (KVGroupReconstructor*)(*fGroupReconstructor)[fNGrpRecon];
+      grec->SetGroup(group);
       grec->Reconstruct();
-
+      //grec->GetEventFragment()->Print();
+      ++fNGrpRecon;
    }
-
-   fGroupReconstructor->Clear();
    // merge resulting event fragments
-   //MergeGroupEventFragments();
+   MergeGroupEventFragments();
 }
 
 void KVEventReconstructor::IdentifyEvent()
@@ -142,8 +142,12 @@ void KVEventReconstructor::MergeGroupEventFragments()
       to_merge.Add(((KVGroupReconstructor*)(*fGroupReconstructor)[i])->GetEventFragment());
 
    }
-   GetEvent()->Clear();
    GetEvent()->MergeEventFragments(&to_merge);
+   for (int i = 0; i < fNGrpRecon; i++) {
+
+      ((KVGroupReconstructor*)(*fGroupReconstructor)[i])->GetEventFragment()->Clear();
+
+   }
 }
 
 Double_t KVEventReconstructor::GetTargetEnergyLossCorrection(KVReconstructedNucleus* ion)

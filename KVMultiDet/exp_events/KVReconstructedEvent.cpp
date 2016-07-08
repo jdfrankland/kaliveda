@@ -155,6 +155,7 @@ void KVReconstructedEvent::Print(Option_t* option) const
 
    KVReconstructedNucleus* frag = 0;
    int i = 0;
+   ((KVReconstructedEvent*) this)->ResetGetNextParticle();
    while ((frag =
               ((KVReconstructedEvent*) this)->GetNextParticle(option))) {
       cout << "RECONSTRUCTED PARTICLE #" << ++i << endl;
