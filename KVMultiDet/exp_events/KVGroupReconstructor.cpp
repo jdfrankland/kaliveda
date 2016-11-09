@@ -105,8 +105,8 @@ void KVGroupReconstructor::Reconstruct()
             //to the detected particle's list
             ReconstructParticle(kvdp, traj, node);
 
-            //set detector state so it will not be used again
-            d->SetAnalysed(kTRUE);
+            //start next trajectory
+            break;
          }
       }
 
@@ -129,20 +129,15 @@ void KVGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* part, con
    while ((n = Rtraj->GetNextNode())) {
 
       KVDetector* d = n->GetDetector();
-      //part->AddDetector(d);
       d->AddHit(part);  // add particle to list of particles hitting detector
       d->SetAnalysed(kTRUE);   //cannot be used to seed another particle
 
    }
 
-   //part->ResetNSegDet();
-   //cout << "part->ResetNSegDet()=" << part->GetNSegDet() << endl;
-   //cout << "independent = " << Rtraj->GetNumberOfIndependentIdentifications() << endl;
 }
 
 void KVGroupReconstructor::AnalyseParticles()
 {
-   //cout << "GetNUnidentifiedInGroup()=" << GetNUnidentifiedInGroup() << endl;
 
    if (GetNUnidentifiedInGroup() > 1) { //if there is more than one unidentified particle in the group
 
@@ -154,15 +149,14 @@ void KVGroupReconstructor::AnalyseParticles()
          if (nuc->IsIdentified())
             continue;
 
-         if (nuc->GetNSegDet() >= 2) {
-            //all part.s crossing 2 or more independent detectors are fine
+         if (nuc->GetNSegDet() >= 1) {
+            //all particles with at least one independent identification telescope are fine
             nuc->SetStatus(KVReconstructedNucleus::kStatusOK);
-         } else if ((nuc->GetNSegDet() <= 1) && (nuc->GetReconstructionTrajectory()->GetNumberOfIdentifications())) {
-            //1 or less independent detector hit => depends on what's in the rest of the group
+         } else if (!nuc->GetNSegDet() && (nuc->GetReconstructionTrajectory()->GetNumberOfIdentifications())) {
+            //no independent identification telescope => depends on what's in the rest of the group
             ++n_nseg_1;
          } else {
-            //part.s crossing 0 independent detectors (i.E. arret ChIo)
-            //can not be reconstructed
+            //no identification available
             nuc->SetStatus(KVReconstructedNucleus::kStatusStopFirstStage);
          }
       }
@@ -171,20 +165,20 @@ void KVGroupReconstructor::AnalyseParticles()
          if (nuc->IsIdentified())
             continue;           //ignore identified particles
 
-         if ((nuc->GetNSegDet() <= 1) && (nuc->GetReconstructionTrajectory()->GetNumberOfIdentifications())) {
+         if (!nuc->GetNSegDet() && (nuc->GetReconstructionTrajectory()->GetNumberOfIdentifications())) {
+            //particles with no independent identification possibility
             if (n_nseg_1 == 1) {
                //just the one ? then we can get it no problem
                //after identifying the others and subtracting their calculated
-               //energy losses from the "dependent"/"non-segmented" detector
+               //energy losses from the other detectors
                nuc->SetStatus(KVReconstructedNucleus::kStatusOKafterSub);
             } else {
                //more than one ? then we can make some wild guess by sharing the
-               //"non-segmented" contribution between them, but
-               //I wouldn't trust it as far as I can spit
+               //contribution between them, but I wouldn't trust it as far as I can spit
                nuc->SetStatus(KVReconstructedNucleus::kStatusOKafterShare);
             }
             //one possibility remains: the particle may actually have stopped e.g.
-            //in the DE detector of a DE-E telescope, in which case AnalStatus = 3
+            //in the DE detector of a DE-E telescope
             if (!nuc->GetReconstructionTrajectory()->GetNumberOfIdentifications()) {
                //no ID telescopes with which to identify particle
                nuc->SetStatus(KVReconstructedNucleus::kStatusStopFirstStage);
@@ -248,9 +242,9 @@ void KVGroupReconstructor::IdentifyParticle(KVReconstructedNucleus* PART)
             // we may have to wait for secondary identification
             Int_t nseg = PART->GetNSegDet();
             PART->SetNSegDet(TMath::Max(nseg - 1, 0));
-            //if there are other unidentified particles in the group and NSegDet is < 2
+            //if there are other unidentified particles in the group and NSegDet is < 1
             //then exact status depends on segmentation of the other particles : reanalyse
-            if (PART->GetNSegDet() < 2 && GetNUnidentifiedInGroup() > 1) {
+            if (PART->GetNSegDet() < 1 && GetNUnidentifiedInGroup() > 1) {
                AnalyseParticles();
                return;
             }

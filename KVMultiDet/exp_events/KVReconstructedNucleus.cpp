@@ -42,10 +42,11 @@ ClassImp(KVReconstructedNucleus);
 void KVReconstructedNucleus::init()
 {
    //default initialisation
+   fReconTraj = nullptr;
    fRealZ = fRealA = 0.;
    fDetNames = "/";
    fIDTelName = "";
-   fIDTelescope = 0;
+   fIDTelescope = nullptr;
    fNSegDet = 0;
    fAnalStatus = 99;
    fTargetEnergyLoss = 0;
@@ -231,6 +232,8 @@ void KVReconstructedNucleus::Print(Option_t*) const
          cout << GetStatus() << endl;
          break;
    }
+   cout << "NSegDet = " << GetNSegDet() << endl;
+   GetReconstructionTrajectory()->ls();
    if (GetParameters()->GetNpar()) GetParameters()->Print();
 }
 
@@ -246,22 +249,29 @@ void KVReconstructedNucleus::Copy(TObject& obj)
    //Copy this to obj
    //
    KVNucleus::Copy(obj);
-   ((KVReconstructedNucleus&) obj).SetIdentifyingTelescope(GetIdentifyingTelescope());
-   ((KVReconstructedNucleus&) obj).fDetNames = fDetNames;
-   ((KVReconstructedNucleus&) obj).SetRealZ(GetRealZ());
-   ((KVReconstructedNucleus&) obj).SetRealA(GetRealA());
-   ((KVReconstructedNucleus&) obj).SetTargetEnergyLoss(GetTargetEnergyLoss());
+   KVReconstructedNucleus& robj = (KVReconstructedNucleus&)obj;
+   robj.SetIdentifyingTelescope(GetIdentifyingTelescope());
+   robj.fDetNames = fDetNames;
+   robj.SetRealZ(GetRealZ());
+   robj.SetRealA(GetRealA());
+   robj.SetTargetEnergyLoss(GetTargetEnergyLoss());
+   robj.fReconTraj = fReconTraj;
+   fDetList.Copy(robj.fDetList);
+   robj.fIDTelescope = fIDTelescope;
+   robj.fNSegDet = fNSegDet;
+   robj.fAnalStatus = fAnalStatus;
+   //fIDResults.Copy(robj.fIDResults);
 }
 
 
 
 void KVReconstructedNucleus::Clear(Option_t* opt)
 {
-   //Reset nucleus. Calls KVNucleus::Clear.
-   //Calls KVGroup::Reset for the group where it was reconstructed.
+   // Reset nucleus. Calls KVNucleus::Clear.
+   // if opt!="NGR": Calls KVGroup::Reset for the group where it was reconstructed.
 
    KVNucleus::Clear(opt);
-   if (GetGroup())
+   if (GetGroup() && strncmp(opt, "NGR", 3))
       GetGroup()->Reset();
    fDetList.Clear();
    fIDResults.Clear("C");

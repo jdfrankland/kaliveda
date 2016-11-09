@@ -76,11 +76,15 @@ public:
    };
    KVDetector* GetDetector(int i) const
    {
-      //Returns the detector referenced by fDetectors.At(i)
+      //Returns the detectors hit by the particle.
       //If i=0, this is the detector in which the particle stopped.
       //For i>0 one obtains the names of the detectors through which the particle
       //must have passed before stopping, in inverse order (i.e. i=0 is the last
       //detector, as i increases we get the detectors closer to the target).
+
+      if (fReconTraj) {
+         return fReconTraj->GetNodeAt(i)->GetDetector();
+      }
       if (i >= GetDetectorList()->GetEntries()) return 0;
       return (KVDetector*) GetDetectorList()->At(i);
    };
@@ -102,29 +106,36 @@ public:
    };
    Int_t GetNumDet() const
    {
+      // Number of detectors on reconstruction trajectory
+      if (fReconTraj) return fReconTraj->GetN();
       return GetDetectorList()->GetEntries();
-   };
+   }
    Int_t GetNSegDet() const
    {
       // return segmentation index of particle used by Identify() and
       // KVGroup::AnalyseParticles
       return fNSegDet;
-   };
+   }
    void SetNSegDet(Int_t seg)
    {
       // set segmentation index of particle used by Identify() and
       // KVGroup::AnalyseParticles
       fNSegDet = seg;
-   };
+   }
    void ResetNSegDet()
    {
       // recalculate segmentation index of particle used by Identify() and
       // KVGroup::AnalyseParticles
+
+      if (fReconTraj) {
+         fNSegDet = fReconTraj->GetNumberOfIndependentIdentifications();
+         return;
+      }
       fNSegDet = 0;
       KVDetector* det;
       TIter nxt(&fDetList);
       while ((det = (KVDetector*)nxt())) fNSegDet += det->GetSegment();
-   };
+   }
    inline Int_t GetStatus() const
    {
       // Returns status of reconstructed particle as decided by analysis of the group (KVGroup) in
@@ -161,11 +172,7 @@ public:
 
    void AddDetector(KVDetector*);
 
-#if ROOT_VERSION_CODE >= ROOT_VERSION(3,4,0)
    virtual void Copy(TObject&) const;
-#else
-   virtual void Copy(TObject&);
-#endif
 
    KVSeqCollection* GetIDTelescopes() const
    {

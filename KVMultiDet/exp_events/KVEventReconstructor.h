@@ -14,6 +14,8 @@ class KVEventReconstructor : public KVBase {
    KVReconstructedEvent*  fEvent;//!       The reconstructed event
    TClonesArray*   fGroupReconstructor;//! array of group reconstructors
    Int_t           fNGrpRecon;//!          number of group reconstructors for current event
+   TList           fThreads;//!            list of threads for parallel reconstruction
+   Bool_t          fThreaded;
 
 protected:
    KVMultiDetArray* GetArray()
@@ -22,7 +24,7 @@ protected:
    }
 
 public:
-   KVEventReconstructor(KVMultiDetArray*, KVReconstructedEvent*);
+   KVEventReconstructor(KVMultiDetArray*, KVReconstructedEvent*, Bool_t = kFALSE);
    virtual ~KVEventReconstructor();
 
    void Copy(TObject& obj) const;
@@ -42,6 +44,7 @@ public:
    Double_t GetTargetEnergyLossCorrection(KVReconstructedNucleus*);
 
    ClassDef(KVEventReconstructor, 0) //Base class for handling event reconstruction
+   static void ThreadedReconstructor(void* arg);
 };
 
 #endif

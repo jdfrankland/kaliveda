@@ -156,11 +156,18 @@ KVNucleus* KVEvent::AddParticle()
 
 //________________________________________________________________________________
 
-void KVEvent::Clear(Option_t*)
+void KVEvent::Clear(Option_t* opt)
 {
-   //Reset the event to zero ready for new event.
+   // Reset the event to zero ready for new event.
+   // Any option string is passed on to the Clear() method of the particle
+   // objects in the TClonesArray fParticles.
 
-   fParticles->Clear("C");
+   if (strcmp(opt, "")) {
+      // pass options to particle class Clear() method
+      TString Opt = Form("C+%s", opt);
+      fParticles->Clear(Opt);
+   } else
+      fParticles->Clear("C");
    fParameters.Clear();
    ResetGetNextParticle();
 }
@@ -1009,23 +1016,26 @@ const Char_t* KVEvent::GetPartitionName()
    return partition.Data();
 }
 
-void KVEvent::MergeEventFragments(TCollection* events)
+void KVEvent::MergeEventFragments(TCollection* events, Option_t* opt)
 {
    // Merge all events in the list into one event (this one)
    // First we clear this event, then all particles in each event
    // in the list are moved into this one.
+   // If option "opt" is given, it is given as argument to each call to
+   // KVEvent::Clear() - this option is then passed on to the Clear()
+   // method of each particle in each event.
    // NOTE: the events in the list will be empty and useless after this!
 
-   Clear();
+   Clear(opt);
    TIter it(events);
    KVEvent* e;
-   while ((e = (KVEvent*)it())) { //fParticles->AbsorbObjects(e->fParticles);
+   while ((e = (KVEvent*)it())) {
       KVNucleus* n;
       e->ResetGetNextParticle();
       while ((n = e->GetNextParticle())) {
          n->Copy(*AddParticle());
       }
-      e->Clear();
+      e->Clear(opt);
    }
 }
 

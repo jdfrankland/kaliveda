@@ -6,6 +6,8 @@
 #include "KVGroupReconstructor.h"
 #include "KVTarget.h"
 
+#include <TThread.h>
+
 ClassImp(KVEventReconstructor)
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -29,9 +31,9 @@ ClassImp(KVEventReconstructor)
 //    event object
 ////////////////////////////////////////////////////////////////////////////////
 
-KVEventReconstructor::KVEventReconstructor(KVMultiDetArray* a, KVReconstructedEvent* e)
+KVEventReconstructor::KVEventReconstructor(KVMultiDetArray* a, KVReconstructedEvent* e, Bool_t threaded)
    : KVBase("KVEventReconstructor", Form("Reconstruction of events in array %s", a->GetName())),
-     fArray(a), fEvent(e), fGroupReconstructor(nullptr)
+     fArray(a), fEvent(e), fGroupReconstructor(nullptr), fThreaded(threaded)
 {
    // Default constructor
 }
@@ -69,12 +71,7 @@ void KVEventReconstructor::SetGroupReconstructorPlugin(const char* p)
 
    unique_ptr<KVSeqCollection> groups(GetArray()->GetStructureTypeList("GROUP"));
    Int_t N = groups->GetEntries();
-   fGroupReconstructor = new TClonesArray(plugin_class, N);
-   for (int i = 0; i < N; i++) {
-      KVGroupReconstructor* grec = (KVGroupReconstructor*)fGroupReconstructor->ConstructedAt(i);
-      grec->SetReconEventClass(GetEvent()->IsA());
-      grec->SetEventReconstructor(this);
-   }
+   fGroupReconstructor = new TClonesArray(plugin_class, N / 5);
 }
 
 void KVEventReconstructor::ReconstructEvent(TSeqCollection* fired)
@@ -92,14 +89,39 @@ void KVEventReconstructor::ReconstructEvent(TSeqCollection* fired)
    TIter it(detev.GetGroups());
    KVGroup* group;
    while ((group = (KVGroup*)it())) {
-      KVGroupReconstructor* grec = (KVGroupReconstructor*)(*fGroupReconstructor)[fNGrpRecon];
+      KVGroupReconstructor* grec = (KVGroupReconstructor*)fGroupReconstructor->ConstructedAt(fNGrpRecon);
+      if (!grec->GetEventFragment()) {
+         grec->SetReconEventClass(GetEvent()->IsA());
+         grec->SetEventReconstructor(this);
+      }
       grec->SetGroup(group);
-      grec->Reconstruct();
-      //grec->GetEventFragment()->Print();
+      if (fThreaded) {
+         TThread* t = new TThread(Form("grp_rec_%d", fNGrpRecon), (TThread::VoidRtnFunc_t)&ThreadedReconstructor, (void*)grec);
+         fThreads.Add(t);
+         t->Run();
+      } else
+         grec->Reconstruct();
       ++fNGrpRecon;
    }
+   if (fThreaded) {
+      // wait for threads to finish
+      TThread* th;
+      TIter itr(&fThreads);
+      while ((th = (TThread*)itr())) th->Join();
+      // cleanup threads
+      fThreads.Delete();
+   }
+
    // merge resulting event fragments
    MergeGroupEventFragments();
+}
+
+void KVEventReconstructor::ThreadedReconstructor(void* arg)
+{
+   // Group reconstruction in separate threads
+
+   KVGroupReconstructor* grec = (KVGroupReconstructor*)arg;
+   grec->Reconstruct();
 }
 
 void KVEventReconstructor::IdentifyEvent()
@@ -142,10 +164,10 @@ void KVEventReconstructor::MergeGroupEventFragments()
       to_merge.Add(((KVGroupReconstructor*)(*fGroupReconstructor)[i])->GetEventFragment());
 
    }
-   GetEvent()->MergeEventFragments(&to_merge);
+   GetEvent()->MergeEventFragments(&to_merge, "NGR");// "NGR" = no group reset
    for (int i = 0; i < fNGrpRecon; i++) {
 
-      ((KVGroupReconstructor*)(*fGroupReconstructor)[i])->GetEventFragment()->Clear();
+      ((KVGroupReconstructor*)(*fGroupReconstructor)[i])->GetEventFragment()->Clear("NGR");// "NGR" = no group reset
 
    }
 }
