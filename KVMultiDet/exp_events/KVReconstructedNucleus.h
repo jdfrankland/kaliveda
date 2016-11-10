@@ -391,12 +391,12 @@ public:
    virtual void SubtractEnergyFromAllDetectors();
    inline static UInt_t GetNIdentifiedInGroup(KVGroup*)
    {
-      Warning("GetNIdentifiedInGroup(KVGroup*)", "DO NOT USE");
+      ::Warning("GetNIdentifiedInGroup(KVGroup*)", "DO NOT USE");
       return 0;
    }
    inline static UInt_t GetNUnidentifiedInGroup(KVGroup*)
    {
-      Warning("GetNUnidentifiedInGroup(KVGroup*)", "DO NOT USE");
+      ::Warning("GetNUnidentifiedInGroup(KVGroup*)", "DO NOT USE");
       return 0;
    }
    static void AnalyseParticlesInGroup(KVGroup* grp);
