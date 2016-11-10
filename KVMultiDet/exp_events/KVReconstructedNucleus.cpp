@@ -300,6 +300,8 @@ void KVReconstructedNucleus::AddDetector(KVDetector* det)
 
 void KVReconstructedNucleus::SetReconstructionTrajectory(const KVReconNucTrajectory* t)
 {
+   // Method called in initial reconstruction of particle
+
    fReconTraj = t;
    fNSegDet = t->GetNumberOfIndependentIdentifications();
    t->IterateFrom();
@@ -307,6 +309,22 @@ void KVReconstructedNucleus::SetReconstructionTrajectory(const KVReconNucTraject
    while ((n = t->GetNextNode())) n->GetDetector()->IncrementUnidentifiedParticles();
 }
 
+void KVReconstructedNucleus::CopyAndMoveReferences(const KVNucleus* other)
+{
+   // Copy all characteristics of 'other' and also change all references to
+   // 'other' to references to 'this' (i.e. in detectors hit by particle).
+   // 'other' will not be fully valid after this operation (shouldn't be used further)
+
+   KVNucleus::CopyAndMoveReferences(other);
+   KVDetector* d;
+   KVNucleus* Other = const_cast<KVNucleus*>(other);
+   KVReconstructedNucleus* OTHER = static_cast<KVReconstructedNucleus*>(Other);
+   TIter next(OTHER->GetDetectorList());
+   while ((d = (KVDetector*)next())) {
+      d->GetHits()->Remove(Other);
+      d->GetHits()->Add(this);
+   }
+}
 
 //______________________________________________________________________________________________//
 
@@ -642,16 +660,7 @@ void KVReconstructedNucleus::SetIdentification(KVIdentificationResult* idr)
    if (idr->Aident) {
       SetA(idr->A);
       SetRealA(idr->PID);
-   } else {
-      SetRealZ(idr->PID);
-   }
-   //debug
-//   std::cout << "KVReconstructedNucleus::SetIdentification() IDCode=" << idr->IDcode << std::endl;
-//   std::cout << "KVReconstructedNucleus::SetIdentification() Zident=" << idr->Zident << std::endl;
-//   std::cout << "KVReconstructedNucleus::SetIdentification() Z=" << idr->Z << std::endl;
-//   std::cout << "KVReconstructedNucleus::SetIdentification() PID=" << idr->PID << std::endl;
-//   std::cout << "KVReconstructedNucleus::SetIdentification() RealZ=" << GetRealZ() << std::endl;
-//   std::cout << "KVReconstructedNucleus::SetIdentification() Aident=" << idr->Aident << std::endl;
+   } else SetRealZ(idr->PID);
 }
 
 void KVReconstructedNucleus::SubtractEnergyFromAllDetectors()

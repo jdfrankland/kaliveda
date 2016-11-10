@@ -92,6 +92,10 @@ public:
 #else
    virtual void Copy(TObject&);
 #endif
+   virtual void CopyAndMoveReferences(const KVNucleus* o)
+   {
+      o->Copy(*this);
+   }
 
    Bool_t IsSortable() const
    {

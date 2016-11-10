@@ -24,7 +24,7 @@ void KVGroup::init()
    // Default initialisation
    // KVGroup does not own the structures which it groups together
 
-   fReconstructedNuclei = 0;
+   //fReconstructedNuclei = 0;
    SetType("GROUP");
    SetOwnsDaughters(kFALSE);
    fReconTraj.SetOwner();
@@ -34,12 +34,12 @@ void KVGroup::init()
 
 KVGroup::~KVGroup()
 {
-   if (fReconstructedNuclei && fReconstructedNuclei->TestBit(kNotDeleted)) {
-      fReconstructedNuclei->Clear();
-      delete fReconstructedNuclei;
-      fReconstructedNuclei = 0;
-   }
-   fReconstructedNuclei = 0;
+//   if (fReconstructedNuclei && fReconstructedNuclei->TestBit(kNotDeleted)) {
+//      fReconstructedNuclei->Clear();
+//      delete fReconstructedNuclei;
+//      fReconstructedNuclei = 0;
+//   }
+//   fReconstructedNuclei = 0;
 }
 
 UInt_t KVGroup::GetNumberOfDetectorLayers()
@@ -80,9 +80,9 @@ void KVGroup::Reset()
    //Reset the group, i.e. wipe the list of reconstructed nuclei and call "Clear" method of
    //each and every detector in the group.
    //Info("Reset","Call %s",GetName());
-   if (fReconstructedNuclei && fReconstructedNuclei->GetSize()) {
-      fReconstructedNuclei->Clear();
-   }
+//   if (fReconstructedNuclei && fReconstructedNuclei->GetSize()) {
+//      fReconstructedNuclei->Clear();
+//   }
    //reset energy loss and KVDetector::IsAnalysed() state
    //plus ACQParams set to zero
    const_cast<KVSeqCollection*>(GetDetectors())->R__FOR_EACH(KVDetector, Clear)();
@@ -90,31 +90,31 @@ void KVGroup::Reset()
 
 //_________________________________________________________________________________
 
-void KVGroup::AddHit(KVNucleus* kvd)
-{
-   if (!fReconstructedNuclei) {
-      fReconstructedNuclei = new KVList(kFALSE);
-      fReconstructedNuclei->SetCleanup();
-   }
-   fReconstructedNuclei->Add(kvd);
-}
+//void KVGroup::AddHit(KVNucleus* kvd)
+//{
+//   if (!fReconstructedNuclei) {
+//      fReconstructedNuclei = new KVList(kFALSE);
+//      fReconstructedNuclei->SetCleanup();
+//   }
+//   fReconstructedNuclei->Add(kvd);
+//}
 
 //_________________________________________________________________________________
 
-void KVGroup::RemoveHit(KVNucleus* kvd)
-{
-   //Remove reconstructed nucleus from group's list of reconstructed
-   //particles.
-   if (fReconstructedNuclei) {
-      fReconstructedNuclei->Remove(kvd);
-      if (fReconstructedNuclei->GetSize() == 0) {
-         delete fReconstructedNuclei;
-         fReconstructedNuclei = 0;
-      }
-   } else {
-      Warning("RemoveHit", "No reconstructed nuclei in this group");
-   }
-}
+//void KVGroup::RemoveHit(KVNucleus* kvd)
+//{
+//   //Remove reconstructed nucleus from group's list of reconstructed
+//   //particles.
+//   if (fReconstructedNuclei) {
+//      fReconstructedNuclei->Remove(kvd);
+//      if (fReconstructedNuclei->GetSize() == 0) {
+//         delete fReconstructedNuclei;
+//         fReconstructedNuclei = 0;
+//      }
+//   } else {
+//      Warning("RemoveHit", "No reconstructed nuclei in this group");
+//   }
+//}
 
 TList* KVGroup::GetAlignedDetectors(KVDetector* det, UChar_t dir)
 {

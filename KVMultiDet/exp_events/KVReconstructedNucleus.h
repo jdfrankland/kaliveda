@@ -41,7 +41,7 @@ protected:
 
 public:
 
-   // status codes given to reconstructed particles by KVGroup::AnalyseParticles
+   // status codes given to reconstructed particles by KVGroupReconstructor::AnalyseParticles
    enum {
       kStatusOK,           // = 0 :   identification is, in principle at least, possible straight away
       kStatusOKafterSub,   // = 1 :   identification is, in principle, possible after identification and subtraction
@@ -389,8 +389,16 @@ public:
    }
 
    virtual void SubtractEnergyFromAllDetectors();
-   inline static UInt_t GetNIdentifiedInGroup(KVGroup* grp);
-   inline static UInt_t GetNUnidentifiedInGroup(KVGroup* grp);
+   inline static UInt_t GetNIdentifiedInGroup(KVGroup*)
+   {
+      Warning("GetNIdentifiedInGroup(KVGroup*)", "DO NOT USE");
+      return 0;
+   }
+   inline static UInt_t GetNUnidentifiedInGroup(KVGroup*)
+   {
+      Warning("GetNUnidentifiedInGroup(KVGroup*)", "DO NOT USE");
+      return 0;
+   }
    static void AnalyseParticlesInGroup(KVGroup* grp);
 
    const KVReconNucTrajectory* GetReconstructionTrajectory() const
@@ -398,26 +406,10 @@ public:
       return fReconTraj;
    }
    void SetReconstructionTrajectory(const KVReconNucTrajectory* t);
+   void CopyAndMoveReferences(const KVNucleus*);
 
    ClassDef(KVReconstructedNucleus, 17)  //Nucleus detected by multidetector array
 };
 
-inline UInt_t KVReconstructedNucleus::GetNIdentifiedInGroup(KVGroup* grp)
-{
-   //number of identified particles reconstructed in group
-   UInt_t n = 0;
-   if (grp->GetHits()) {
-      TIter next(grp->GetParticles());
-      KVReconstructedNucleus* nuc = 0;
-      while ((nuc = (KVReconstructedNucleus*) next()))
-         n += (UInt_t) nuc->IsIdentified();
-   }
-   return n;
-};
-inline UInt_t KVReconstructedNucleus::GetNUnidentifiedInGroup(KVGroup* grp)
-{
-   //number of unidentified particles reconstructed in group
-   return (grp->GetHits() - GetNIdentifiedInGroup(grp));
-};
 
 #endif

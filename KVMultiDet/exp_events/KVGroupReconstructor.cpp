@@ -68,7 +68,7 @@ KVGroupReconstructor* KVGroupReconstructor::Factory(const char* plugin)
 
 void KVGroupReconstructor::Reconstruct()
 {
-   // Reconstruct the particles in the group
+   // Reconstruct the particles in the group from hit trajectories
 
    GetEventFragment()->Clear();
 
@@ -138,6 +138,7 @@ void KVGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* part, con
 
 void KVGroupReconstructor::AnalyseParticles()
 {
+   //cout << "GetNUnidentifiedInGroup()=" << GetNUnidentifiedInGroup() << endl;
 
    if (GetNUnidentifiedInGroup() > 1) { //if there is more than one unidentified particle in the group
 

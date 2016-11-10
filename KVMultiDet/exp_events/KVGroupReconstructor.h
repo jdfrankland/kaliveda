@@ -16,7 +16,7 @@ class KVGroupReconstructor : public KVBase {
    KVReconstructedEvent* fGrpEvent;//!     event containing particles reconstructed in this group
    KVEventReconstructor* fEvRecon;//!      parent class for reconstructing event
 
-   void SetReconEventClass(TClass*);
+   void SetReconEventClass(TClass* c);
 
 protected:
    virtual void ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
@@ -63,6 +63,7 @@ public:
       Int_t n = 0;
       if (GetEventFragment()->GetMult()) {
          KVReconstructedNucleus* nuc;
+         GetEventFragment()->ResetGetNextParticle();
          while ((nuc = GetEventFragment()->GetNextParticle())) n += (Int_t) nuc->IsIdentified();
       }
       return n;

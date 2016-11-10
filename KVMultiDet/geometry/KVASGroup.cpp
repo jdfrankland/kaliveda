@@ -48,7 +48,7 @@ KVASGroup::~KVASGroup()
    fNumberOfLayers = 0;
    fLayNumMin = 0;
    fLayNumMax = 0;
-   fReconstructedNuclei = 0;
+//   fReconstructedNuclei = 0;
 }
 
 //_____________________________________________________________________________________

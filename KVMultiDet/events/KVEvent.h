@@ -290,7 +290,7 @@ public:
    void CustomStreamer()
    {
       fParticles->BypassStreamer(kFALSE);
-   };
+   }
 
    void DefineGroup(const Char_t* groupname, const Char_t* from = "");
    void DefineGroup(const Char_t* groupname, KVParticleCondition* cond, const Char_t* from = "");
