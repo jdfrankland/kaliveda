@@ -43,7 +43,10 @@ public:
    }
    void SetEventReconstructor(KVEventReconstructor* evr)
    {
+      // Set parent event reconstructor.
+      // Also initializes reconstructed event fragment if not already done
       fEvRecon = evr;
+      if (!fGrpEvent) SetReconEventClass(evr->GetEvent()->IsA());
    }
    KVEventReconstructor* GetEventReconstructor() const
    {

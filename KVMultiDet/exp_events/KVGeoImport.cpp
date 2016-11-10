@@ -84,38 +84,11 @@ KVGeoImport::~KVGeoImport()
 void KVGeoImport::ParticleEntersNewVolume(KVNucleus*)
 {
    // All detectors crossed by the particle's trajectory are added to the multidetector
-   // and the groups (KVGroup) of aligned detectors are set up
 
    KVDetector* detector = GetCurrentDetector();
    if (!detector) return;
-   Bool_t group_inconsistency = kFALSE;
-   if (fCreateArray) {
-      if (!fCurrentGroup) {
-         if (detector->GetGroup()) {
-            fCurrentGroup = detector->GetGroup();
-         } else {
-            fCurrentGroup = new KVGroup;
-            fCurrentGroup->SetNumber(++fGroupNumber);
-            fCurrentGroup->Add(detector);
-            fArray->Add(fCurrentGroup);
-         }
-      } else {
-         KVGroup* det_group = detector->GetGroup();
-         if (!det_group) {
-            fCurrentGroup->Add(detector);
-         } else {
-            if (det_group != fCurrentGroup) {
-//                     Warning("ParticleEntersNewVolume",
-//                             "Detector %s : already belongs to %s, now seems to be in %s",
-//                             detector->GetName(), det_group->GetName(),
-//                             fCurrentGroup->GetName());
-               group_inconsistency = kTRUE;
-            }
-         }
-      }
-   }
    detector->GetNode()->SetName(detector->GetName());
-   if (fLastDetector && detector != fLastDetector && !group_inconsistency) {
+   if (fLastDetector && detector != fLastDetector) {
       fLastDetector->GetNode()->AddBehind(detector);
       detector->GetNode()->AddInFront(fLastDetector);
       fCurrentTrajectory.AddLast(fLastDetector->GetNode());
@@ -131,9 +104,6 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
    // (ThetaMin,ThetaMax) - with respect to Z-axis - and (PhiMin,PhiMax) - cylindrical
    // angle in the (X,Y)-plane, over a grid of step dTheta in Theta and dPhi in Phi.
 
-   // note that ImportGeometry can be called for a KVMultiDetArray
-   // which already contains detectors, groups and id telescopes
-   fGroupNumber = unique_ptr<KVSeqCollection>(fArray->GetStructureTypeList("GROUP"))->GetEntries();
    Int_t ndets0 = fArray->GetDetectors()->GetEntries();
 
    unique_ptr<KVEvent> evt(new KVEvent());
@@ -149,7 +119,6 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
       for (Double_t phi = PhiMin; phi <= PhiMax; phi += dPhi) {
          nuc->SetTheta(theta);
          nuc->SetPhi(phi);
-         fCurrentGroup = nullptr;
          fLastDetector = nullptr;
          PropagateEvent(evt.get());
          count++;
@@ -171,6 +140,8 @@ void KVGeoImport::ImportGeometry(Double_t dTheta, Double_t dPhi,
    while ((d = (KVDetector*)next())) d->GetNode()->RehashLists();
    // set up all detector node trajectories
    fArray->AssociateTrajectoriesAndNodes();
+   // create all groups
+   fArray->DeduceGroupsFromTrajectories();
 
    if (fCreateArray) {
       fArray->SetGeometry(GetGeometry());

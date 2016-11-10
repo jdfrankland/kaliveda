@@ -62,15 +62,15 @@ KVIDGUITelescopeChooserDialog::KVIDGUITelescopeChooserDialog(
    fComboBox994 = new TGComboBox(fMainFrame979, -1, kHorizontalFrame | kSunkenFrame | kDoubleBorder | kOwnBackground);
 
    //get list of ID telescope types from multidetarray
-   KVList* id_types = MDA->GetIDTelescopeTypes();
+   unique_ptr<KVUniqueNameList> id_types(MDA->GetIDTelescopeTypes());
    // fill combo with types in list id_types
-   TIter next_type(id_types);
+   TIter next_type(id_types.get());
    TObjString* type_string;
    int entry_id = 0;
    while ((type_string = (TObjString*)next_type())) {
       fComboBox994->AddEntry(type_string->GetString().Data(), entry_id++);
    }
-   delete id_types;
+
    fComboBox994->Resize(dx, 22);
    fComboBox994->Select(-1);
    fMainFrame979->AddFrame(fComboBox994, new TGLayoutHints(kLHintsLeft | kLHintsTop, 2, 2, 2, 2));

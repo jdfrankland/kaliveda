@@ -20,7 +20,7 @@ ClassImp(KVGroupReconstructor)
 
 KVGroupReconstructor::KVGroupReconstructor()
    : KVBase("KVGroupReconstructor", "Reconstruction of particles in detector groups"),
-     fGroup(nullptr), fGrpEvent(nullptr)
+     fGroup(nullptr), fGrpEvent(nullptr), fEvRecon(nullptr)
 {
    // Default constructor
 
@@ -77,28 +77,32 @@ void KVGroupReconstructor::Reconstruct()
 
    // loop over trajectories
    while ((traj = (KVGeoDNTrajectory*)nxt_traj())) {
-      //cout << "on trajectory:" << traj->GetTitle() << endl;
+      cout << "on trajectory:" << traj->GetName() << " ";
+      traj->IterateBackFrom();
+      KVGeoDetectorNode* n;
+      int i = 0;
+      while ((n = traj->GetNextNode())) {
+         if (i++) cout << "--";
+         if (n->GetDetector()->Fired()) cout << "X";
+         else cout << "O";
+      }
+      cout << endl;
 
       // Work our way along the trajectory, starting from furthest detector from target,
       // start reconstruction of new detected particle from first fired detector.
-      //
-      // More precisely: If detector has fired*,
-      // making sure fired detector hasn't already been used to reconstruct
-      // a particle, then we create and fill a new detected particle.
-      //
-      // *change condition by calling SetPartSeedCond("any"): in this case,
-      // particles will be reconstructed starting from detectors with at least 1 fired parameter.
-
       traj->IterateFrom();
       KVGeoDetectorNode* node;
       while ((node = traj->GetNextNode())) {
 
          KVDetector* d = node->GetDetector();
-         // if d has fired, has not already been analysed, and is not the last
-         // node of several trajectories, reconstruct particle
-         if ((d->Fired(GetEventFragment()->GetPartSeedCond()) && !d->IsAnalysed()
-               && !(traj->EndsAt(node) && node->GetBackwardTrajectories()->GetEntries() > 1))) {
-            //cout << d->GetName() << " fired: reconstructing particle" << endl;
+         // if d has fired, has not already been analysed, and is either independent
+         // (only one trajectory passes through it) or, if several trajectories pass through it,
+         // only if the detector directly in front of it on this trajectory fired also
+         if (d->Fired(GetEventFragment()->GetPartSeedCond())
+               && (node->GetNTraj() == 1 ||
+                   (traj->GetNodeInFront(node) &&
+                    traj->GetNodeInFront(node)->GetDetector()->Fired(GetEventFragment()->GetPartSeedCond())))) {
+            cout << d->GetName() << " fired: reconstructing particle" << endl;
 
             KVReconstructedNucleus* kvdp = GetEventFragment()->AddParticle();
             //add all active detector layers in front of this one
@@ -130,7 +134,6 @@ void KVGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* part, con
 
       KVDetector* d = n->GetDetector();
       d->AddHit(part);  // add particle to list of particles hitting detector
-      d->SetAnalysed(kTRUE);   //cannot be used to seed another particle
 
    }
 
@@ -149,11 +152,14 @@ void KVGroupReconstructor::AnalyseParticles()
          //ignore identified particles
          if (nuc->IsIdentified())
             continue;
-
-         if (nuc->GetNSegDet() >= 1) {
-            //all particles with at least one independent identification telescope are fine
+         // The condition for a particle to be identifiable straight away is that the first
+         // identification method that will be used must be independent
+         //if (nuc->GetNSegDet() >= 1) {
+         if (nuc->GetReconstructionTrajectory()->GetIDTelescopes()
+               && ((KVIDTelescope*)nuc->GetReconstructionTrajectory()->GetIDTelescopes()->First())->IsIndependent()) {
+            //all particles whose first identification telescope is independent are fine
             nuc->SetStatus(KVReconstructedNucleus::kStatusOK);
-         } else if (!nuc->GetNSegDet() && (nuc->GetReconstructionTrajectory()->GetNumberOfIdentifications())) {
+         } else if (nuc->GetReconstructionTrajectory()->GetNumberOfIdentifications()) {
             //no independent identification telescope => depends on what's in the rest of the group
             ++n_nseg_1;
          } else {
@@ -166,7 +172,9 @@ void KVGroupReconstructor::AnalyseParticles()
          if (nuc->IsIdentified())
             continue;           //ignore identified particles
 
-         if (!nuc->GetNSegDet() && (nuc->GetReconstructionTrajectory()->GetNumberOfIdentifications())) {
+         if (!(nuc->GetReconstructionTrajectory()->GetIDTelescopes()
+               && ((KVIDTelescope*)nuc->GetReconstructionTrajectory()->GetIDTelescopes()->First())->IsIndependent())
+               && nuc->GetReconstructionTrajectory()->GetNumberOfIdentifications()) {
             //particles with no independent identification possibility
             if (n_nseg_1 == 1) {
                //just the one ? then we can get it no problem

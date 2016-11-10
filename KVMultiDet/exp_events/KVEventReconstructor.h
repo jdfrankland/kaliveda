@@ -42,9 +42,9 @@ public:
       return fEvent;
    }
    Double_t GetTargetEnergyLossCorrection(KVReconstructedNucleus*);
+   static void ThreadedReconstructor(void* arg);
 
    ClassDef(KVEventReconstructor, 0) //Base class for handling event reconstruction
-   static void ThreadedReconstructor(void* arg);
 };
 
 #endif

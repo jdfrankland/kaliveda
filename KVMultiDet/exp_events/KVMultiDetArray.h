@@ -103,6 +103,7 @@ protected:
       fTrajectories.Add(d);
    }
    void AssociateTrajectoriesAndNodes();
+   void DeduceGroupsFromTrajectories();
 
 public:
    void CreateGeoManager(Double_t dx = 500, Double_t dy = 500, Double_t dz = 500)
@@ -186,7 +187,7 @@ public:
    {
       return fIDTelescopes;
    };
-   KVList* GetIDTelescopeTypes();
+   KVUniqueNameList* GetIDTelescopeTypes();
    KVSeqCollection* GetIDTelescopesWithType(const Char_t* type);
    virtual void SetDetectorThicknesses();
 
@@ -312,6 +313,7 @@ public:
    void SetDetectorTransparency(Char_t);
 
    ClassDef(KVMultiDetArray, 7) //Base class for multidetector arrays
+   void RecursiveTrajectoryClustering(KVGeoDetectorNode* N, KVUniqueNameList& tried_trajectories, KVUniqueNameList& multitraj_nodes, KVUniqueNameList& detectors_of_group);
 };
 
 //................  global variable

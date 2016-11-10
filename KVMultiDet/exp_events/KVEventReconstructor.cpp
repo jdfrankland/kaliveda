@@ -71,7 +71,7 @@ void KVEventReconstructor::SetGroupReconstructorPlugin(const char* p)
 
    unique_ptr<KVSeqCollection> groups(GetArray()->GetStructureTypeList("GROUP"));
    Int_t N = groups->GetEntries();
-   fGroupReconstructor = new TClonesArray(plugin_class, N / 5);
+   fGroupReconstructor = new TClonesArray(plugin_class, (N > 5 ? N / 5 : N));
 }
 
 void KVEventReconstructor::ReconstructEvent(TSeqCollection* fired)
@@ -90,10 +90,7 @@ void KVEventReconstructor::ReconstructEvent(TSeqCollection* fired)
    KVGroup* group;
    while ((group = (KVGroup*)it())) {
       KVGroupReconstructor* grec = (KVGroupReconstructor*)fGroupReconstructor->ConstructedAt(fNGrpRecon);
-      if (!grec->GetEventFragment()) {
-         grec->SetReconEventClass(GetEvent()->IsA());
-         grec->SetEventReconstructor(this);
-      }
+      grec->SetEventReconstructor(this);
       grec->SetGroup(group);
       if (fThreaded) {
          TThread* t = new TThread(Form("grp_rec_%d", fNGrpRecon), (TThread::VoidRtnFunc_t)&ThreadedReconstructor, (void*)grec);

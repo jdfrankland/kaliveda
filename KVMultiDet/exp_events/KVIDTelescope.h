@@ -233,9 +233,10 @@ public:
       // other telescopes/detectors in the group/array etc.
       // This is the case if
       //   - the identification is made with a single detector e.g. fast-slow id in Cesium Iodide
-      //   - for a dE-E telescope, if only one trajectory passes through the dE detector
+      //   - for a dE-E telescope, if only one trajectory passes through both detectors
 
-      return (GetSize() == 1 || (GetSize() == 2 && GetDetector(1)->GetNode()->GetNTraj() == 1));
+      return (GetSize() == 1 || (GetSize() == 2 && GetDetector(1)->GetNode()->GetNTraj() == 1
+                                 && GetDetector(2)->GetNode()->GetNTraj() == 1));
    }
    ClassDef(KVIDTelescope, 5)   //A delta-E - E identification telescope
 };
