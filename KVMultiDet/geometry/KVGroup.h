@@ -1,6 +1,8 @@
 #ifndef KVGROUP_H
 #define KVGROUP_H
 
+#define KVGROUP_ADD_UNKNOWN_TELESCOPE "Attempt to add undefined telescope to group"
+
 #include "KVGeoStrucElement.h"
 #include "KVList.h"
 #include "KVGeoDNTrajectory.h"
@@ -14,7 +16,7 @@ protected:
    enum {
       kIsRemoving = BIT(14)     //flag set during call to RemoveTelescope
    };
-   //KVList* fReconstructedNuclei;        //!Particles reconstructed in this group
+   KVList* fReconstructedNuclei;        //!Particles reconstructed in this group
    KVHashList fTrajectories;           //! Trajectories passing through group
    KVHashList fReconTraj;              //! list of all possible trajectories for reconstructed particles
    KVNameValueList fReconTrajMap;      //! map names of duplicate trajectories for reconstructed particles
@@ -43,18 +45,18 @@ public:
 
    inline UInt_t GetHits()
    {
-//      if (fReconstructedNuclei)
-//         return fReconstructedNuclei->GetSize();
-//      else
-      return 0;
+      if (fReconstructedNuclei)
+         return fReconstructedNuclei->GetSize();
+      else
+         return 0;
    };
    void ClearHitDetectors();
    KVList* GetParticles()
    {
-      return nullptr;//fReconstructedNuclei;
+      return fReconstructedNuclei;
    }
-//   void AddHit(KVNucleus* kvd);
-//   void RemoveHit(KVNucleus* kvd);
+   void AddHit(KVNucleus* kvd);
+   void RemoveHit(KVNucleus* kvd);
 
    Bool_t IsRemoving()
    {
