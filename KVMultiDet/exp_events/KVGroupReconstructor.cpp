@@ -95,8 +95,8 @@ void KVGroupReconstructor::Reconstruct()
       while ((node = traj->GetNextNode())) {
 
          KVDetector* d = node->GetDetector();
-         // if d has fired, has not already been analysed, and is either independent
-         // (only one trajectory passes through it) or, if several trajectories pass through it,
+         // if d has fired and is either independent (only one trajectory passes through it)
+         // or, if several trajectories pass through it,
          // only if the detector directly in front of it on this trajectory fired also
          if (d->Fired(GetEventFragment()->GetPartSeedCond())
                && (node->GetNTraj() == 1 ||
