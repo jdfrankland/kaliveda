@@ -319,13 +319,34 @@ void KVIDTelescope::Initialize()
 
 //____________________________________________________________________________________
 
-Bool_t KVIDTelescope::Identify(KVIdentificationResult*, Double_t, Double_t)
+Bool_t KVIDTelescope::Identify(KVIdentificationResult* idr, Double_t x, Double_t y)
 {
    //Default identification method.
-   //Identification of experimental data needs to be implemented in specific
-   //child classes. Returns kFALSE.
+   //Works for dE-E id telescopes for which a single identification grid is defined.
+   //Uses GetIDMapX(),GetIDMapY() for coordinates to identify.
+   //
+   //Identification of experimental data needs to be implemented
+   //in specific child classes.
 
-   return kFALSE;
+   idr->SetIDType(GetType());
+   idr->IDattempted = kFALSE;
+   KVIDGrid* grid = dynamic_cast<KVIDGrid*>(GetIDGrid());
+   if (!grid) return kFALSE;
+
+   idr->IDattempted = kTRUE;
+
+   Double_t de = (y < 0. ? GetIDMapY() : y);
+   Double_t e = (x < 0. ? GetIDMapX() : x);
+
+   if (grid->IsIdentifiable(e, de)) {
+      grid->Identify(e, de, idr);
+   } else {
+      idr->IDOK = kFALSE;
+   }
+
+   idr->IDcode = GetIDCode();
+
+   return kTRUE;
 }
 
 //____________________________________________________________________________________

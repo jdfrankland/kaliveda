@@ -7,26 +7,24 @@
 #include "KVBase.h"
 #include "KVGroup.h"
 #include "KVReconstructedEvent.h"
-#include "KVEventReconstructor.h"
 
 class KVGroupReconstructor : public KVBase {
-   friend class KVEventReconstructor;
 
    KVGroup*              fGroup;//!        the group where we are reconstructing
    KVReconstructedEvent* fGrpEvent;//!     event containing particles reconstructed in this group
-   KVEventReconstructor* fEvRecon;//!      parent class for reconstructing event
-
-   void SetReconEventClass(TClass* c);
 
 protected:
    virtual void ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
    virtual void IdentifyParticle(KVReconstructedNucleus* PART);
    virtual void CalibrateParticle(KVReconstructedNucleus* PART);
 
+   Double_t GetTargetEnergyLossCorrection(KVReconstructedNucleus* ion);
+
 public:
    KVGroupReconstructor();
    virtual ~KVGroupReconstructor();
 
+   void SetReconEventClass(TClass* c);
    void Copy(TObject& obj) const;
 
    KVReconstructedEvent* GetEventFragment() const
@@ -41,20 +39,10 @@ public:
    {
       return fGroup;
    }
-   void SetEventReconstructor(KVEventReconstructor* evr)
-   {
-      // Set parent event reconstructor.
-      // Also initializes reconstructed event fragment if not already done
-      fEvRecon = evr;
-      if (!fGrpEvent) SetReconEventClass(evr->GetEvent()->IsA());
-   }
-   KVEventReconstructor* GetEventReconstructor() const
-   {
-      return fEvRecon;
-   }
 
    static KVGroupReconstructor* Factory(const char*);
 
+   void Process();
    void Reconstruct();
    void Identify();
    void Calibrate();

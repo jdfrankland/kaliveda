@@ -285,6 +285,8 @@ Int_t KVMultiDetArray::try_all_doubleID_telescopes(KVDetector* de, KVDetector* e
    KVIDTelescope* idt = new KVIDTelescope;
    uri = de_type + "-" + e_type;
    idt->SetLabel(uri);
+   // set type as "[DEtype]-[Etype]" where "[*type]" is type of DE/E detectors
+   idt->SetType(Form("%s-%s", de_type.Data(), e_type.Data()));
    set_up_telescope(de, e, idt, l);
 
    return 1;

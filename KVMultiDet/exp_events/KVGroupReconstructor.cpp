@@ -2,6 +2,8 @@
 //Author: John Frankland,,,
 
 #include "KVGroupReconstructor.h"
+#include "KVMultiDetArray.h"
+#include "KVTarget.h"
 
 #include <TPluginManager.h>
 using std::cout;
@@ -20,7 +22,7 @@ ClassImp(KVGroupReconstructor)
 
 KVGroupReconstructor::KVGroupReconstructor()
    : KVBase("KVGroupReconstructor", "Reconstruction of particles in detector groups"),
-     fGroup(nullptr), fGrpEvent(nullptr), fEvRecon(nullptr)
+     fGroup(nullptr), fGrpEvent(nullptr)
 {
    // Default constructor
 
@@ -52,7 +54,7 @@ void KVGroupReconstructor::SetReconEventClass(TClass* c)
 {
    // Instantiate event fragment object
 
-   fGrpEvent = (KVReconstructedEvent*)c->New();
+   if (!fGrpEvent) fGrpEvent = (KVReconstructedEvent*)c->New();
 }
 
 KVGroupReconstructor* KVGroupReconstructor::Factory(const char* plugin)
@@ -66,6 +68,14 @@ KVGroupReconstructor* KVGroupReconstructor::Factory(const char* plugin)
    return nullptr;
 }
 
+void KVGroupReconstructor::Process()
+{
+   // Perform full reconstruction for group: reconstruct, identify, calibrate
+   Reconstruct();
+   Identify();
+   Calibrate();
+}
+
 void KVGroupReconstructor::Reconstruct()
 {
    // Reconstruct the particles in the group from hit trajectories
@@ -77,16 +87,16 @@ void KVGroupReconstructor::Reconstruct()
 
    // loop over trajectories
    while ((traj = (KVGeoDNTrajectory*)nxt_traj())) {
-      cout << "on trajectory:" << traj->GetName() << " ";
-      traj->IterateBackFrom();
-      KVGeoDetectorNode* n;
-      int i = 0;
-      while ((n = traj->GetNextNode())) {
-         if (i++) cout << "--";
-         if (n->GetDetector()->Fired()) cout << "X";
-         else cout << "O";
-      }
-      cout << endl;
+//      cout << "on trajectory:" << traj->GetName() << " ";
+//      traj->IterateBackFrom();
+//      KVGeoDetectorNode* n;
+//      int i = 0;
+//      while ((n = traj->GetNextNode())) {
+//         if (i++) cout << "--";
+//         if (n->GetDetector()->Fired()) cout << "X";
+//         else cout << "O";
+//      }
+//      cout << endl;
 
       // Work our way along the trajectory, starting from furthest detector from target,
       // start reconstruction of new detected particle from first fired detector.
@@ -102,7 +112,6 @@ void KVGroupReconstructor::Reconstruct()
                && (node->GetNTraj() == 1 ||
                    (traj->GetNodeInFront(node) &&
                     traj->GetNodeInFront(node)->GetDetector()->Fired(GetEventFragment()->GetPartSeedCond())))) {
-            cout << d->GetName() << " fired: reconstructing particle" << endl;
 
             KVReconstructedNucleus* kvdp = GetEventFragment()->AddParticle();
             //add all active detector layers in front of this one
@@ -223,10 +232,11 @@ void KVGroupReconstructor::IdentifyParticle(KVReconstructedNucleus* PART)
    // This continues until a successful identification is achieved or there are no more ID telescopes to try.
    // The identification code corresponding to the identifying telescope is set as the identification code of the particle.
 
-
+   Info("IdentifiyParticle", "called");
    const KVSeqCollection* idt_list = PART->GetReconstructionTrajectory()->GetIDTelescopes();
 
    if (idt_list->GetEntries() > 0) {
+      Info("IdentifiyParticle", "got telescopes");
 
       KVIDTelescope* idt;
       TIter next(idt_list);
@@ -237,9 +247,12 @@ void KVGroupReconstructor::IdentifyParticle(KVReconstructedNucleus* PART)
          KVIdentificationResult* IDR = PART->GetIdentificationResult(idnumber++);
 
          if (idt->IsReadyForID()) { // is telescope able to identify for this run ?
+            Info("IdentifiyParticle", "telescope is ready");
 
             IDR->IDattempted = kTRUE;
             idt->Identify(IDR);
+
+            IDR->Print();
 
             if (IDR->IDOK) n_success_id++;
          } else
@@ -264,6 +277,31 @@ void KVGroupReconstructor::IdentifyParticle(KVReconstructedNucleus* PART)
             }
          }
 
+      }
+      // set first successful identification as particle identification
+      Int_t id_no = 1;
+      Bool_t ok = kFALSE;
+      KVIdentificationResult partID;
+      KVIdentificationResult* pid = PART->GetIdentificationResult(id_no);
+      while (pid->IDattempted) {
+         if (pid->IDOK) {
+            ok = kTRUE;
+            partID = *pid;
+            break;
+         }
+         ++id_no;
+         pid = PART->GetIdentificationResult(id_no);
+      }
+      if (ok) {
+         PART->SetIsIdentified();
+         KVIDTelescope* idt = (KVIDTelescope*)PART->GetIDTelescopes()->FindObjectByType(partID.GetType());
+         if (!idt) {
+            Warning("Identify", "cannot find ID telescope with type %s", partID.GetType());
+            PART->GetIDTelescopes()->ls();
+            partID.Print();
+         }
+         PART->SetIdentifyingTelescope(idt);
+         PART->SetIdentification(&partID);
       }
 
    }
@@ -295,7 +333,7 @@ void KVGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
       //add correction for target energy loss - moving charged particles only!
       Double_t E_targ = 0.;
       if (PART->GetZ() && PART->GetEnergy() > 0) {
-         E_targ = GetEventReconstructor()->GetTargetEnergyLossCorrection(PART);
+         E_targ = GetTargetEnergyLossCorrection(PART);
          PART->SetTargetEnergyLoss(E_targ);
       }
       Double_t E_tot = PART->GetEnergy() + E_targ;
@@ -314,8 +352,9 @@ void KVGroupReconstructor::Identify()
    //order coherency analysis (KVReconstructedNucleus::GetStatus=0), will be identified.
    //Particles stopping in first member of a telescope (KVReconstructedNucleus::GetStatus=3) will
    //have their Z estimated from the energy loss in the detector (if calibrated).
-
+   Info("Identify", "called");
    KVReconstructedNucleus* d;
+   GetEventFragment()->ResetGetNextParticle();
    while ((d = GetEventFragment()->GetNextParticle())) {
       if (!d->IsIdentified()) {
          if (d->GetStatus() == KVReconstructedNucleus::kStatusOK) {
@@ -335,6 +374,7 @@ void KVGroupReconstructor::Identify()
          }
       }
    }
+   GetEventFragment()->Print();
 }
 
 //_____________________________________________________________________________
@@ -347,6 +387,7 @@ void KVGroupReconstructor::Calibrate()
    // uncalibrated particle (those for which KVReconstructedNucleus::IsCalibrated()
    // returns kFALSE).
 
+
    KVReconstructedNucleus* d;
 
    while ((d = GetEventFragment()->GetNextParticle())) {
@@ -357,5 +398,28 @@ void KVGroupReconstructor::Calibrate()
 
    }
 
+}
+
+
+Double_t KVGroupReconstructor::GetTargetEnergyLossCorrection(KVReconstructedNucleus* ion)
+{
+   // Calculate the energy loss in the current target of the multidetector
+   // for the reconstructed charged particle 'ion', assuming that the current
+   // energy and momentum of this particle correspond to its state on
+   // leaving the target.
+   //
+   // WARNING: for this correction to work, the target must be in the right 'state':
+   //
+   //      gMultiDetArray->GetTarget()->SetIncoming(kFALSE);
+   //      gMultiDetArray->GetTarget()->SetOutgoing(kTRUE);
+   //
+   // (see KVTarget::GetParticleEIncFromERes).
+   //
+   // The returned value is the energy lost in the target in MeV.
+   // The energy/momentum of 'ion' are not affected.
+
+   KVMultiDetArray* array = (KVMultiDetArray*)GetGroup()->GetArray();
+   if (!array->GetTarget() || !ion) return 0.0;
+   return (array->GetTarget()->GetParticleEIncFromERes(ion) - ion->GetEnergy());
 }
 

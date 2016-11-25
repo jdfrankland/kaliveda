@@ -23,6 +23,7 @@ KVDetectionSimulator::KVDetectionSimulator(KVMultiDetArray* a, Double_t e_cut_of
    // Initialise a detection simulator
    // The detector array is put into simulation mode, and the minimum cut-off energy
    // for propagation of particles is set
+   a->Clear();
    a->SetSimMode(kTRUE);
    static_cast<KVRangeTableGeoNavigator*>(a->GetNavigator())->SetCutOffKEForPropagation(e_cut_off);
 }

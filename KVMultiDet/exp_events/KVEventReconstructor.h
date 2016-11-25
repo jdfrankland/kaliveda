@@ -32,16 +32,12 @@ public:
    void SetGroupReconstructorPlugin(const char* p);
 
    void ReconstructEvent(TSeqCollection* = nullptr);
-   void IdentifyEvent();
-   void CalibrateEvent();
-
    void MergeGroupEventFragments();
 
    KVReconstructedEvent* GetEvent()
    {
       return fEvent;
    }
-   Double_t GetTargetEnergyLossCorrection(KVReconstructedNucleus*);
    static void ThreadedReconstructor(void* arg);
 
    ClassDef(KVEventReconstructor, 0) //Base class for handling event reconstruction
