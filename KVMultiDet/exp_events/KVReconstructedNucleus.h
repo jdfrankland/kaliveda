@@ -57,7 +57,7 @@ public:
    KVReconstructedNucleus();
    KVReconstructedNucleus(const KVReconstructedNucleus&);
    void init();
-   virtual ~ KVReconstructedNucleus();
+   virtual ~KVReconstructedNucleus() {}
    virtual void Print(Option_t* option = "") const;
    virtual void Clear(Option_t* option = "");
    virtual void Reconstruct(KVDetector* kvd);
@@ -69,11 +69,9 @@ public:
       // Return pointer to list of detectors through which particle passed,
       // in reverse order (i.e. first detector in list is the one in which particle stopped).
 
-      if (!fDetList.GetEntries()) {
-         const_cast<KVReconstructedNucleus*>(this)->MakeDetectorList();
-      }
-      return &fDetList;
-   };
+      Obsolete("GetDetectorList", "1.10", "1.11");
+      return nullptr;
+   }
    KVDetector* GetDetector(int i) const
    {
       //Returns the detectors hit by the particle.
@@ -82,12 +80,8 @@ public:
       //must have passed before stopping, in inverse order (i.e. i=0 is the last
       //detector, as i increases we get the detectors closer to the target).
 
-      if (fReconTraj) {
-         return fReconTraj->GetNodeAt(i)->GetDetector();
-      }
-      if (i >= GetDetectorList()->GetEntries()) return 0;
-      return (KVDetector*) GetDetectorList()->At(i);
-   };
+      return (fReconTraj ? fReconTraj->GetNodeAt(i)->GetDetector() : nullptr);
+   }
 
    const Char_t* GetDetectorNames() const
    {
@@ -127,14 +121,7 @@ public:
       // recalculate segmentation index of particle used by Identify() and
       // KVGroup::AnalyseParticles
 
-      if (fReconTraj) {
-         fNSegDet = fReconTraj->GetNumberOfIndependentIdentifications();
-         return;
-      }
-      fNSegDet = 0;
-      KVDetector* det;
-      TIter nxt(&fDetList);
-      while ((det = (KVDetector*)nxt())) fNSegDet += det->GetSegment();
+      fNSegDet = fReconTraj->GetNumberOfIndependentIdentifications();
    }
    inline Int_t GetStatus() const
    {
@@ -344,7 +331,7 @@ public:
    Int_t GetNumberOfIdentificationResults() const
    {
       // Returns the number of KVIdentificationResult objects in the TClonesArray fIDresults.
-      // Do not assume that all of these correspond to attemted identifications
+      // Do not assume that all of these correspond to attempted identifications
       // (see comments in GetIdentificationResult(Int_t))
       return fIDResults.GetEntries();
    }
@@ -406,7 +393,7 @@ public:
       return fReconTraj;
    }
    void SetReconstructionTrajectory(const KVReconNucTrajectory* t);
-   void CopyAndMoveReferences(const KVNucleus*);
+   void CopyAndMoveReferences(const KVReconstructedNucleus*);
 
    ClassDef(KVReconstructedNucleus, 17)  //Nucleus detected by multidetector array
 };

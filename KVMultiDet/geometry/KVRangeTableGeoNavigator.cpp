@@ -159,7 +159,7 @@ void KVRangeTableGeoNavigator::ParticleEntersNewVolume(KVNucleus* part)
             // update energy loss in active layer of detector
             Double_t E = theDet->GetEnergyLoss() + de;
             theDet->SetEnergyLoss(E);
-            theDet->AddHit(part);
+            //theDet->AddHit(part);//don't put a reference to simulated particle in detector
          }
       }
       part->GetParameters()->SetValue(Form("Xin:%s", absorber_name.Data()), GetEntryPoint().X());

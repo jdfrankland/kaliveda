@@ -228,5 +228,33 @@ void KVReconstructedEvent::CalibrateEvent()
 
 }
 
-////////////////////////////////////////////////////////////////////////////////////////
+void KVReconstructedEvent::MergeEventFragments(TCollection* events, Option_t* opt)
+{
+   // Merge all events in the list into one event (this one)
+   // First we clear this event, then we fill it with copies of each particle in each event
+   // in the list.
+   // If option "opt" is given, it is given as argument to each call to
+   // KVEvent::Clear() - this option is then passed on to the Clear()
+   // method of each particle in each event.
+   // NOTE: the events in the list will be empty and useless after this!
+   //
+   // This method overrides the one defined in KVEvent. As KVReconstructedNucleus objects
+   // are referenced by the detectors used in their reconstruction, we also have to update
+   // the references in the detectors otherwise they will still reference the particles
+   // in the events in the list, which will no longer be valid after this operation.
+
+   Clear(opt);
+   TIter it(events);
+   KVReconstructedEvent* e;
+   while ((e = (KVReconstructedEvent*)it())) {
+      KVReconstructedNucleus* n;
+      e->ResetGetNextParticle();
+      while ((n = e->GetNextParticle())) {
+         AddParticle()->CopyAndMoveReferences(n);
+      }
+      e->Clear(opt);
+   }
+}
+
+
 

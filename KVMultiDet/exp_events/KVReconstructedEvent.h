@@ -82,6 +82,7 @@ public:
       // Perform identifications and calibrations of particles not included
       // in first round (methods IdentifyEvent() and CalibrateEvent()).
    }
+   void MergeEventFragments(TCollection*, Option_t* opt = "");
 
    ClassDef(KVReconstructedEvent, 2)    //Base class for reconstructed experimental multiparticle events
 };

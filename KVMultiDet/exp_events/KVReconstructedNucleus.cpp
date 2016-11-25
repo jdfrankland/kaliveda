@@ -76,16 +76,6 @@ KVReconstructedNucleus::KVReconstructedNucleus(const KVReconstructedNucleus& obj
 #endif
 }
 
-KVReconstructedNucleus::~KVReconstructedNucleus()
-{
-   //dtor
-   // calls KVGroup::Reset() of the group in which this particle was detected
-   if (GetGroup()) {
-      GetGroup()->Reset();
-   }
-   init();
-}
-
 //______________________________________________________________________________
 
 void KVReconstructedNucleus::Streamer(TBuffer& R__b)
@@ -256,14 +246,37 @@ void KVReconstructedNucleus::Copy(TObject& obj)
    robj.SetRealA(GetRealA());
    robj.SetTargetEnergyLoss(GetTargetEnergyLoss());
    robj.fReconTraj = fReconTraj;
-   fDetList.Copy(robj.fDetList);
    robj.fIDTelescope = fIDTelescope;
    robj.fNSegDet = fNSegDet;
    robj.fAnalStatus = fAnalStatus;
-   //fIDResults.Copy(robj.fIDResults);
+   // copy id results
+   Int_t nidres = GetNumberOfIdentificationResults();
+   for (int i = 1; i <= nidres; ++i) {
+      GetIdentificationResult(i)->Copy(*robj.GetIdentificationResult(i));
+   }
+   robj.SetBit(kIsIdentified, TestBit(kIsIdentified));
+   robj.SetBit(kIsCalibrated, TestBit(kIsCalibrated));
+   robj.SetBit(kCoherency, TestBit(kCoherency));
+   robj.SetBit(kZMeasured, TestBit(kZMeasured));
+   robj.SetBit(kAMeasured, TestBit(kAMeasured));
 }
 
+void KVReconstructedNucleus::CopyAndMoveReferences(const KVReconstructedNucleus* other)
+{
+   // Copy all characteristics of 'other' and also change all references to
+   // 'other' to references to 'this' (i.e. in detectors hit by particle).
+   // 'other' will not be fully valid after this operation (shouldn't be used further)
 
+   other->Copy(*this);
+   KVGeoDetectorNode* node;
+   const KVReconNucTrajectory* traj = other->GetReconstructionTrajectory();
+   traj->IterateFrom();
+   while ((node = traj->GetNextNode())) {
+      KVDetector* d = node->GetDetector();
+      d->GetHits()->Remove(const_cast<KVReconstructedNucleus*>(other));
+      d->GetHits()->Add(this);
+   }
+}
 
 void KVReconstructedNucleus::Clear(Option_t* opt)
 {
@@ -307,23 +320,6 @@ void KVReconstructedNucleus::SetReconstructionTrajectory(const KVReconNucTraject
    t->IterateFrom();
    KVGeoDetectorNode* n;
    while ((n = t->GetNextNode())) n->GetDetector()->IncrementUnidentifiedParticles();
-}
-
-void KVReconstructedNucleus::CopyAndMoveReferences(const KVNucleus* other)
-{
-   // Copy all characteristics of 'other' and also change all references to
-   // 'other' to references to 'this' (i.e. in detectors hit by particle).
-   // 'other' will not be fully valid after this operation (shouldn't be used further)
-
-   KVNucleus::CopyAndMoveReferences(other);
-   KVDetector* d;
-   KVNucleus* Other = const_cast<KVNucleus*>(other);
-   KVReconstructedNucleus* OTHER = static_cast<KVReconstructedNucleus*>(Other);
-   TIter next(OTHER->GetDetectorList());
-   while ((d = (KVDetector*)next())) {
-      d->GetHits()->Remove(Other);
-      d->GetHits()->Add(this);
-   }
 }
 
 //______________________________________________________________________________________________//
