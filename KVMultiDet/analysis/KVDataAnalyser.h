@@ -69,6 +69,23 @@ protected:
    static Bool_t fCleanAbort;//flag to force abort of processing
 
 public:
+   enum EProofMode {
+      None,
+      Lite,
+      Proof
+   };
+private:
+   EProofMode fProofMode;
+public:
+   void SetProofMode(EProofMode e)
+   {
+      fProofMode = e;
+   }
+   EProofMode GetProofMode() const
+   {
+      return fProofMode;
+   }
+
    static void SetAbortProcessingLoop(Bool_t now = kTRUE)
    {
       // Set flag to force a clean abort of the processing loop
@@ -252,6 +269,8 @@ public:
    static void RunAnalyser(const Char_t* plugin = "");
 
    static Bool_t IsRunningBatchAnalysis();
+
+   virtual void AddJobDescriptionList(TList*);
 
    ClassDef(KVDataAnalyser, 0)  //For submitting & performing data analysis tasks
 };

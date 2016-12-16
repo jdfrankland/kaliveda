@@ -10,12 +10,14 @@ $Date: 2007/11/15 14:59:45 $
 #include "KVBase.h"
 #include "KVINDRAReconDataAnalyser.h"
 #include "KVINDRADBRun.h"
+#include "KVINDRADB.h"
 #include "KVDataAnalysisTask.h"
 #include "KVDataSet.h"
 #include "TChain.h"
 #include "TObjString.h"
 #include "TChain.h"
 #include "KVAvailableRunsFile.h"
+#include "KVINDRA.h"
 
 using namespace std;
 
@@ -109,7 +111,7 @@ void KVINDRAReconDataAnalyser::SubmitTask()
       TFile* f = (TFile*)gDataSet->OpenRunfile(fDataType.Data(), run);
       cout << "Adding file " << fullPathToRunfile;
       cout << " to the TChain." << endl;
-      theChain->Add(fullPathToRunfile);
+      dynamic_cast<TChain*>(theChain)->Add(fullPathToRunfile);
       if (f && !f->IsZombie()) {
          // update run infos in available runs file if necessary
          KVAvailableRunsFile* ARF = gDataSet->GetAvailableRunsFile(fDataType.Data());
@@ -143,7 +145,7 @@ void KVINDRAReconDataAnalyser::SubmitTask()
       option += GetUserClassOptions();
    }
 
-   fSelector = (KVSelector*)GetInstanceOfUserClass();
+   fSelector = (KVINDRAEventSelector*)GetInstanceOfUserClass();
 
    if (!fSelector || !fSelector->InheritsFrom("TSelector")) {
       cout << "The selector \"" << GetUserClass() << "\" is not valid." << endl;
@@ -151,14 +153,17 @@ void KVINDRAReconDataAnalyser::SubmitTask()
    } else {
       SafeDelete(fSelector);
       Info("SubmitTask", "Beginning TChain::Process...");
+      if (gDataAnalyser->GetProofMode() != KVDataAnalyser::EProofMode::None) dynamic_cast<TChain*>(theChain)->SetProof(kTRUE);
       if (nbEventToRead) {
-         theChain->Process(GetUserClass(), option.Data(), nbEventToRead);
+         theChain->Process(Form("%s%s", fUserClassImp.Data(), GetACliCMode()), option.Data(), nbEventToRead);
+         //theChain->Process(GetUserClass(), option.Data(), nbEventToRead);
       } else {
-         theChain->Process(GetUserClass(), option.Data());
+         theChain->Process(Form("%s%s", fUserClassImp.Data(), GetACliCMode()), option.Data());
+         //theChain->Process(GetUserClass(), option.Data());
       }
    }
    delete theChain;
-   fSelector = 0; //deleted by TChain/TTreePlayer
+   fSelector = nullptr; //deleted by TChain/TTreePlayer
 }
 
 //_________________________________________________________________
@@ -306,7 +311,8 @@ void KVINDRAReconDataAnalyser::preInitAnalysis()
    // Note that at this stage we are not analysing a given run, so the parameters
    // of the array are not set (they will be set in preInitRun()).
 
-   if (!gIndra) KVMultiDetArray::MakeMultiDetector(gDataSet->GetName());
+   Info("preInitAnalysis", "called");
+   if (!gIndra) KVMultiDetArray::MakeMultiDetector(GetDataSet()->GetName());
 }
 
 
@@ -318,8 +324,11 @@ void KVINDRAReconDataAnalyser::preInitRun()
    // Infos on currently read file/tree are printed.
    // Any required data patches ("rustines") are initialized.
 
+   Info("preInitRun", "called: theChain=%p", theChain);
+   Info("preInitRun", "filename = %s", theChain->GetCurrentFile()->GetName());
    Int_t run = GetRunNumberFromFileName(theChain->GetCurrentFile()->GetName());
    gIndra->SetParameters(run);
+   fSelector->SetKinematics(gIndraDB->GetRun(run)->GetSystem()->GetKinematics());
    ConnectRawDataTree();
    PrintTreeInfos();
    fRustines.InitializePatchList(GetDataSet()->GetName(), GetDataType(), run, GetDataSeries(),

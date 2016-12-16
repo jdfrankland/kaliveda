@@ -129,9 +129,13 @@ Xterm.BatchSystem.JobScript: "KaliVedaAnalysis -b -n"&
 Linux.BatchSystem.Title:    Execute task in background with output stored in log file
 Linux.BatchSystem.DefaultJobOptions:   -b -n > #JobName#.log 2>&1 &
 Linux.BatchSystem.JobSubCmd:   KaliVedaAnalysis
++BatchSystem:    PROOFLite
+PROOFLite.BatchSystem.Title:  PROOFLite
+PROOFLite.BatchSystem.JobSubCmd:  root
 #Plugins for batch systems
 Plugin.KVBatchSystem:    Xterm    KVRootBatch     KVMultiDetanalysis    "KVRootBatch(const Char_t*)"
 +Plugin.KVBatchSystem:    Linux    KVLinuxBatch     KVMultiDetanalysis    "KVLinuxBatch(const Char_t*)"
++Plugin.KVBatchSystem:    PROOFLite    KVPROOFLiteBatch     KVMultiDetanalysis    "KVPROOFLiteBatch(const Char_t*)"
 
 # Plugins for data analysis
 # KVDataAnalyser can be tuned for different datasets/environments

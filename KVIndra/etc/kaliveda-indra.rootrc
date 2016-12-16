@@ -283,7 +283,7 @@ RootAnalysis.DataAnalysisTask.StatusUpdateInterval:     20000
 +Plugin.KVDataAnalyser:   INDRARawDataIdent      KVINDRARawIdent              KVIndraanalysis "KVINDRARawIdent()"
 # +Plugin.KVDataAnalyser:   INDRAOnlineDataAnalyser   KVINDRAOnlineDataAnalyser     KVIndraanalysis     "KVINDRAOnlineDataAnalyser()"   
 # TSelector plugins for analysis of ROOT TTrees
-+Plugin.TSelector:   INDRASelector          KVSelector                   KVIndraanalysis   "KVSelector()"
++Plugin.TSelector:   INDRASelector          KVINDRAEventSelector                   KVIndraanalysis   "KVINDRAEventSelector()"
 +Plugin.TSelector:   INDRAGeneDataSelector  KVINDRAGeneDataSelector      KVIndraanalysis   "KVINDRAGeneDataSelector()"
 +Plugin.TSelector:   INDRAReconIdent        KVINDRAReconIdent                 KVIndraanalysis   "KVINDRAReconIdent()"
 +Plugin.TSelector:   INDRAReconRoot        KVINDRAReconRoot                 KVIndraanalysis   "KVINDRAReconRoot()"

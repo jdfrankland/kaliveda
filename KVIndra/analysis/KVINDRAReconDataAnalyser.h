@@ -11,7 +11,7 @@ $Date: 2007/05/31 09:59:22 $
 #define __KVINDRAReconDataAnalyser_H
 
 #include "KVDataAnalyser.h"
-#include "KVSelector.h"
+#include "KVINDRAEventSelector.h"
 #include <KVDataPatchList.h>
 class TChain;
 
@@ -23,8 +23,8 @@ protected:
    KVString fDataSelectorDec;//name of KVDataSelector header file (if it exists)
 
    virtual KVNumberList PrintAvailableRuns(KVString& datatype);
-   KVSelector* fSelector;// the data analysis class
-   TChain* theChain;//chain of TTrees to be analysed
+   KVINDRAEventSelector* fSelector;// the data analysis class
+   TTree* theChain;//chain of TTrees to be analysed
    TTree* theRawData;//raw data TTree in recon file
    Int_t NbParFired;
    UShort_t* ParVal;
@@ -52,6 +52,14 @@ public:
 
    virtual void SetKVDataSelector(const Char_t* kvs = "");
 
+   TTree* GetTree() const
+   {
+      return theChain;
+   }
+   void SetTree(TTree* t)
+   {
+      theChain = t;
+   }
    virtual const Char_t* GetKVDataSelector(void)
    {
       return fDataSelector.Data();
@@ -72,7 +80,7 @@ public:
    void preInitRun();
    virtual void RegisterUserClass(TObject* obj)
    {
-      fSelector = (KVSelector*)obj;
+      fSelector = (KVINDRAEventSelector*)obj;
    };
    void PrintTreeInfos();
    TEnv* GetReconDataTreeInfos() const;

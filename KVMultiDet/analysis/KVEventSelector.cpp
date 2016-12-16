@@ -88,6 +88,8 @@ ClassImp(KVEventSelector)
 void KVEventSelector::Begin(TTree* /*tree*/)
 {
    // Need to parse options here for use in Terminate
+   // Also, on PROOF, any KVDataAnalyser instance has to be passed to the workers
+   // via the TSelector input list.
 
    ParseOptions();
 
@@ -95,7 +97,19 @@ void KVEventSelector::Begin(TTree* /*tree*/)
       fCombinedOutputFile = GetOpt("CombinedOutputFile");
       Info("Begin", "Output file name = %s", fCombinedOutputFile.Data());
    }
+
+   if (gDataAnalyser) {
+      Info("Begin", "gDataAnalyser name = %s", gDataAnalyser->GetName());
+      if (GetInputList()) {
+         gDataAnalyser->AddJobDescriptionList(GetInputList());
+         GetInputList()->ls();
+      }
+   }
 }
+
+#include "KVDataRepositoryManager.h"
+#include "KVDataRepository.h"
+#include "KVDataSetManager.h"
 
 void KVEventSelector::SlaveBegin(TTree* /*tree*/)
 {
@@ -112,6 +126,24 @@ void KVEventSelector::SlaveBegin(TTree* /*tree*/)
    // Test the presence or not of such histo or tree
    // to manage it properly
 
+   if (GetInputList() && GetInputList()->FindObject("JobDescriptionList")) {
+      KVNameValueList* jdl = dynamic_cast<KVNameValueList*>(GetInputList()->FindObject("JobDescriptionList"));
+      if (jdl) {
+         if (!gDataRepositoryManager) {
+            new KVDataRepositoryManager;
+            gDataRepositoryManager->Init();
+            gDataRepositoryManager->GetRepository(jdl->GetStringValue("DataRepository"))->cd();
+            gDataSetManager->GetDataSet(jdl->GetStringValue("DataSet"))->cd();
+            KVDataAnalysisTask* task = gDataSet->GetAnalysisTask(jdl->GetStringValue("AnalysisTask"));
+            gDataAnalyser = KVDataAnalyser::GetAnalyser(task->GetDataAnalyser());
+            gDataAnalyser->SetDataSet(gDataSet);
+            gDataAnalyser->SetAnalysisTask(task);
+            gDataAnalyser->RegisterUserClass(this);
+            gDataAnalyser->SetProofMode((KVDataAnalyser::EProofMode)jdl->GetIntValue("PROOFMode"));
+         }
+      }
+   }
+
    ParseOptions();
 
    if (IsOptGiven("CombinedOutputFile")) {
@@ -119,7 +151,13 @@ void KVEventSelector::SlaveBegin(TTree* /*tree*/)
       Info("SlaveBegin", "Output file name = %s", fCombinedOutputFile.Data());
    }
 
-   InitAnalysis();
+   // tell the data analyser who we are
+   if (gDataAnalyser) {
+      gDataAnalyser->RegisterUserClass(this);
+      gDataAnalyser->preInitAnalysis();
+   }
+   InitAnalysis();              //user initialisations for analysis
+   if (gDataAnalyser) gDataAnalyser->postInitAnalysis();
 
    if (ltree->GetEntries() > 0)
       for (Int_t ii = 0; ii < ltree->GetEntries(); ii += 1) {
@@ -196,6 +234,7 @@ Bool_t KVEventSelector::Process(Long64_t entry)
       }
    }
    GetEntry(entry);
+   if (gDataAnalyser) gDataAnalyser->preAnalysis();
    fEventsRead++;
    if (GetEvent()) {
       SetAnalysisFrame();//let user define any necessary reference frames
@@ -218,6 +257,7 @@ Bool_t KVEventSelector::Process(Long64_t entry)
 
    Bool_t ok_anal = kTRUE;
    ok_anal = Analysis();     //user analysis
+   if (gDataAnalyser) gDataAnalyser->postAnalysis();
 
    CheckEndOfRun();
 
@@ -229,8 +269,9 @@ void KVEventSelector::CheckEndOfRun()
    // Testing whether EndRun() should be called
    if (AtEndOfRun()) {
       Info("Process", "End of file reached after %lld events", fEventsRead);
-
+      if (gDataAnalyser) gDataAnalyser->preEndRun();
       EndRun();
+      if (gDataAnalyser) gDataAnalyser->postEndRun();
       fNotifyCalled = kFALSE;//Notify will be called when next file is opened (in TChain)
    }
 
@@ -307,9 +348,9 @@ void KVEventSelector::Terminate()
       } else  Info("Terminate", "none");
    }
 
-
+   if (gDataAnalyser) gDataAnalyser->preEndAnalysis();
    EndAnalysis();               //user end of analysis routine
-
+   if (gDataAnalyser) gDataAnalyser->postEndAnalysis();
 }
 
 KVVarGlob* KVEventSelector::AddGV(const Char_t* class_name,
@@ -704,4 +745,50 @@ void KVEventSelector::ParseOptions()
    if (IsOptGiven("BranchName")) SetBranchName(GetOpt("BranchName"));
    // check for events read interval
    if (IsOptGiven("EventsReadInterval")) SetEventsReadInterval(GetOpt("EventsReadInterval").Atoi());
+}
+
+void KVEventSelector::Init(TTree* tree)
+{
+   // The Init() function is called when the selector needs to initialize
+   // a new tree or chain. Typically here the branch addresses and branch
+   // pointers of the tree will be set.
+   // It is normally not necessary to make changes to the generated
+   // code, but the routine can be extended by the user if needed.
+   // Init() will be called many times when running on PROOF
+   // (once per file to be processed).
+
+   // Set object pointer
+   Event = 0;
+   // Set branch addresses and branch pointers
+   if (!tree) return;
+   fChain = tree;
+   fChain->SetMakeClass(1);
+
+   if (strcmp(GetBranchName(), "")  && fChain->GetBranch(GetBranchName())) {
+      Info("Init", "Analysing data in branch : %s", GetBranchName());
+      fChain->SetBranchAddress(GetBranchName() , &Event, &b_Event);
+   }
+   //user additional branches addressing
+   SetAdditionalBranchAddress();
+   fEventsRead = 0;
+
+}
+
+Bool_t KVEventSelector::Notify()
+{
+   // The Notify() function is called when a new file is opened. This
+   // can be either for a new TTree in a TChain or when when a new TTree
+   // is started when using PROOF. It is normally not necessary to make changes
+   // to the generated code, but the routine can be extended by the
+   // user if needed. The return value is currently not used.
+
+   if (fNotifyCalled) return kTRUE; // avoid multiple calls at beginning of analysis
+   fNotifyCalled = kTRUE;
+
+   Info("Notify", "Beginning analysis of file %s (%lld events)", fChain->GetCurrentFile()->GetName(), fChain->GetTree()->GetEntries());
+
+   if (gDataAnalyser) gDataAnalyser->preInitRun();
+   InitRun();                   //user initialisations for run
+   if (gDataAnalyser) gDataAnalyser->postInitRun();
+   return kTRUE;
 }

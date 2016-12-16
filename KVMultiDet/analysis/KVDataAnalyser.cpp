@@ -179,6 +179,7 @@ KVDataAnalyser::KVDataAnalyser()
    fChoseRunMode = kFALSE;
    fWorkDirInit = fWorkDirEnd = 0;
    fMenus = kFALSE;
+   fProofMode = EProofMode::None;
 }
 
 KVDataAnalyser::~KVDataAnalyser()
@@ -209,6 +210,7 @@ void KVDataAnalyser::Reset()
    nbEventToRead = -1;
    fBatchSystem = 0;
    fChoseRunMode = kFALSE;
+   fProofMode = EProofMode::None;
 }
 
 //_________________________________________________________________
@@ -1307,6 +1309,7 @@ void KVDataAnalyser::SubmitTask()
    the_analyser->SetBatchMode(BatchMode());
    the_analyser->SetBatchName(GetBatchName());
    the_analyser->SetBatchSystem(fBatchSystem);
+   the_analyser->SetProofMode(GetProofMode());
    //set global pointer to analyser object which performs the analysis
    //this allows e.g. user class to obtain information on the analysis task
    gDataAnalyser = the_analyser;
@@ -1619,5 +1622,22 @@ Bool_t KVDataAnalyser::IsRunningBatchAnalysis()
 
    if (gDataAnalyser) return (gDataAnalyser->BatchMode() && gDataAnalyser->fBatchSystem);
    return kFALSE;
+}
+
+void KVDataAnalyser::AddJobDescriptionList(TList* l)
+{
+   // Create a KVNameValueList called "JobDescriptionList" and add it to
+   // the TList. The parameters in the list describe the properties of the
+   // current job. The TList pointer could be, for example, the address of
+   // the TSelector::fInput list used by PROOF.
+
+   KVNameValueList* jdl = new KVNameValueList("JobDescriptionList", "Job parameters");
+
+   jdl->SetValue("DataRepository", gDataRepository->GetName());
+   jdl->SetValue("DataSet", fDataSet->GetName());
+   jdl->SetValue("AnalysisTask", fTask->GetType());
+   jdl->SetValue("PROOFMode", GetProofMode());
+
+   l->Add(jdl);
 }
 

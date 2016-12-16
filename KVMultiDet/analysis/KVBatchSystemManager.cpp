@@ -86,16 +86,14 @@ void KVBatchSystemManager::Init()
 
    fBatchSystems.Clear();
 
-   TObjArray* systems = list.Tokenize(" ");
-   TIter next(systems);
+   unique_ptr<TObjArray> systems(list.Tokenize(" "));
+   TIter next(systems.get());
    TObjString* batch_sys;
    while ((batch_sys = (TObjString*)next())) {
 
       KVBatchSystem* bs = KVBatchSystem::GetBatchSystem(batch_sys->GetString().Data());
       fBatchSystems.Add(bs);
    }
-
-   delete systems;
 
    //set default
    fDefault = (KVBatchSystem*)fBatchSystems.FindObjectByName(gEnv->GetValue("Default.BatchSystem", ""));
