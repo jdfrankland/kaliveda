@@ -238,7 +238,18 @@ public:
    {
       //if user wants to read additional branches of the tree
       //
-   };
+   }
+   void SetCombinedOutputFile(const TString& filename)
+   {
+      // Call in InitAnalysis() to set the name of the single output file
+      // containing all histograms and TTrees produced by analysis.
+      // This is equivalent to running the analysis with option
+      //    CombinedOutputFile=[filename]
+      // but setting this option in InitAnalysis() will not work.
+      // Note that if this method is not called/the option is not given,
+      // histograms and TTrees will be written in separated files.
+      fCombinedOutputFile = filename;
+   }
 
    ClassDef(KVEventSelector, 0)//General purpose analysis class for TTrees containing KVEvent objects
 };
