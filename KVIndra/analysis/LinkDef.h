@@ -11,7 +11,7 @@
 #pragma link C++ class KVINDRAReconDataAnalyser;
 #pragma link C++ class KVINDRAGeneDataSelector;
 #pragma link C++ class KVINDRAGeneDataAnalyser;
-#pragma link C++ class KVSelector+;
+#pragma link C++ class KVOldINDRASelector+;
 #pragma link C++ class KVINDRAEventSelector+;
 #pragma link C++ class KVDataSelector;
 #pragma link C++ class KVINDRAReconIdent+;

@@ -1,5 +1,5 @@
-#define KVSelector_cxx
-#include "KVSelector.h"
+#define KVOldINDRASelector_cxx
+#include "KVOldINDRASelector.h"
 #include "TH2.h"
 #include "TStyle.h"
 #include "TString.h"
@@ -20,18 +20,18 @@
 
 #include <KVINDRADB.h>
 
-KVString KVSelector::fBranchName = "INDRAReconEvent";
+KVString KVOldINDRASelector::fBranchName = "INDRAReconEvent";
 using namespace std;
 
-ClassImp(KVSelector)
+ClassImp(KVOldINDRASelector)
 
 //______________________________________________________________________________
-//KVSelector
+//KVOldINDRASelector
 //
 //Basic analysis class derived from TSelector for the analysis of TChains of
 //KVINDRAReconEvent objects (ROOT files containing INDRA data).
 //
-//The user's analysis class, derived from KVSelector, must define the following
+//The user's analysis class, derived from KVOldINDRASelector, must define the following
 //methods:
 //
 //      void    InitAnalysis()
@@ -59,7 +59,7 @@ ClassImp(KVSelector)
 //              Called at the end of the analysis.
 //              Write histograms, TTrees to TFiles, etc.
 //
-//Use the static method KVSelector::Make("MySelector") in order to generate a
+//Use the static method KVOldINDRASelector::Make("MySelector") in order to generate a
 //template for your analysis class with the correct declarations for the above
 //methods. MySelector.C and MySelector.h will be generated.
 //
@@ -69,7 +69,7 @@ ClassImp(KVSelector)
 //Using Global Variables
 //======================
 //Many of the most frequently used global variables have been implemented as
-//KaliVeda classes, all of which derive from the base class KVVarGlob. The KVSelector
+//KaliVeda classes, all of which derive from the base class KVVarGlob. The KVOldINDRASelector
 //class provides a semi-automatic way to calculate and use these variables, via
 //an internal list of global variables (KVGVList class). In order to use a
 //global variable in your analysis, declare it in your InitAnalysis() method,
@@ -137,7 +137,7 @@ ClassImp(KVSelector)
 //
 //////////////////////////////////////////////////////////////////
 
-KVSelector::KVSelector(TTree*)
+KVOldINDRASelector::KVOldINDRASelector(TTree*)
 {
    //ctor
    fChain = 0;
@@ -164,7 +164,7 @@ KVSelector::KVSelector(TTree*)
    dataselector_lock.SetSleeptime(1);   // try lock every second
 }
 
-KVSelector::~KVSelector()
+KVOldINDRASelector::~KVOldINDRASelector()
 {
    //dtor
    //delete global variable list if it belongs to us, i.e. if created by a
@@ -182,7 +182,7 @@ KVSelector::~KVSelector()
    delete ltree;
 }
 
-void KVSelector::Init(TTree* tree)
+void KVOldINDRASelector::Init(TTree* tree)
 {
    if (fChain) return; //Init has already been called
 
@@ -222,7 +222,7 @@ void KVSelector::Init(TTree* tree)
    }
 }
 
-Bool_t KVSelector::Notify()
+Bool_t KVOldINDRASelector::Notify()
 {
    // Called when loading a new file.
    // Get branch pointers.
@@ -289,7 +289,7 @@ Bool_t KVSelector::Notify()
    return kTRUE;
 }
 
-void KVSelector::Begin(TTree*)
+void KVOldINDRASelector::Begin(TTree*)
 {
    // Function called before starting the event loop.
    // When running with PROOF Begin() is only called in the client.
@@ -307,7 +307,7 @@ void KVSelector::Begin(TTree*)
    fTimer->Start(kTRUE);
 }
 
-void KVSelector::SlaveBegin(TTree*)
+void KVOldINDRASelector::SlaveBegin(TTree*)
 {
    // Function called before starting the event loop.
    // When running with PROOF SlaveBegin() is called in each slave
@@ -320,9 +320,9 @@ void KVSelector::SlaveBegin(TTree*)
 }
 
 #ifdef __WITHOUT_TSELECTOR_LONG64_T
-Bool_t KVSelector::Process(Int_t entry) //for ROOT versions < 4.01/01
+Bool_t KVOldINDRASelector::Process(Int_t entry) //for ROOT versions < 4.01/01
 #else
-Bool_t KVSelector::Process(Long64_t entry)      //for ROOT versions > 4.00/08
+Bool_t KVOldINDRASelector::Process(Long64_t entry)      //for ROOT versions > 4.00/08
 #endif
 {
    //Here the event is read into memory and checks are made on the number
@@ -408,14 +408,14 @@ Bool_t KVSelector::Process(Long64_t entry)      //for ROOT versions > 4.00/08
    return ok_anal;
 }
 
-void KVSelector::SlaveTerminate()
+void KVOldINDRASelector::SlaveTerminate()
 {
    // Function called at the end of the event loop in each PROOF slave.
 
 
 }
 
-void KVSelector::Terminate()
+void KVOldINDRASelector::Terminate()
 {
    // Function called at the end of the event loop.
    // When running with PROOF Terminate() is only called in the client.
@@ -459,17 +459,17 @@ void KVSelector::Terminate()
    gDataAnalyser->DeleteBatchStatusFile();
 }
 
-void KVSelector::Make(const Char_t* kvsname)
+void KVOldINDRASelector::Make(const Char_t* kvsname)
 {
-   // Automatic generation of KVSelector-derived class for KaliVeda analysis
-   KVClassFactory cf(kvsname, "User analysis class", "KVSelector", kTRUE);
+   // Automatic generation of KVOldINDRASelector-derived class for KaliVeda analysis
+   KVClassFactory cf(kvsname, "User analysis class", "KVOldINDRASelector", kTRUE);
    cf.AddImplIncludeFile("KVINDRAReconNuc.h");
    cf.AddImplIncludeFile("KVBatchSystem.h");
    cf.AddImplIncludeFile("KVINDRA.h");
    cf.GenerateCode();
 }
 
-void KVSelector::SetGVList(KVGVList* list)
+void KVOldINDRASelector::SetGVList(KVGVList* list)
 {
    //Use a user-defined list of global variables for the analysis.
    //In this case it is the user's responsibility to delete the list
@@ -477,11 +477,11 @@ void KVSelector::SetGVList(KVGVList* list)
    gvlist = list;
 }
 
-KVGVList* KVSelector::GetGVList(void)
+KVGVList* KVOldINDRASelector::GetGVList(void)
 {
    //Access to the internal list of global variables
    //If the list does not exist, it is created.
-   //In this case it will be automatically deleted with the KVSelector object.
+   //In this case it will be automatically deleted with the KVOldINDRASelector object.
    if (!gvlist) {
       gvlist = new KVGVList;
       SetBit(kDeleteGVList);
@@ -489,7 +489,7 @@ KVGVList* KVSelector::GetGVList(void)
    return gvlist;
 }
 
-void KVSelector::AddGV(KVVarGlob* vg)
+void KVOldINDRASelector::AddGV(KVVarGlob* vg)
 {
    //Add the global variable "vg" to the list of variables for the analysis.
    //This is equivalent to GetGVList()->Add( vg ).
@@ -499,17 +499,17 @@ void KVSelector::AddGV(KVVarGlob* vg)
       GetGVList()->Add(vg);
 }
 
-KVVarGlob* KVSelector::GetGV(const Char_t* name) const
+KVVarGlob* KVOldINDRASelector::GetGV(const Char_t* name) const
 {
    //Access the global variable with name "name" in the list of variables
    //for the analysis.
    //This is equivalent to GetGVList()->GetGV( name ).
 
-   return (const_cast < KVSelector* >(this)->GetGVList()->GetGV(name));
+   return (const_cast < KVOldINDRASelector* >(this)->GetGVList()->GetGV(name));
 }
 
-KVVarGlob* KVSelector::AddGV(const Char_t* class_name,
-                             const Char_t* name)
+KVVarGlob* KVOldINDRASelector::AddGV(const Char_t* class_name,
+                                     const Char_t* name)
 {
    //Add a global variable to the list of variables for the analysis.
    //
@@ -567,7 +567,7 @@ KVVarGlob* KVSelector::AddGV(const Char_t* class_name,
 
 //____________________________________________________________________________
 
-void KVSelector::RecalculateGlobalVariables()
+void KVOldINDRASelector::RecalculateGlobalVariables()
 {
    //Use this method if you change e.g. the acceptable particle identification codes in your
    //Analysis() method and want to recalculate the values of all global variables
@@ -603,9 +603,9 @@ void KVSelector::RecalculateGlobalVariables()
 //____________________________________________________________________________
 
 #ifdef __WITHOUT_TSELECTOR_LONG64_T
-Int_t KVSelector::GetTreeEntry() const
+Int_t KVOldINDRASelector::GetTreeEntry() const
 #else
-Long64_t KVSelector::GetTreeEntry() const
+Long64_t KVOldINDRASelector::GetTreeEntry() const
 #endif
 {
    //During event analysis (i.e. inside the Analysis() method), this gives the current TTree
@@ -615,7 +615,7 @@ Long64_t KVSelector::GetTreeEntry() const
 }
 
 //____________________________________________________________________________
-void KVSelector::BuildEventList(void)
+void KVOldINDRASelector::BuildEventList(void)
 {
 //
 // Builds the event list of the TChain by adding the event lists of each TTree.
@@ -729,7 +729,7 @@ void KVSelector::BuildEventList(void)
 }
 
 //____________________________________________________________________________
-Bool_t KVSelector::AtEndOfRun(void)
+Bool_t KVOldINDRASelector::AtEndOfRun(void)
 {
 //
 // Check whether the end of run is reached for the current tree
@@ -755,7 +755,7 @@ Bool_t KVSelector::AtEndOfRun(void)
 }
 
 //____________________________________________________________________________
-void KVSelector::LoadDataSelector(void)
+void KVOldINDRASelector::LoadDataSelector(void)
 {
 //
 // Set the pointer of the KVDataSelector according to its name
@@ -836,10 +836,10 @@ void KVSelector::LoadDataSelector(void)
                   fDataSelector.Data());
          } else {
             fKVDataSelector = (KVDataSelector*) ph->ExecPlugin(0);
-            fKVDataSelector->SetKVSelector(this);
+            fKVDataSelector->SetKVOldINDRASelector(this);
             cout << "Apres Plugin " << fKVDataSelector->IsA()->
                  GetName() << " : " << fKVDataSelector->
-                 GetKVSelector() << endl;
+                 GetKVOldINDRASelector() << endl;
          }
 
       } else if (!clas->InheritsFrom("KVDataSelector")) {
@@ -848,10 +848,10 @@ void KVSelector::LoadDataSelector(void)
                fDataSelector.Data());
       } else {
          fKVDataSelector = (KVDataSelector*) clas->New();
-         fKVDataSelector->SetKVSelector(this);
+         fKVDataSelector->SetKVOldINDRASelector(this);
          cout << "Apres clas->New() " << fKVDataSelector->IsA()->
               GetName() << " : " << fKVDataSelector->
-              GetKVSelector() << endl;
+              GetKVOldINDRASelector() << endl;
       }
       if (deleteSources) {
          cout << "Removing files \"" << fDataSelector.
@@ -868,7 +868,7 @@ void KVSelector::LoadDataSelector(void)
 }
 
 //____________________________________________________________________________
-void KVSelector::SaveCurrentDataSelection(void)
+void KVOldINDRASelector::SaveCurrentDataSelection(void)
 {
 //
 // Save the newly built TEventList in the DataSelection root file
@@ -935,7 +935,7 @@ void KVSelector::SaveCurrentDataSelection(void)
 }
 
 //____________________________________________________________________________
-const Char_t* KVSelector::GetDataSelectorFileName(void)
+const Char_t* KVOldINDRASelector::GetDataSelectorFileName(void)
 {
 //
 // Gets the name of the file where the TEventLists and the KVDataSelectors
@@ -955,7 +955,7 @@ const Char_t* KVSelector::GetDataSelectorFileName(void)
 
 //____________________________________________________________________________
 
-void KVSelector::ChangeFragmentMasses(UInt_t mass_formula)
+void KVOldINDRASelector::ChangeFragmentMasses(UInt_t mass_formula)
 {
    //Call this method in your InitAnalysis() if you want to replace the masses of nuclei
    //in each event with masses calculated from the given formula (see KVNucleus::GetAFromZ).
@@ -976,7 +976,7 @@ void KVSelector::ChangeFragmentMasses(UInt_t mass_formula)
 
 //____________________________________________________________________________
 
-void KVSelector::SetParticleConditions(const KVParticleCondition& cond)
+void KVOldINDRASelector::SetParticleConditions(const KVParticleCondition& cond)
 {
    //Use this method to set criteria for selecting particles (other than the identification
    //or calibration quality codes - see KVINDRAReconEvent::AcceptIDCodes and
@@ -1014,7 +1014,7 @@ void KVSelector::SetParticleConditions(const KVParticleCondition& cond)
 
 //____________________________________________________________________________
 
-KVHashList* KVSelector::GetHistoList()
+KVHashList* KVOldINDRASelector::GetHistoList()
 {
 
    return lhisto;
@@ -1023,7 +1023,7 @@ KVHashList* KVSelector::GetHistoList()
 
 //____________________________________________________________________________
 
-TH1* KVSelector::GetHisto(const Char_t* histo_name)
+TH1* KVOldINDRASelector::GetHisto(const Char_t* histo_name)
 {
 
    return (TH1*)lhisto->FindObject(histo_name);
@@ -1032,7 +1032,7 @@ TH1* KVSelector::GetHisto(const Char_t* histo_name)
 
 //____________________________________________________________________________
 
-void KVSelector::FillHisto(KVString sname, Double_t one, Double_t two, Double_t three, Double_t four)
+void KVOldINDRASelector::FillHisto(KVString sname, Double_t one, Double_t two, Double_t three, Double_t four)
 {
 
    //Find in the list, if there is an histogram named "sname"
@@ -1063,7 +1063,7 @@ void KVSelector::FillHisto(KVString sname, Double_t one, Double_t two, Double_t 
 
 //____________________________________________________________________________
 
-void KVSelector::FillTH1(TH1* h1, Double_t one, Double_t two)
+void KVOldINDRASelector::FillTH1(TH1* h1, Double_t one, Double_t two)
 {
 
    h1->Fill(one, two);
@@ -1072,7 +1072,7 @@ void KVSelector::FillTH1(TH1* h1, Double_t one, Double_t two)
 
 //____________________________________________________________________________
 
-void KVSelector::FillTProfile(TProfile* h1, Double_t one, Double_t two, Double_t three)
+void KVOldINDRASelector::FillTProfile(TProfile* h1, Double_t one, Double_t two, Double_t three)
 {
 
    h1->Fill(one, two, three);
@@ -1081,7 +1081,7 @@ void KVSelector::FillTProfile(TProfile* h1, Double_t one, Double_t two, Double_t
 
 //____________________________________________________________________________
 
-void KVSelector::FillTH2(TH2* h2, Double_t one, Double_t two, Double_t three)
+void KVOldINDRASelector::FillTH2(TH2* h2, Double_t one, Double_t two, Double_t three)
 {
 
    h2->Fill(one, two, three);
@@ -1090,7 +1090,7 @@ void KVSelector::FillTH2(TH2* h2, Double_t one, Double_t two, Double_t three)
 
 //____________________________________________________________________________
 
-void KVSelector::FillTProfile2D(TProfile2D* h2, Double_t one, Double_t two, Double_t three, Double_t four)
+void KVOldINDRASelector::FillTProfile2D(TProfile2D* h2, Double_t one, Double_t two, Double_t three, Double_t four)
 {
 
    h2->Fill(one, two, three, four);
@@ -1098,7 +1098,7 @@ void KVSelector::FillTProfile2D(TProfile2D* h2, Double_t one, Double_t two, Doub
 
 //____________________________________________________________________________
 
-void KVSelector::FillKVDalitz(KVDalitzPlot* h2, Double_t one, Double_t two, Double_t three)
+void KVOldINDRASelector::FillKVDalitz(KVDalitzPlot* h2, Double_t one, Double_t two, Double_t three)
 {
 
    h2->FillAsDalitz(one, two, three);
@@ -1106,7 +1106,7 @@ void KVSelector::FillKVDalitz(KVDalitzPlot* h2, Double_t one, Double_t two, Doub
 
 //____________________________________________________________________________
 
-void KVSelector::FillTH3(TH3* h3, Double_t one, Double_t two, Double_t three, Double_t four)
+void KVOldINDRASelector::FillTH3(TH3* h3, Double_t one, Double_t two, Double_t three, Double_t four)
 {
 
    h3->Fill(one, two, three, four);
@@ -1115,7 +1115,7 @@ void KVSelector::FillTH3(TH3* h3, Double_t one, Double_t two, Double_t three, Do
 
 //____________________________________________________________________________
 
-void KVSelector::CreateHistos()
+void KVOldINDRASelector::CreateHistos()
 {
 
    Warning("CreateHistos", "To be redefined child class");
@@ -1124,7 +1124,7 @@ void KVSelector::CreateHistos()
 
 //____________________________________________________________________________
 
-void KVSelector::WriteHistoToFile(KVString filename, Option_t* option)
+void KVOldINDRASelector::WriteHistoToFile(KVString filename, Option_t* option)
 {
 
    //If no filename is specified, assume that the current directory is writable
@@ -1149,7 +1149,7 @@ void KVSelector::WriteHistoToFile(KVString filename, Option_t* option)
 
 //____________________________________________________________________________
 
-KVHashList* KVSelector::GetTreeList()
+KVHashList* KVOldINDRASelector::GetTreeList()
 {
 
    return ltree;
@@ -1158,7 +1158,7 @@ KVHashList* KVSelector::GetTreeList()
 
 //____________________________________________________________________________
 
-TTree* KVSelector::GetTree(const Char_t* tree_name)
+TTree* KVOldINDRASelector::GetTree(const Char_t* tree_name)
 {
 
    return (TTree*)ltree->FindObject(tree_name);
@@ -1166,7 +1166,7 @@ TTree* KVSelector::GetTree(const Char_t* tree_name)
 }
 //____________________________________________________________________________
 
-void KVSelector::CreateTrees()
+void KVOldINDRASelector::CreateTrees()
 {
 
    Warning("CreateTrees", "To be redefined child class");
@@ -1175,7 +1175,7 @@ void KVSelector::CreateTrees()
 
 //____________________________________________________________________________
 
-void KVSelector::FillTree(KVString sname)
+void KVOldINDRASelector::FillTree(KVString sname)
 {
 
    if (sname == "") {
@@ -1193,7 +1193,7 @@ void KVSelector::FillTree(KVString sname)
 
 //____________________________________________________________________________
 
-void KVSelector::WriteTreeToFile(KVString filename, Option_t* option)
+void KVOldINDRASelector::WriteTreeToFile(KVString filename, Option_t* option)
 {
 
    //If no filename is specified, assume that the current directory is writable
@@ -1216,7 +1216,7 @@ void KVSelector::WriteTreeToFile(KVString filename, Option_t* option)
 
 }
 
-void KVSelector::SetOpt(const Char_t* option, const Char_t* value)
+void KVOldINDRASelector::SetOpt(const Char_t* option, const Char_t* value)
 {
    //Set a value for an option
    KVString tmp(value);
@@ -1225,7 +1225,7 @@ void KVSelector::SetOpt(const Char_t* option, const Char_t* value)
 
 //_________________________________________________________________
 
-Bool_t KVSelector::IsOptGiven(const Char_t* opt)
+Bool_t KVOldINDRASelector::IsOptGiven(const Char_t* opt)
 {
    // Returns kTRUE if the option 'opt' has been set
 
@@ -1234,7 +1234,7 @@ Bool_t KVSelector::IsOptGiven(const Char_t* opt)
 
 //_________________________________________________________________
 
-const TString& KVSelector::GetOpt(const Char_t* opt) const
+const TString& KVOldINDRASelector::GetOpt(const Char_t* opt) const
 {
    // Returns the value of the option
    // Only use after checking existence of option with IsOptGiven(const Char_t* opt)
@@ -1244,14 +1244,14 @@ const TString& KVSelector::GetOpt(const Char_t* opt) const
 
 //_________________________________________________________________
 
-void KVSelector::UnsetOpt(const Char_t* opt)
+void KVOldINDRASelector::UnsetOpt(const Char_t* opt)
 {
    // Removes the option 'opt' from the internal lists, as if it had never been set
 
    fOptionList.RemoveParameter(opt);
 }
 
-void KVSelector::ParseOptions()
+void KVOldINDRASelector::ParseOptions()
 {
    // Analyse comma-separated list of options given to TTree::Process
    // and store all "option=value" pairs in fOptionList.
