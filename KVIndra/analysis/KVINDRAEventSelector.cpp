@@ -19,7 +19,7 @@ KVINDRAEventSelector::KVINDRAEventSelector(TTree* arg1)
    : KVEventSelector(arg1), fKinematics(nullptr)
 {
    SetBranchName("INDRAReconEvent");
-   SetEventsReadInterval(2000);
+   SetEventsReadInterval(20000);
 }
 
 //____________________________________________________________________________//
@@ -33,9 +33,7 @@ void KVINDRAEventSelector::Init(TTree* tree)
 {
    // When using PROOF, need to set tree pointer in KVDataAnalyser
    KVEventSelector::Init(tree);
-   Info("Init", "tree=%p", tree);
    if (tree && gDataAnalyser->GetProofMode() != KVDataAnalyser::EProofMode::None) {
-      Info("Init", "setting tree in analyser");
       dynamic_cast<KVINDRAReconDataAnalyser*>(gDataAnalyser)->SetTree(tree);
    }
 }

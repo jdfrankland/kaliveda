@@ -81,7 +81,7 @@ public:
    virtual void RegisterUserClass(TObject* obj)
    {
       fSelector = (KVINDRAEventSelector*)obj;
-   };
+   }
    void PrintTreeInfos();
    TEnv* GetReconDataTreeInfos() const;
 

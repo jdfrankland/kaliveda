@@ -4,6 +4,10 @@
 #include "TPluginManager.h"
 #include "TSystem.h"
 #include "KVDataAnalyser.h"
+#include "KVDataRepositoryManager.h"
+#include "KVDataRepository.h"
+#include "KVDataSetManager.h"
+#include "TProof.h"
 
 using namespace std;
 
@@ -79,6 +83,7 @@ ClassImp(KVEventSelector)
 // If you want all results of your analysis to be written in a single file
 // containing both histos and trees, put the following in the list of options:
 //      CombinedOutputFile=myResults.root
+// or call method SetCombinedOutputFile("myResults.root") in your InitAnalysis();
 // do not call SaveHistos() in EndAnalysis(), and make
 // sure you call CreateTreeFile() without giving a name (the
 // resulting intermediate file will have a default name
@@ -95,21 +100,28 @@ void KVEventSelector::Begin(TTree* /*tree*/)
 
    if (IsOptGiven("CombinedOutputFile")) {
       fCombinedOutputFile = GetOpt("CombinedOutputFile");
-      Info("Begin", "Output file name = %s", fCombinedOutputFile.Data());
+   } else if (gProof) {
+      // when running with PROOF, if the user calls SetCombinedOutputFile()
+      // in InitAnalysis(), it will only be executed on the workers (in SlaveBegin()).
+      // therefore we call InitAnalysis() here, but deactivate CreateTreeFile(),
+      // AddTree() and AddHisto() in order to avoid interference with workers
+      fDisableCreateTreeFile = kTRUE;
+      if (gDataAnalyser) {
+         gDataAnalyser->RegisterUserClass(this);
+         gDataAnalyser->preInitAnalysis();
+      }
+      InitAnalysis();              //user initialisations for analysis
+      if (gDataAnalyser) gDataAnalyser->postInitAnalysis();
+      fDisableCreateTreeFile = kFALSE;
    }
 
    if (gDataAnalyser) {
-      Info("Begin", "gDataAnalyser name = %s", gDataAnalyser->GetName());
       if (GetInputList()) {
          gDataAnalyser->AddJobDescriptionList(GetInputList());
          GetInputList()->ls();
       }
    }
 }
-
-#include "KVDataRepositoryManager.h"
-#include "KVDataRepository.h"
-#include "KVDataSetManager.h"
 
 void KVEventSelector::SlaveBegin(TTree* /*tree*/)
 {
@@ -172,6 +184,8 @@ Bool_t KVEventSelector::CreateTreeFile(const Char_t* filename)
    // For PROOF:
    // This method must be called before creating any user TTree in InitAnalysis().
    // If no filename is given, default name="TreeFileFrom[name of selector class].root"
+
+   if (fDisableCreateTreeFile) return kTRUE;
 
    if (!strcmp(filename, ""))
       tree_file_name.Form("TreeFileFrom%s.root", ClassName());
@@ -497,6 +511,9 @@ void KVEventSelector::AddHisto(TH1* histo)
 {
    // Declare a histogram to be used in analysis.
    // This method must be called when using PROOF.
+
+   if (fDisableCreateTreeFile) return;
+
    lhisto->Add(histo);
    fOutput->Add(histo);
    if (!fOutput->FindObject("ThereAreHistos")) fOutput->Add(new TNamed("ThereAreHistos", "...so save them!"));
@@ -506,6 +523,9 @@ void KVEventSelector::AddTree(TTree* tree)
 {
    // Declare a TTree to be used in analysis.
    // This method must be called when using PROOF.
+
+   if (fDisableCreateTreeFile) return;
+
    ltree->Add(tree);
 }
 

@@ -46,6 +46,7 @@ void KVPROOFLiteBatch::SubmitTask(KVDataAnalyser* da)
       }
    }
    da->SetProofMode(KVDataAnalyser::EProofMode::Lite);
+   SetAnalyser(da);
    da->SubmitTask();
 }
 

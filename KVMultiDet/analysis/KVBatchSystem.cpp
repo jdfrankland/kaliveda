@@ -74,7 +74,7 @@ else {
 KVBatchSystem* gBatchSystem = 0;
 
 KVBatchSystem::KVBatchSystem(const Char_t* name)
-   : KVBase(name), fMultiJobs(kFALSE)
+   : KVBase(name), fAnalyser(nullptr), fMultiJobs(kFALSE)
 {
    // Constructor with name of batch system. Name will be used to retrieve
    // resources from configuration file, e.g. batch system title, job submission
@@ -88,7 +88,6 @@ KVBatchSystem::KVBatchSystem(const Char_t* name)
    //
    // If RunsPerJob is not defined, we use 1 as default value
 
-   fAnalyser = NULL;
    //set title of batch system
    SetTitle(gEnv->GetValue(Form("%s.BatchSystem.Title", name), ""));
    //command for job submission
@@ -165,7 +164,7 @@ void KVBatchSystem::Clear(Option_t*)
    fJobName = "";
    fParList.Clear();
    fMultiJobs = kFALSE;
-   fAnalyser = 0;
+   fAnalyser = nullptr;
 }
 
 //_______________________________________________________________________________//
@@ -253,7 +252,7 @@ void KVBatchSystem::SubmitTask(KVDataAnalyser* da)
    // job submission depending on the current environment, see ChangeDefJobOpt().
 
    Info("SubmitTask", "Task submission for analyser class : %s", da->ClassName());
-   fAnalyser = da;
+   SetAnalyser(da);
    //change job submission options depending on task, environment, etc.
    ChangeDefJobOpt(da);
    Run();

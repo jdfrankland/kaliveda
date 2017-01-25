@@ -113,7 +113,7 @@ public:
    virtual void SetAnalyser(KVDataAnalyser* da)
    {
       fAnalyser = da;
-   };
+   }
 
    virtual TString BQS_Request(KVString /*value*/, KVString /*jobname*/ = "")
    {

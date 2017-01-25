@@ -61,6 +61,8 @@ protected :
    //parsed list of options given to TTree::Process
    KVNameValueList fOptionList;
 
+   Bool_t fDisableCreateTreeFile;//used with PROOF
+
    void FillTH1(TH1* h1, Double_t one, Double_t two);
    void FillTProfile(TProfile* h1, Double_t one, Double_t two, Double_t three);
    void FillTH2(TH2* h2, Double_t one, Double_t two, Double_t three);
@@ -76,7 +78,7 @@ public:
    virtual void ParseOptions();
 
    KVEventSelector(TTree* /*tree*/ = 0) : fChain(0), gvlist(0), fBranchName("data"), fPartCond(0), fFirstEvent(kTRUE),
-      fEventsRead(0), fEventsReadInterval(100), fNotifyCalled(kFALSE)
+      fEventsRead(0), fEventsReadInterval(100), fNotifyCalled(kFALSE), fDisableCreateTreeFile(kFALSE)
    {
       lhisto = new KVHashList();
       ltree = new KVHashList();
@@ -247,7 +249,7 @@ public:
       //    CombinedOutputFile=[filename]
       // but setting this option in InitAnalysis() will not work.
       // Note that if this method is not called/the option is not given,
-      // histograms and TTrees will be written in separated files.
+      // histograms and TTrees will be written in separate files.
       fCombinedOutputFile = filename;
    }
 
