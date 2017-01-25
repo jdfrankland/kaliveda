@@ -9,7 +9,7 @@ $Date: 2007/05/31 09:59:21 $
 
 #include "KVDataSelector.h"
 #include "TEventList.h"
-#include "KVSelector.h"
+#include "KVOldINDRASelector.h"
 #include "KVClassFactory.h"
 
 using namespace std;
@@ -66,7 +66,7 @@ Bool_t KVDataSelector::ProcessCurrentEntry(void)
 //
    Bool_t ok = kFALSE;
    if (!kvsel) {
-      Warning("ProcessCurrentEntry(void)", "The KVSelector is not set");
+      Warning("ProcessCurrentEntry(void)", "The KVOldINDRASelector is not set");
    }
    if (SelectCurrentEntry()) {
       ok = kvsel->Analysis();
@@ -80,7 +80,7 @@ void KVDataSelector::Init(void)
 {
 //
 // Initialisations of the KVDataSelector
-// This method is called before the InitAnalysis method of the KVSelector
+// This method is called before the InitAnalysis method of the KVOldINDRASelector
 //
 }
 
@@ -105,6 +105,6 @@ void KVDataSelector::MakeClass(const Char_t* classname,
    //which will be used to document the class.
    KVClassFactory cf(classname, classdesc, "KVDataSelector", kTRUE);
    cf.AddImplIncludeFile("KVINDRA.h");
-   cf.AddImplIncludeFile("KVSelector.h");
+   cf.AddImplIncludeFile("KVOldINDRASelector.h");
    cf.GenerateCode();
 }

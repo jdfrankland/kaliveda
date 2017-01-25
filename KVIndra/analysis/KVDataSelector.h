@@ -11,13 +11,13 @@ $Date: 2006/11/03 08:01:32 $
 #define __KVDATASELECTOR_H
 
 #include "KVBase.h"
-class KVSelector;
+class KVOldINDRASelector;
 #include "TEventList.h"
 
 class KVDataSelector: public KVBase {
 
 private:
-   KVSelector* kvsel;
+   KVOldINDRASelector* kvsel;
    TEventList* evtl;
 
 public:
@@ -25,10 +25,10 @@ public:
    KVDataSelector();
    virtual ~ KVDataSelector();
 
-   virtual void SetKVSelector(KVSelector* kvs = 0)
+   virtual void SetKVSelector(KVOldINDRASelector* kvs = 0)
    {
       kvsel = kvs;
-   } virtual KVSelector* GetKVSelector(void)
+   } virtual KVOldINDRASelector* GetKVSelector(void)
    {
       return kvsel;
    }
@@ -44,7 +44,7 @@ public:
    static void MakeClass(const Char_t* classname,
                          const Char_t* classdesc);
 
-   ClassDef(KVDataSelector, 1)  //Class handling event lists for KVSelector analysis of data chains
+   ClassDef(KVDataSelector, 1)  //Class handling event lists for KVOldINDRASelector analysis of data chains
 };
 
 #endif

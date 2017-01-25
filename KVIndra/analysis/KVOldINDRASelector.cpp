@@ -836,10 +836,10 @@ void KVOldINDRASelector::LoadDataSelector(void)
                   fDataSelector.Data());
          } else {
             fKVDataSelector = (KVDataSelector*) ph->ExecPlugin(0);
-            fKVDataSelector->SetKVOldINDRASelector(this);
+            fKVDataSelector->SetKVSelector(this);
             cout << "Apres Plugin " << fKVDataSelector->IsA()->
                  GetName() << " : " << fKVDataSelector->
-                 GetKVOldINDRASelector() << endl;
+                 GetKVSelector() << endl;
          }
 
       } else if (!clas->InheritsFrom("KVDataSelector")) {
@@ -848,10 +848,10 @@ void KVOldINDRASelector::LoadDataSelector(void)
                fDataSelector.Data());
       } else {
          fKVDataSelector = (KVDataSelector*) clas->New();
-         fKVDataSelector->SetKVOldINDRASelector(this);
+         fKVDataSelector->SetKVSelector(this);
          cout << "Apres clas->New() " << fKVDataSelector->IsA()->
               GetName() << " : " << fKVDataSelector->
-              GetKVOldINDRASelector() << endl;
+              GetKVSelector() << endl;
       }
       if (deleteSources) {
          cout << "Removing files \"" << fDataSelector.
