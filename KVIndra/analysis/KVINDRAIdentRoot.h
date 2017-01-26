@@ -7,13 +7,13 @@ $Date: 2006/10/19 14:32:43 $
 #ifndef KVINDRAIdentRoot_h
 #define KVINDRAIdentRoot_h
 
-#include "KVSelector.h"
+#include "KVOldINDRASelector.h"
 
 
 class TFile;
 class TTree;
 
-class KVINDRAIdentRoot: public KVSelector {
+class KVINDRAIdentRoot: public KVOldINDRASelector {
 
    int codes[15];
    int status[4];

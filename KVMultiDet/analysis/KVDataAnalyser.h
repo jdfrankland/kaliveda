@@ -61,8 +61,8 @@ protected:
    void CopyAnalysisResultsToLaunchDirectory();
 
    virtual KVNumberList PrintAvailableRuns(KVString& datatype);
-   virtual Bool_t CheckIfUserClassIsValid();
-   virtual TObject* GetInstanceOfUserClass();
+   virtual Bool_t CheckIfUserClassIsValid(const KVString& alternative_base_class = "");
+   virtual TObject* GetInstanceOfUserClass(const KVString& alternative_base_class = "");
 
    virtual const Char_t* GetACliCMode();
 

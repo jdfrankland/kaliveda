@@ -471,7 +471,7 @@ void KVEventSelector::RecalculateGlobalVariables()
 
 //____________________________________________________________________________
 
-void KVEventSelector::SetParticleConditions(const KVParticleCondition& cond)
+void KVEventSelector::SetParticleConditions(const KVParticleCondition& cond, const KVString& upcast_class)
 {
    //Use this method to set criteria for selecting particles to include in analysis.
    //The criteria defined in the KVParticleCondition object will be applied to every
@@ -481,9 +481,15 @@ void KVEventSelector::SetParticleConditions(const KVParticleCondition& cond)
    //Neither will the particle be included in the evaluation of any global variables.
    //
    //This method must be called in the user's InitAnalysis() or InitRun() method.
+   //
+   //If the methods used in the condition are not defined for KVNucleus, you can give the
+   //name of the class to which the methods refer (upcast_class), or you can set it before
+   //hand (SetParticleConditionsParticleClassName)
 
    if (!fPartCond) fPartCond = new KVParticleCondition(cond);
    else *fPartCond = cond;
+   if (upcast_class != "") fPartCond->SetParticleClassName(upcast_class);
+   else if (fPartName) fPartCond->SetParticleClassName(fPartName);
 }
 
 //____________________________________________________________________________

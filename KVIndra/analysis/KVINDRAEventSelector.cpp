@@ -16,10 +16,11 @@ ClassImp(KVINDRAEventSelector)
 ////////////////////////////////////////////////////////////////////////////////
 
 KVINDRAEventSelector::KVINDRAEventSelector(TTree* arg1)
-   : KVEventSelector(arg1), fKinematics(nullptr)
+   : KVEventSelector(arg1), fCurrentRun(nullptr)
 {
    SetBranchName("INDRAReconEvent");
    SetEventsReadInterval(20000);
+   SetParticleConditionsParticleClassName("KVINDRAReconNuc");
 }
 
 //____________________________________________________________________________//
@@ -42,10 +43,7 @@ void KVINDRAEventSelector::SetAnalysisFrame()
 {
    // Define the CM frame for the current event
    //calculate momenta of particles in reaction cm frame
-   if (fKinematics) {
-      GetEvent()->SetFrame("CM", fKinematics->GetCMVelocity());
+   if (fCurrentRun->GetSystem() && fCurrentRun->GetSystem()->GetKinematics()) {
+      GetEvent()->SetFrame("CM", fCurrentRun->GetSystem()->GetKinematics()->GetCMVelocity());
    }
 }
-
-//____________________________________________________________________________//
-

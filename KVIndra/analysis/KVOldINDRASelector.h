@@ -91,8 +91,8 @@ protected:
 
    TTree* fChain;              //!pointer to the analyzed TTree or TChain
 
-   TTree* fGeneData; //!pointer to tree containing pulser and laser data for run
-   TTree* fRawData; //!pointer to tree containing raw data for run
+//   TTree* fGeneData; //!pointer to tree containing pulser and laser data for run
+//   TTree* fRawData; //!pointer to tree containing raw data for run
 
    //parsed list of options given to TTree::Process
    KVNameValueList fOptionList;
@@ -129,18 +129,22 @@ public:
    KVINDRAReconEvent* GetEvent()
    {
       return data;
-   };
+   }
    Int_t GetEventNumber()
    {
       // returns number of currently analysed event
       // N.B. this may be different to the TTree/TChain entry number etc.
       return data->GetNumber();
-   };
+   }
 
    Int_t Version() const
    {
       return 2;
-   };
+   }
+   void SetCurrentRun(KVINDRADBRun* r)
+   {
+      fCurrentRun = r;
+   }
 
    void Begin(TTree* tree);
    void SlaveBegin(TTree* tree);
@@ -225,16 +229,16 @@ public:
    virtual void SetParticleConditions(const KVParticleCondition&);
 
    //Return pointer to tree containing pulser and laser events for the current run
-   TTree* GetGeneData()
-   {
-      return fGeneData;
-   };
+//   TTree* GetGeneData()
+//   {
+//      return fGeneData;
+//   };
 
-   //Return pointer to tree containing raw data for the current run
-   TTree* GetRawData()
-   {
-      return fRawData;
-   };
+//   //Return pointer to tree containing raw data for the current run
+//   TTree* GetRawData()
+//   {
+//      return fRawData;
+//   };
 
    static void Make(const Char_t* kvsname = "MyOwnKVOldINDRASelector");
 

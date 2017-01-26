@@ -6,11 +6,13 @@
 
 #include "KVEventSelector.h"
 
-#include <KV2Body.h>
+#include <KVINDRADBRun.h>
 #include <KVINDRAReconEvent.h>
 
 class KVINDRAEventSelector : public KVEventSelector {
-   KV2Body* fKinematics;
+
+protected:
+   KVINDRADBRun* fCurrentRun;   //! current run
 
 public:
    KVINDRAEventSelector(TTree* /*arg1*/ = 0);
@@ -18,9 +20,9 @@ public:
 
    void Init(TTree* tree);
 
-   void SetKinematics(KV2Body* p)
+   void SetCurrentRun(KVINDRADBRun* r)
    {
-      fKinematics = p;
+      fCurrentRun = r;
    }
 
    void SetAnalysisFrame();

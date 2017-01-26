@@ -27,7 +27,7 @@
 #include "KVClassFactory.h"
 
 KVIVSelector::KVIVSelector(TTree* tree)
-   : KVSelector(tree)
+   : KVOldINDRASelector(tree)
 {
    // Default ctor. Does nothing.
 }
@@ -56,7 +56,7 @@ Bool_t KVIVSelector::Notify()
    Bool_t status(kFALSE);
 
    try {
-      status = KVSelector::Notify();
+      status = KVOldINDRASelector::Notify();
    } catch (const std::exception& e) {
       // We've caught an exception from the SetParameters method! We handle
       // this event by terminating the current run.

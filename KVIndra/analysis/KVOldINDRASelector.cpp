@@ -156,8 +156,6 @@ KVOldINDRASelector::KVOldINDRASelector(TTree*)
    needToCallEndRun = kFALSE;
    fCurrentRun = 0;
    fPartCond = 0;
-   fGeneData = 0;
-   fRawData = 0;
    data = 0;
    dataselector_lock.SetTimeout(60);   // 60-second timeout in case of problems
    dataselector_lock.SetSuspend(5);   // suspension after timeout
@@ -234,55 +232,22 @@ Bool_t KVOldINDRASelector::Notify()
 
    needToCallEndRun = kTRUE;
 
-   Int_t nrun =
-      gDataAnalyser->GetRunNumberFromFileName(fChain->GetCurrentFile()->GetName());
-   fCurrentRun = ((KVINDRADB*) gDataBase)->GetRun(nrun);
-
    if (fEvtList)
       needToSelect = !(fTEVLexist[fCurrentTreeNumber]);
    else
       needToSelect = kFALSE;
 
+   gDataAnalyser->preInitRun(); // will initialize fCurrentRun
+
    if (needToSelect) {
       if (!fKVDataSelector) {
          LoadDataSelector();
       }
-      fKVDataSelector->Reset(nrun);
-   }
-
-   cout << endl << " ===================  New Run  =================== " <<
-        endl << endl;
-
-   fCurrentRun->Print();
-   if (fCurrentRun->GetSystem()) {
-      if (fCurrentRun->GetSystem()->GetKinematics())
-         fCurrentRun->GetSystem()->GetKinematics()->Print();
-   }
-
-   cout << endl << " ================================================= " <<
-        endl << endl;
-
-   // Retrieving the pointer to the raw data tree
-   fRawData = (TTree*) fChain->GetCurrentFile()->Get("RawData");
-   // Retrieving the pointer to the gene tree
-   fGeneData = (TTree*) fChain->GetCurrentFile()->Get("GeneData");
-   if (!fGeneData) {
-      cout << "  --> No pulser & laser data for this run !!!" << endl << endl;
-   } else {
-      cout << "  --> Pulser & laser data tree contains " << fGeneData->GetEntries()
-           << " events" << endl << endl;
-   }
-
-   if (needToSelect) {
+      fKVDataSelector->Reset(fCurrentRun->GetNumber());
       cout << " Building new TEventList : " << fKVDataSelector->
            GetTEventList()->GetName()
            << endl;
    }
-
-   gDataAnalyser->preInitRun();
-   Info("Notify", "Data written with series %s, release %d",
-        ((KVINDRAReconDataAnalyser*)gDataAnalyser)->GetDataSeries().Data(),
-        ((KVINDRAReconDataAnalyser*)gDataAnalyser)->GetDataReleaseNumber());
 
    InitRun();                   //user initialisations for run
    gDataAnalyser->postInitRun();

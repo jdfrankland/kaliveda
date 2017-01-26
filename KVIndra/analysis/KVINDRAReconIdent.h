@@ -7,12 +7,12 @@ $Date: 2007/06/08 15:49:10 $
 #ifndef KVINDRAReconIdent_h
 #define KVINDRAReconIdent_h
 
-#include "KVSelector.h"
+#include "KVOldINDRASelector.h"
 
 class TFile;
 class TTree;
 
-class KVINDRAReconIdent: public KVSelector {
+class KVINDRAReconIdent: public KVOldINDRASelector {
 
 protected:
    TFile* fIdentFile;           //new file

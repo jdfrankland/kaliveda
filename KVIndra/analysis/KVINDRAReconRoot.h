@@ -1,12 +1,12 @@
 #ifndef KVINDRAReconRoot_h
 #define KVINDRAReconRoot_h
 
-#include "KVSelector.h"
+#include "KVOldINDRASelector.h"
 
 class TFile;
 class TTree;
 
-class KVINDRAReconRoot: public KVSelector {
+class KVINDRAReconRoot: public KVOldINDRASelector {
    int codes[15];
    int status[4];
    int Acodes[15];

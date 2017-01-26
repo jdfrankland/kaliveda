@@ -8,10 +8,10 @@
 #ifndef KVIVSelector_h
 #define KVIVSelector_h
 
-#include <KVSelector.h>
+#include <KVOldINDRASelector.h>
 #include "KVIVReconEvent.h"
 
-class KVIVSelector : public KVSelector {
+class KVIVSelector : public KVOldINDRASelector {
 
 
 #define VERY_BIG_TABLEAU 500
@@ -233,7 +233,7 @@ void KVIVSelector::Init(TTree* tree)
    if (TClass::GetClass(br->GetClassName())->InheritsFrom("KVINDRAReconEvent"))
       SetINDRAReconEventBranchName(br->GetName());
 
-   KVSelector::Init(tree);
+   KVOldINDRASelector::Init(tree);
 
 //   fChain->SetBranchAddress("EchiM", &EchiM, &b_EchiM);
 //   fChain->SetBranchAddress("Echi", Echi, &b_Echi);

@@ -45,6 +45,7 @@ protected :
    KVString fBranchName; //name of branch which contains events to analyse
 
    KVParticleCondition* fPartCond;//(optional) conditions for selecting particles
+   KVString fPartName;//(optional) classname for upcasting in KVParticleCondition::Optimize
 
    Bool_t fFirstEvent;//set to kFALSE after first event is read
 
@@ -215,7 +216,11 @@ public:
       return (fTreeEntry + 1 == fChain->GetTree()->GetEntries());
    };
 
-   virtual void SetParticleConditions(const KVParticleCondition&);
+   virtual void SetParticleConditions(const KVParticleCondition&, const KVString& = "");
+   void SetParticleConditionsParticleClassName(const KVString& t)
+   {
+      fPartName = t;
+   }
 
    void AddHisto(TH1* histo);
    void AddTree(TTree* tree);

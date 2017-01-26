@@ -9,6 +9,7 @@
 #include "KVDataAnalyser.h"
 #include "KVINDRAReconNuc.h"
 #include "KVINDRADB.h"
+#include "KVINDRAReconDataAnalyser.h"
 
 using namespace std;
 
@@ -136,8 +137,7 @@ void KVINDRAReconRoot::EndRun(void)
 
    gDataAnalyser->WriteBatchInfo(fIdentTree);
 
-   GetRawData()->CloneTree(-1, "fast"); //copy raw data tree to file
-   GetGeneData()->CloneTree(-1, "fast"); //copy pulser & laser (gene) tree to file
+   ((KVINDRAReconDataAnalyser*)gDataAnalyser)->CloneRawAndGeneTrees();
 
    fIdentFile->Write();
 

@@ -698,7 +698,6 @@ void KVTreeAnalyzer::OpenGUI()
    hf->AddFrame(fMain_selectionlist, new TGLayoutHints(kLHintsLeft | kLHintsExpandX, 5, 5, 5, 5));
    fMain_histolist->AddFrame(hf, new TGLayoutHints(kLHintsTop | kLHintsCenterX | kLHintsExpandX));
 
-
    /**** Histo creation group ********/
    TGGroupFrame* histo_opts = new TGGroupFrame(fMain_histolist, "CREATE HISTO", kHorizontalFrame);
    fHorizontalFrame = new TGHorizontalFrame(histo_opts, lWidth, 36, kHorizontalFrame);

@@ -12,6 +12,7 @@ $Date: 2007/05/31 09:59:22 $
 
 #include "KVDataAnalyser.h"
 #include "KVINDRAEventSelector.h"
+#include "KVOldINDRASelector.h" // backwards compatibility
 #include <KVDataPatchList.h>
 class TChain;
 
@@ -24,14 +25,17 @@ protected:
 
    virtual KVNumberList PrintAvailableRuns(KVString& datatype);
    KVINDRAEventSelector* fSelector;// the data analysis class
+   KVOldINDRASelector* fOldSelector;// backwards compatibility
    TTree* theChain;//chain of TTrees to be analysed
    TTree* theRawData;//raw data TTree in recon file
+   TTree* theGeneData;//gene data TTree in recon file
    Int_t NbParFired;
    UShort_t* ParVal;
    UInt_t* ParNum;
    TObjArray* parList;
    Long64_t Entry;
    void ConnectRawDataTree();
+   void ConnectGeneDataTree();
 
    Long64_t TotalEntriesToRead;
    KVString fDataVersion;//KV version used to write analysed data
@@ -80,7 +84,10 @@ public:
    void preInitRun();
    virtual void RegisterUserClass(TObject* obj)
    {
-      fSelector = (KVINDRAEventSelector*)obj;
+      // The user class may inherit from KVINDRAEventSelector or KVOldINDRASelector
+      // Only one of the two pointers will be valid
+      fSelector = dynamic_cast<KVINDRAEventSelector*>(obj);
+      fOldSelector = dynamic_cast<KVOldINDRASelector*>(obj);
    }
    void PrintTreeInfos();
    TEnv* GetReconDataTreeInfos() const;
@@ -97,6 +104,16 @@ public:
    {
       return fDataReleaseNum;
    }
+   TTree* GetRawDataTree() const
+   {
+      return theRawData;
+   }
+   TTree* GetGeneDataTree() const
+   {
+      return theGeneData;
+   }
+   void CloneRawAndGeneTrees();
+   virtual Bool_t CheckIfUserClassIsValid(const KVString& = "");
 
    ClassDef(KVINDRAReconDataAnalyser, 0) //For analysing reconstructed INDRA data
 };
