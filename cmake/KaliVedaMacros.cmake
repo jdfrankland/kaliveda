@@ -389,7 +389,7 @@ function(BUILD_KALIVEDA_SUBPROJECT)
 			#---write Makefile for automatic database updating
 			file(GLOB contents RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/${d} ${d}/*)
 			CHANGE_LIST_TO_STRING(st_contents ${contents})
-			file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${d}_Makefile "$(KV_WORK_DIR)/db/${d}/DataBase.root : ${st_contents}\n")
+         file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/${d}_Makefile "$(KV_WORK_DIR)/db/${d}/DataBase.sqlite : ${st_contents}\n")
 			file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/${d}_Makefile "	@echo Database needs update\n")
 			install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${d}_Makefile DESTINATION ${CMAKE_INSTALL_DATASETDIR}/${d} RENAME Makefile)
 		endforeach()

@@ -116,9 +116,9 @@ void KVINDRAUpDater::SetTrigger(KVDBRun* kvrun)
 void KVINDRAUpDater::CheckStatusOfDetectors(KVDBRun* kvrun)
 {
 
-   KVRList* absdet = kvrun->GetLinks("Absent Detectors");
-   KVRList* oooacq = kvrun->GetLinks("OoO ACQPars");
-   KVRList* ooodet = kvrun->GetLinks("OoO Detectors");
+   KVRList* absdet;// = kvrun->GetLinks("Absent Detectors");
+   KVRList* oooacq;// = kvrun->GetLinks("OoO ACQPars");
+   KVRList* ooodet;// = kvrun->GetLinks("OoO Detectors");
 
    TIter next(gIndra->GetListOfDetectors());
    KVDetector* det;
@@ -199,7 +199,7 @@ void KVINDRAUpDater::SetGains(KVDBRun* kvrun)
    KVDetector* kvd;
    while ((kvd = (KVDetector*) next()))
       kvd->SetGain(1.00);
-   KVRList* gain_list = kvrun->GetLinks("Gains");
+   KVRList* gain_list;// = kvrun->GetLinks("Gains");
    if (!gain_list) {
       return;
    }
@@ -247,7 +247,7 @@ void KVINDRAUpDater::SetChIoPressures(KVDBRun* kvrun)
    //mark the corresponding ChIo's as non detecting detector (see KVDetector::SetDetecting())
    //
 
-   KVRList* param_list = kvrun->GetLinks("ChIo Pressures");
+   KVRList* param_list;// = kvrun->GetLinks("ChIo Pressures");
    if (!param_list) {
       return;
    }
@@ -303,7 +303,7 @@ void KVINDRAUpDater::SetChVoltParameters(KVDBRun* kvrun)
 {
 
 
-   KVRList* param_list = kvrun->GetLinks("Channel-Volt");
+   KVRList* param_list;// = kvrun->GetLinks("Channel-Volt");
    if (!param_list)
       return;
    if (!param_list->GetSize())
@@ -346,7 +346,7 @@ void KVINDRAUpDater::SetChVoltParameters(KVDBRun* kvrun)
 void KVINDRAUpDater::SetVoltEnergyChIoSiParameters(KVDBRun* kvrun)
 {
 
-   KVRList* param_list = kvrun->GetLinks("Volt-Energy ChIo-Si");
+   KVRList* param_list;// = kvrun->GetLinks("Volt-Energy ChIo-Si");
    if (!param_list)
       return;
    if (!param_list->GetSize()) {
@@ -418,7 +418,7 @@ void KVINDRAUpDater::SetCsIGainCorrectionParameters(KVDBRun* kvrun)
       csi->SetTotalLightGainCorrection(1.0);
    }
 
-   KVRList* param_list = kvrun->GetLinks("CsIGainCorr");
+   KVRList* param_list;// = kvrun->GetLinks("CsIGainCorr");
    if (!param_list) {
       return;
    }
@@ -455,7 +455,7 @@ void KVINDRAUpDater::SetLitEnergyCsIParameters(KVDBRun* kvrun)
 {
 
    // Setting Light- Energy CsI calibration parameters for Z=1
-   KVRList* param_list = kvrun->GetLinks("Light-Energy CsI Z=1");
+   KVRList* param_list;// = kvrun->GetLinks("Light-Energy CsI Z=1");
 
    if (param_list && param_list->GetSize()) {
 
@@ -488,7 +488,7 @@ void KVINDRAUpDater::SetLitEnergyCsIParameters(KVDBRun* kvrun)
       }                            //boucle sur les parameters
    }
    // Setting Light- Energy CsI calibration parameters for Z>1
-   param_list = kvrun->GetLinks("Light-Energy CsI Z>1");
+   //param_list = kvrun->GetLinks("Light-Energy CsI Z>1");
 
    if (!param_list || !param_list->GetSize()) {
       return;
@@ -529,24 +529,24 @@ void KVINDRAUpDater::SetChIoSiPedestals(KVDBRun* kvrun)
 {
    //read Chio-Si-Etalons pedestals
 
-   if (!kvrun->GetKey("Pedestals"))
-      return;
-   if (!kvrun->GetKey("Pedestals")->GetLinks())
-      return;
-   if (!kvrun->GetKey("Pedestals")->GetLinks()->At(0))
-      return;
+//   if (!kvrun->GetKey("Pedestals"))
+//      return;
+//   if (!kvrun->GetKey("Pedestals")->GetLinks())
+//      return;
+//   if (!kvrun->GetKey("Pedestals")->GetLinks()->At(0))
+//      return;
 
    ifstream file_pied_chiosi;
-   if (!KVBase::
-         SearchAndOpenKVFile(kvrun->GetKey("Pedestals")->GetLinks()->At(0)->
-                             GetName(), file_pied_chiosi, fDataSet.Data())) {
-      Error("SetPedestals", "Problem opening file %s",
-            kvrun->GetKey("Pedestals")->GetLinks()->At(0)->GetName());
-      return;
-   }
-   cout << "--> Setting Pedestals" << endl;
-   cout << "    ChIo/Si/Etalons: " << kvrun->GetKey("Pedestals")->
-        GetLinks()->At(0)->GetName() << endl;
+//   if (!KVBase::
+//         SearchAndOpenKVFile(kvrun->GetKey("Pedestals")->GetLinks()->At(0)->
+//                             GetName(), file_pied_chiosi, fDataSet.Data())) {
+//      Error("SetPedestals", "Problem opening file %s",
+//            kvrun->GetKey("Pedestals")->GetLinks()->At(0)->GetName());
+//      return;
+//   }
+//   cout << "--> Setting Pedestals" << endl;
+//   cout << "    ChIo/Si/Etalons: " << kvrun->GetKey("Pedestals")->
+//        GetLinks()->At(0)->GetName() << endl;
 
    //skip first 5 lines - header
    TString line;
@@ -619,25 +619,25 @@ void KVINDRAUpDater::SetChIoSiPedestals(KVDBRun* kvrun)
 
 void KVINDRAUpDater::SetCsIPedestals(KVDBRun* kvrun)
 {
-   if (!kvrun->GetKey("Pedestals"))
-      return;
-   if (!kvrun->GetKey("Pedestals")->GetLinks())
-      return;
-   if (!kvrun->GetKey("Pedestals")->GetLinks()->At(1))
-      return;
+//   if (!kvrun->GetKey("Pedestals"))
+//      return;
+//   if (!kvrun->GetKey("Pedestals")->GetLinks())
+//      return;
+//   if (!kvrun->GetKey("Pedestals")->GetLinks()->At(1))
+//      return;
 
    //read CsI pedestals
    ifstream file_pied_csi;
-   if (!KVBase::
-         SearchAndOpenKVFile(kvrun->GetKey("Pedestals")->GetLinks()->At(1)->
-                             GetName(), file_pied_csi, fDataSet.Data())) {
-      Error("SetPedestals", "Problem opening file %s",
-            kvrun->GetKey("Pedestals")->GetLinks()->At(1)->GetName());
-      return;
-   }
-   cout << "--> Setting Pedestals" << endl;
-   cout << "    CsI            : " << kvrun->GetKey("Pedestals")->
-        GetLinks()->At(1)->GetName() << endl;
+//   if (!KVBase::
+//         SearchAndOpenKVFile(kvrun->GetKey("Pedestals")->GetLinks()->At(1)->
+//                             GetName(), file_pied_csi, fDataSet.Data())) {
+//      Error("SetPedestals", "Problem opening file %s",
+//            kvrun->GetKey("Pedestals")->GetLinks()->At(1)->GetName());
+//      return;
+//   }
+//   cout << "--> Setting Pedestals" << endl;
+//   cout << "    CsI            : " << kvrun->GetKey("Pedestals")->
+//        GetLinks()->At(1)->GetName() << endl;
 
    int cou, mod, type, n_phys, n_gene;
    float ave_phys, sig_phys, ave_gene, sig_gene;

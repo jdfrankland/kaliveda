@@ -38,7 +38,7 @@ KVINDRADB1::KVINDRADB1(const Char_t* name): KVINDRADB(name)
 
 void KVINDRADB1::Build()
 {
-
+   KVExpDB::Build();
    //Use KVINDRARunListReader utility subclass to read complete runlist
    TString runlist_fullpath;
    KVBase::SearchKVFile(GetDBEnv("Runlist"), runlist_fullpath, fDataSet);
@@ -53,8 +53,8 @@ void KVINDRADB1::Build()
    kLastRun = 0;
    ReadRunList(runlist_fullpath.Data());
 
-   ReadSystemList();
-   ReadChIoPressures();
+//   ReadSystemList();
+//   ReadChIoPressures();
 }
 
 //____________________________________________________________________________
@@ -88,18 +88,18 @@ void KVINDRADB1::GoodRunLine()
     CREATE IT.
    *********************************************/
    KVDBTape* tape = 0;
-   //tape number (if tape field is filled)
-   if (csv_line->HasFieldValue("tape")) {
-      Int_t tape_n = csv_line->GetIntField("tape");
-      //already exists ?
-      tape = GetTape(tape_n);
-      if (!tape) {
-         tape = new KVDBTape(tape_n);
-         AddTape(tape);
-      }
-   } else {
-      Error("GoodRunLine", "No tape field ? run=%d", run_n);
-   }
+//   //tape number (if tape field is filled)
+//   if (csv_line->HasFieldValue("tape")) {
+//      Int_t tape_n = csv_line->GetIntField("tape");
+//      //already exists ?
+//      tape = GetTape(tape_n);
+//      if (!tape) {
+//         tape = new KVDBTape(tape_n);
+//         AddTape(tape);
+//      }
+//   } else {
+//      Error("GoodRunLine", "No tape field ? run=%d", run_n);
+//   }
 
    /*********************************************
    WE CREATE A NEW RUN AND ADD

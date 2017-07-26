@@ -20,7 +20,6 @@ $Id: KVDBRun.cpp,v 1.14 2009/03/12 14:01:02 franklan Exp $
 #include "TEnv.h"
 #include "TObjString.h"
 #include "TObjArray.h"
-#include "KVDBKey.h"
 
 using namespace std;
 
@@ -32,14 +31,14 @@ ClassImp(KVDBRun);
 //
 //____________________________________________________________________________
 
-KVDBRun::KVDBRun(): fDatime()
+KVDBRun::KVDBRun(): KVBase("DBRun", "Experiment run"), fSystem(nullptr), fDatime()
 {
    //default ctor
    fBlockSignals = kFALSE;
 }
 
 //____________________________________________________________________________
-KVDBRun::KVDBRun(Int_t number, const Char_t* title): fDatime()
+KVDBRun::KVDBRun(Int_t number, const Char_t* title): KVBase(Form("run%04d", number), "Experiment run"), fSystem(nullptr), fDatime()
 {
    //ctor for a given run number
 
@@ -188,46 +187,4 @@ void KVDBRun::WriteRunListHeader(ostream& outstr, Char_t) const
    outstr << "Version=10" << endl;
 }
 
-void KVDBRun::UnsetSystem()
-{
-   //If this run has previously been associated with a system in the database,
-   //this will remove the association. The run will also be removed from the system's
-   //list of associated runs.
-
-   if (GetSystem()) {
-      GetSystem()->RemoveRun(this);
-   }
-   SetTitle("Experimental run");
-   Modified();
-}
-
-KVDBSystem* KVDBRun::GetSystem() const
-{
-   if (GetKey("Systems")) {
-      if (GetKey("Systems")->GetLinks()->GetSize())
-         return (KVDBSystem*) GetKey("Systems")->GetLinks()->First();
-   }
-   return 0;
-}
-
-void KVDBRun::SetSystem(KVDBSystem* system)
-{
-   //Set system for run. Any previous system is unassociated (run will be removed from system's list)
-   if (!GetKey("Systems")) {
-      KVDBKey* key = AddKey("Systems", "Physical system used");
-      key->SetUniqueStatus(kTRUE);
-      key->SetSingleStatus(kTRUE);
-   } else {
-      UnsetSystem();
-   }
-   if (!AddLink("Systems", system)) {
-      Warning("SetSystem(KVDBSystem*)",
-              "System %s couldn't be set for Run %d. This bizarre...",
-              system->GetName(), GetNumber());
-   } else {
-      //set title of run = name of system
-      SetTitle(system->GetName());
-   }
-   Modified();
-}
 

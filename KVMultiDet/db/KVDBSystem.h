@@ -18,7 +18,6 @@ $Id: KVDBSystem.h,v 1.12 2008/03/07 15:01:34 ebonnet Exp $
 #ifndef KV_DB_SYSTEM_H
 #define KV_DB_SYSTEM_H
 
-#include "KVDBRecord.h"
 #include "Riostream.h"
 #include "KVTarget.h"
 #include "KVList.h"
@@ -26,7 +25,7 @@ $Id: KVDBSystem.h,v 1.12 2008/03/07 15:01:34 ebonnet Exp $
 class KV2Body;
 class KVNumberList;
 
-class KVDBSystem: public KVDBRecord {
+class KVDBSystem: public KVBase {
 
 private:
 
@@ -34,7 +33,7 @@ private:
 
    KVTarget* fTarget;           //-> physical target used for experiment run
 
-   KVList* fRunlist;             //!used to store pointer to sorted list of runs
+   KVNumberList fRunlist;       //sorted list of run numbers
    Int_t fRuns;                 //!temporary variable used to stock number of associated runs
 
 protected:
@@ -44,10 +43,6 @@ protected:
    UInt_t fAtarget;             // Mass of the target nucleus
    Float_t fEbeam;              // Energy of the beam in MeV/nucleon
 
-   KVList* _GetRuns();
-
-   KVDBTable* GetRunsTable();
-
 public:
    KVDBSystem();
    KVDBSystem(const Char_t* name);
@@ -56,11 +51,22 @@ public:
    KVTarget* GetTarget() const
    {
       return fTarget;
-   };
+   }
    void SetTarget(KVTarget* targ)
    {
       fTarget = targ;
-   };
+   }
+
+   void SetSysid(Int_t i)
+   {
+      // set value of 'sysid' column in 'Systems' table for this system
+      SetNumber(i);
+   }
+   Int_t GetSysid() const
+   {
+      // return value of 'sysid' column in 'Systems' table for this system
+      return GetNumber();
+   }
 
    virtual void ls(Option_t* option = "*") const;
    UInt_t GetZtarget() const;
@@ -90,13 +96,10 @@ public:
 
    void SetBeam(UInt_t z, UInt_t a, Float_t energy);
 
-   //Returns a sorted list of all the runs associated with this system
-   KVList* GetRuns() const
+   const KVNumberList& GetRunList() const
    {
-      return const_cast <KVDBSystem* >(this)->_GetRuns();
+      return fRunlist;
    }
-
-   virtual void GetRunList(KVNumberList&) const;
    virtual void Save(std::ostream&) const;
    virtual void Load(std::istream&);
 
@@ -113,16 +116,14 @@ public:
    }
    //get number of runs previously set by SetNumberRuns.
    //WARNING: for total number of runs associated to this system in database,
-   //use GetRuns()->GetEntries()
+   //use GetRunList().GetNValues()
    Int_t GetNumberRuns()
    {
       return fRuns;
    }
 
    void SetRuns(KVNumberList&);
-   void RemoveRun(KVDBRecord*);
    void RemoveRun(Int_t);
-   void AddRun(KVDBRecord*);
    void AddRun(Int_t);
    void RemoveAllRuns();
    virtual const Char_t* GetBatchName();

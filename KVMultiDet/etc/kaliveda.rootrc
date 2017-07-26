@@ -71,9 +71,7 @@ DataSet.RunFileClass.ident:    TFile
 DataSet.RunFileClass.root:    TFile
 
 # Default name of database file containing informations on runs, systems, calibration parameters etc.
-DataSet.DatabaseFile:        DataBase.root
-# Default name of database object in file
-DataSet.DatabaseName:        DataBase
+DataSet.DatabaseFile:        DataBase.sqlite
 
 # Default data analysis tasks
 DataAnalysisTask:     RawAnalysis

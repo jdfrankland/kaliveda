@@ -18,16 +18,25 @@ ClassImp(KVExpDB)
 <h4>base class to describe database of an experiment</h4>
 <!-- */
 // --> END_HTML
+// An experiment database contains at least two tables:
+//    Runs      -> infos on all runs
+//    Systems   -> infos on all systems
 ////////////////////////////////////////////////////////////////////////////////
 void KVExpDB::init()
 {
    //default initialisations
    kFirstRun = 0;
    kLastRun = 0;
+   fRuns.SetOwner();
+}
 
-   fRuns = AddTable("Runs", "List of available runs");
-   fRuns->SetDefaultFormat("Run %d"); // default format for run names
-   fSystems = AddTable("Systems", "List of available systems");
+void KVExpDB::fill_runlist_from_database()
+{
+
+}
+
+void KVExpDB::fill_systemlist_from_database()
+{
 
 }
 
@@ -55,6 +64,17 @@ KVExpDB::KVExpDB(const Char_t* name, const Char_t* title)
    init();
 }
 
+void KVExpDB::connect_to_database(const TString& path)
+{
+   // Open the SQLite database file DataBase.sqlite at 'path'
+   // If the file does not exist, this will trigger Build()
+   // If needed, fill runlist & systemlist from database
+
+   KVDataBase::connect_to_database(path);
+   if (!fRuns.GetEntries()) fill_runlist_from_database();
+   if (!fSystems.GetEntries()) fill_systemlist_from_database();
+}
+
 //____________________________________________________________________________//
 
 KVExpDB::~KVExpDB()
@@ -62,122 +82,10 @@ KVExpDB::~KVExpDB()
    // Destructor
 }
 
-//____________________________________________________________________________//
-
-//_____________________________________________________________________
-void KVExpDB::LinkRecordToRunRange(KVDBRecord* rec, UInt_t first_run,
-                                   UInt_t last_run)
-{
-   //If the KVDBRecord 'rec' (i.e. set of calibration parameters, reaction system, etc.) is
-   //associated to, or valid for, a range of runs, we use this method in order to link the record
-   //and the runs. The list of associated runs will be kept with the record, and each of the runs
-   //will have a link to the record.
-
-   for (UInt_t ii = first_run; ii <= last_run; ii++) {
-      LinkRecordToRun(rec, ii);
-   }
-}
-//_____________________________________________________________________
-void KVExpDB::LinkRecordToRunRange(KVDBRecord* rec, KVNumberList nl)
-{
-   //If the KVDBRecord 'rec' (i.e. set of calibration parameters, reaction system, etc.) is
-   //associated to, or valid for, a range of runs, we use this method in order to link the record
-   //and the runs. The list of associated runs will be kept with the record, and each of the runs
-   //will have a link to the record.
-   nl.Begin();
-   while (!nl.End()) {
-      Int_t rr = nl.Next();
-      //Info("LinkRecordToRunRange","run number %d",rr);
-      LinkRecordToRun(rec, rr);
-   }
-}
-
-//_____________________________________________________________________
-void KVExpDB::LinkRecordToRun(KVDBRecord* rec, Int_t rnumber)
-{
-
-   KVDBRecord* run = 0;
-   if ((run = fRuns->GetRecord(rnumber)))
-      rec->AddLink("Runs", run);
-
-}
-
-//_____________________________________________________________________
-void KVExpDB::LinkRecordToRunRanges(KVDBRecord* rec, UInt_t rr_number,
-                                    UInt_t run_ranges[][2])
-{
-   //Call LinkRecordToRunRange for a set of run ranges stored in the two-dimensional array
-   //in the following way:
-   //      run_ranges[0][0] = first run of first run range
-   //      run_ranges[0][1] = last run of first run range
-   //      run_ranges[1][0] = first run of second run range etc. etc.
-   //rr_number is the number of run ranges in the array
-
-   for (UInt_t i = 0; i < rr_number; i++) {
-      LinkRecordToRunRange(rec, run_ranges[i][0], run_ranges[i][1]);
-   }
-}
-
-//______________________________________________________________________________
-void KVExpDB::LinkListToRunRanges(TList* list, UInt_t rr_number,
-                                  UInt_t run_ranges[][2])
-{
-   //Link the records contained in the list to the set of runs (see LinkRecordToRunRanges).
-
-   if (!list) {
-      Error("LinkListToRunRanges",
-            "NULL pointer passed for parameter TList");
-      return;
-   }
-   if (list->GetSize() == 0) {
-      Error("LinkListToRunRanges(TList*,UInt_t,UInt_t*)",
-            "The list is empty");
-      return;
-   }
-   TIter next(list);
-   KVDBRecord* rec;
-
-   for (UInt_t ru_ra = 0; ru_ra < rr_number; ru_ra++) {
-      UInt_t first_run = run_ranges[ru_ra][0];
-      UInt_t last_run = run_ranges[ru_ra][1];
-      for (UInt_t i = first_run; i <= last_run; i++) {
-         KVDBRecord* run = GetDBRun(i);
-         while ((rec = (KVDBRecord*) next())) {
-            if (run)
-               rec->AddLink("Runs", run);
-         }
-         next.Reset();
-      }
-   }
-}
-//______________________________________________________________________________
-void KVExpDB::LinkListToRunRange(TList* list, KVNumberList nl)
-{
-   //Link the records contained in the list to the set of runs (see LinkRecordToRunRanges).
-
-   if (!list) {
-      Error("LinkListToRunRange",
-            "NULL pointer passed for parameter TList");
-      return;
-   }
-   if (list->GetSize() == 0) {
-      Error("LinkListToRunRange(TList*,KVNumberList)",
-            "The list is empty");
-      return;
-   }
-   TIter next(list);
-   KVDBRecord* rec;
-   while ((rec = (KVDBRecord*) next())) {
-      LinkRecordToRunRange(rec, nl);
-   }
-}
-
 //____________________________________________________________________________
 void KVExpDB::ReadSystemList()
 {
-   //Reads list of systems with associated run ranges, creates KVDBSystem
-   //records for these systems, and links them to the appropriate KVDBRun
-   //records using LinkListToRunRanges.
+   //Reads list of systems with associated run ranges
    //
    //There are 2 formats for the description of systems:
    //
@@ -226,21 +134,32 @@ void KVExpDB::ReadSystemList()
    }
    // if any runs are not associated with any system
    // we create an 'unknown' system and associate it to all runs
-   KVDBSystem* sys = 0;
-   TIter nextRun(GetRuns());
-   KVDBRun* run;
-   while ((run = (KVDBRun*)nextRun())) {
-      if (!run->GetSystem()) {
-         if (!sys) {
-            sys = new KVDBSystem("[unknown]");
-            AddSystem(sys);
-         }
-         sys->AddRun(run);
-      }
-   }
+//   KVDBSystem* sys = 0;
+//   TIter nextRun(GetRuns());
+//   KVDBRun* run;
+//   while ((run = (KVDBRun*)nextRun())) {
+//      if (!run->GetSystem()) {
+//         if (!sys) {
+//            sys = new KVDBSystem("[unknown]");
+//            AddSystem(sys);
+//         }
+//         sys->AddRun(run->GetNumber());
+//      }
+//   }
 
-   // rehash the record table now that all names are set
-   fSystems->Rehash();
+   // write systems data in dB table 'Systems'
+   fSQLdb.prepare_data_insertion("Systems");
+   TIter next(&fSystems);
+   KVDBSystem* s;
+   int sysid = 1;
+   while ((s = (KVDBSystem*)next())) {
+      s->SetSysid(sysid);
+      fSQLdb["Systems"]["sysname"].set_data(s->GetName());
+      fSQLdb["Systems"]["runlist"].set_data(s->GetRunList().AsString());
+      fSQLdb.insert_data_row();
+      ++sysid;
+   }
+   fSQLdb.end_data_insertion();
 }
 //__________________________________________________________________________________________________________________
 
@@ -345,6 +264,24 @@ const Char_t* KVExpDB::GetDBEnv(const Char_t*) const
    return 0;
 }
 
+void KVExpDB::Build()
+{
+   // Read systems list
+   // Set up 'Systems' table in sqlite-db
+   // Columns are:
+   //        sysid (INTEGER PRIMARY KEY)
+   //        sysname (TEXT)
+   //        runlist (TEXT) : runlist in KVNumberList format
+
+   KVSQLite::table systems("Systems");
+   systems.add_primary_key("sysid");
+   systems.add_column("sysname", "TEXT");
+   systems.add_column("runlist", "TEXT");
+   fSQLdb.add_table(systems);
+
+   ReadSystemList();
+}
+
 //__________________________________________________________________________________________________________________
 
 void KVExpDB::PrintRuns(KVNumberList& nl) const
@@ -365,7 +302,7 @@ void KVExpDB::PrintRuns(KVNumberList& nl) const
    printf("------------------------------------------------------------------------------------------------------------------\n");
    nl.Begin();
    while (!nl.End()) {
-      KVDBRun* run = GetDBRun(nl.Next());
+      KVDBRun* run = GetRun(nl.Next());
       if (!run) continue;
       printf("%4d\t%-30s\t%s\t\t%d\t\t%s\n",
              run->GetNumber(), (run->GetSystem() ? run->GetSystem()->GetName() : "            "), run->GetTriggerString(),

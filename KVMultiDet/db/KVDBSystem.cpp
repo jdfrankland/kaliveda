@@ -7,13 +7,10 @@
  *                                                                         *
  ***************************************************************************/
 #include "KVDBSystem.h"
-#include "KVDBRun.h"
 #include "KV2Body.h"
 #include "KVNumberList.h"
 #include "KVUnits.h"
 #include "TROOT.h"
-#include "KVDBKey.h"
-#include "KVDBTable.h"
 
 using namespace std;
 
@@ -50,16 +47,13 @@ KVDBSystem::KVDBSystem()
 }
 
 //___________________________________________________________________________
-KVDBSystem::KVDBSystem(const Char_t* name): KVDBRecord(name,
+KVDBSystem::KVDBSystem(const Char_t* name): KVBase(name,
          "Physical System")
 {
    fZtarget = fAtarget = fZbeam = fAbeam = 0;
    fEbeam = 0.;
    fCinema = 0;
    fTarget = 0;
-   KVDBKey* dbk = AddKey("Runs", "List of Runs");
-   dbk->SetUniqueStatus(kTRUE);
-   fRunlist = 0;
    fRuns = 0;
 }
 
@@ -72,8 +66,6 @@ KVDBSystem::~KVDBSystem()
       fCinema = 0;
    }
    delete fTarget;
-   if (fRunlist)
-      delete fRunlist;
 }
 
 //___________________________________________________________________________
@@ -159,48 +151,13 @@ Int_t KVDBSystem::Compare(const TObject* obj) const
    //(sorted) list of runs associated to the system.
    //Systems with lower first run numbers appear earlier in the list.
 
-   if (!GetRuns())
-      return 0;
    KVDBSystem* other_sys =
       dynamic_cast < KVDBSystem* >(const_cast < TObject* >(obj));
    if (!other_sys)
       return 0;
-   KVList* other_runs;
-   if (!(other_runs = other_sys->GetRuns()))
-      return 0;
-   Int_t first = ((KVDBRecord*) fRunlist->At(0))->GetNumber();
-   Int_t other_first = ((KVDBRecord*) other_runs->At(0))->GetNumber();
+   Int_t first = fRunlist.First();
+   Int_t other_first = other_sys->GetRunList().First();
    return (first == other_first ? 0 : (other_first > first ? -1 : 1));
-}
-
-//_____________________________________________________________________________
-
-KVList* KVDBSystem::_GetRuns()
-{
-   //"translate" the KVRList returned by GetLinks into a standard
-   //TList which can then be sorted (Sort() is not implemented for TRefArray).
-   KVRList* _rlist = GetLinks("Runs");
-   TIter nxt(_rlist);
-   KVDBRun* db;
-   SafeDelete(fRunlist);
-   fRunlist = new KVList(kFALSE);        //will be deleted with object
-   while ((db = (KVDBRun*) nxt()))
-      fRunlist->Add(db);
-   fRunlist->Sort();
-   return fRunlist;
-}
-
-//___________________________________________________________________________
-
-void KVDBSystem::GetRunList(KVNumberList& list) const
-{
-   //Fills the KVNumberList object with the list of all run numbers associated with this system
-   list.Clear();
-   TIter next(GetRuns());
-   KVDBRun* run;
-   while ((run = (KVDBRun*)next())) {
-      list.Add(run->GetNumber());
-   }
 }
 
 //___________________________________________________________________________
@@ -229,9 +186,7 @@ void KVDBSystem::Save(ostream& f) const
          f << " " << lay->GetAreaDensity() / KVUnits::mg << endl;
       }
    }
-   KVNumberList runlist;
-   GetRunList(runlist);
-   f << "Runs: " << runlist.AsString() << endl;
+   f << "Runs: " << fRunlist.AsString() << endl;
 }
 
 //___________________________________________________________________________
@@ -252,7 +207,7 @@ void KVDBSystem::Load(istream& f)
    Float_t target_thickness;
    fAbeam = fZbeam = fAtarget = fZtarget = 0;
    fEbeam = target_thickness = 0;
-   KVNumberList runlist;
+   fRunlist.Clear();
    //'peek' at first character of next line
    char next_char = f.peek();
    if (next_char == '+') {
@@ -292,20 +247,17 @@ void KVDBSystem::Load(istream& f)
             fTarget->Print();
          } else if (line.BeginsWith("Runs")) {
             line.Remove(0, line.Index(":") + 1);
-            runlist.SetList(line.Data());
+            fRunlist.SetList(line.Data());
             cout << "Runs : " << line.Data() << endl;
          } else if (line.BeginsWith("Run Range")) {
             line.Remove(0, line.Index(":") + 1);
             Int_t frun, lrun;
             sscanf(line.Data(), "%i %i", &frun, &lrun);
-            runlist.Add(Form("%i-%i", frun, lrun));
+            fRunlist.Add(Form("%i-%i", frun, lrun));
             cout << "Run range : " << line.Data() << endl;
          }
       }
       next_char = f.peek();
-   }
-   if (runlist.GetNValues()) {
-      SetRuns(runlist);
    }
    //set target if not already done (old versions)
    if (!fTarget && target_thickness > 0 && fZtarget > 0) {
@@ -315,105 +267,34 @@ void KVDBSystem::Load(istream& f)
    }
 }
 
-//___________________________________________________________________________
-
-void KVDBSystem::SetRuns(KVNumberList& rl)
-{
-   //Associate this system with the runs in the list
-   //Any previously associated runs are first removed (links in the runs will be removed too)
-   Info("SetRuns", "Setting runs for system %s : %s", GetName(), rl.AsString());
-   RemoveAllRuns();
-   rl.Begin();
-   KVDBTable* runtable = GetRunsTable();
-   Int_t run_number;
-   while (!rl.End()) {
-      run_number = rl.Next();
-      KVDBRun* run = (KVDBRun*)runtable->GetRecord(run_number);
-      if (run) {
-         if (run->GetSystem()) {
-            Error("SetRuns", "Associating run %d with system \"%s\" : run already associated with system \"%s\"",
-                  run_number, GetName(), run->GetSystem()->GetName());
-         }
-         if (AddLink("Runs", run)) {
-            //use name of system as title of run
-            run->SetTitle(GetName());
-         } else {
-            Info("SetRuns", "Could not add link for run %d", run_number);
-         }
-      } else {
-         //Info("SetRuns", "Run %d not found in database", run_number);
-      }
-   }
-}
-
-//___________________________________________________________________________
-
-void KVDBSystem::AddRun(KVDBRecord* rec)
-{
-   //Associate the given run with this system.
-   //If the run was previously associated with another system, this association
-   //will be removed.
-   if (!rec) return;
-   if (!rec->InheritsFrom("KVDBRun")) {
-      Error("AddRun", "Called with pointer to an object of class %s; should inherit from KVDBRun!",
-            rec->ClassName());
-      return;
-   }
-   KVDBRun* run = (KVDBRun*)rec;
-   if (run->GetSystem()) run->GetSystem()->RemoveRun(run);
-   if (AddLink("Runs", run)) {
-      Info("AddRun", "Added link for run %d", run->GetNumber());
-      //use name of system as title of run
-      run->SetTitle(GetName());
-   } else {
-      Info("AddRun", "Could not add link for run %d", run->GetNumber());
-   }
-}
-
-//___________________________________________________________________________
 
 void KVDBSystem::AddRun(Int_t run)
 {
    //Associate the given run with this system.
-   //If the run was previously associated with another system, this association
-   //will be removed.
-   AddRun(GetRunsTable()->GetRecord(run));
-}
-
-//___________________________________________________________________________
-
-void KVDBSystem::RemoveRun(KVDBRecord* run)
-{
-   //Unassociate the given run from this system. Cross-reference link to this system
-   //is removed from the run at the same time.
-   RemoveLink("Runs", run);
+   fRunlist.Add(run);
 }
 
 //___________________________________________________________________________
 
 void KVDBSystem::RemoveRun(Int_t run)
 {
-   //Unassociate the given run from this system. Cross-reference link to this system
-   //is removed from the run at the same time.
-   RemoveRun(GetRunsTable()->GetRecord(run));
+   //Unassociate the given run from this system.
+   fRunlist.Remove(run);
 }
 
 //___________________________________________________________________________
 
 void KVDBSystem::RemoveAllRuns()
 {
-   //Unassociate all runs from this system. Cross-reference links to this system
-   //are removed from the runs at the same time.
-   RemoveAllLinks("Runs");
+   //Unassociate all runs from this system.
+   fRunlist.Clear();
 }
 
 void KVDBSystem::Print(Option_t*) const
 {
    cout << "________________________________________________________" <<
         endl << "System : " << GetName() << endl;
-   KVNumberList r;
-   GetRunList(r);
-   cout << "Runs : " << r.AsString() << endl;
+   cout << "Runs : " << fRunlist.AsString() << endl;
    cout << "  Zbeam : " << fZbeam
         << endl << "  Abeam : " << fAbeam << endl << "  Ebeam : " << fEbeam
         << " A.MeV" << endl << "  Ztarget : " << fZtarget << endl <<
@@ -428,25 +309,8 @@ void KVDBSystem::Print(Option_t*) const
 
 void KVDBSystem::ls(Option_t*) const
 {
-   KVNumberList r;
-   GetRunList(r);
-   cout << "KVDBSystem : " << GetName() << " Runs : " << r.AsString() << endl;
+   cout << "KVDBSystem : " << GetName() << " Runs : " << fRunlist.AsString() << endl;
 }
-
-KVDBTable* KVDBSystem::GetRunsTable()
-{
-   //Deduce path to runs table in database from full path to parent table of this record.
-   //The systems are stored in a table called "Systems"
-   //The runs are stored in a table called "Runs"
-   //Therefore if we take the full path to the Systems table and replace Systems with Runs,
-   //we can then use gROOT->FindObject to get the pointer to the Runs table.
-
-   TString path = fFullPathTable.Data();
-   path.ReplaceAll("Systems", "Runs");
-   return (KVDBTable*)gROOT->FindObject(path.Data());
-}
-
-//__________________________________________________________________________________//
 
 const Char_t* KVDBSystem::GetBatchName()
 {

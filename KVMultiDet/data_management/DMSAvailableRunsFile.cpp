@@ -11,6 +11,8 @@
 #include "KVUniqueNameList.h"
 #include "TClass.h"
 
+#include <KVExpDB.h>
+
 //macro converting octal filemode to decimal value
 //to convert e.g. 664 (=u+rw, g+rw, o+r) use CHMODE(6,6,4)
 #define CHMODE(u,g,o) ((u << 6) + (g << 3) + o)
@@ -88,7 +90,7 @@ void DMSAvailableRunsFile::Update(Bool_t no_existing_file)
    Int_t ntot = dir_list->GetSize();
    Int_t n5pc = TMath::Max(ntot / 20, 1);
    Int_t ndone = 0;
-   KVDBTable* run_table = GetDataSet()->GetDataBase()->GetTable("Runs");
+   KVExpDB* db = GetDataSet()->GetDataBase();
    KVNumberList lnewruns;  //list containing run with a valid file but not store  in database
    while ((objs = (DMSFile_t*) next())) {      // loop over all entries in directory
 
@@ -98,7 +100,7 @@ void DMSAvailableRunsFile::Update(Bool_t no_existing_file)
       if ((run_num = IsRunFileName(objs->GetName()))) {
 
          KVDatime filedate;
-         KVDBRun* run = (KVDBRun*) run_table->GetRecord(run_num);
+         KVDBRun* run = (db ? db->GetRun(run_num) : nullptr);
          if (run) {
             //runfile exists in repository
             //check in case it is possible to extract a date from the name of the file

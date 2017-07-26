@@ -11,9 +11,9 @@ set(build_targets
 	KaliVedaAnalysis update_runlist kaliveda kaliveda-sim
    debug KaliVedaGUI
 )
-if(USE_INDRA)
-   list(APPEND build_targets KVDataBaseGUI)
-endif()
+#if(USE_INDRA)
+#   list(APPEND build_targets KVDataBaseGUI)
+#endif()
 
 set(debug_SRC debug.cxx)
 

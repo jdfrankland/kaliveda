@@ -18,7 +18,6 @@ $Id: KVDBRun.h,v 1.15 2009/03/12 14:01:02 franklan Exp $
 #ifndef KV_DB_RUN_H
 #define KV_DB_RUN_H
 
-#include "KVDBRecord.h"
 #include "KVDBSystem.h"
 #include "KVTarget.h"
 #include "KVString.h"
@@ -33,13 +32,14 @@ $Id: KVDBRun.h,v 1.15 2009/03/12 14:01:02 franklan Exp $
 #define KV__SET_DBL(__param,__val) fParameters.SetValue(__param,__val);
 #define KV__SET_STR(__param,__val) fParameters.SetValue(__param,__val);
 
-class KVDBRun: public KVDBRecord {
+class KVDBRun: public KVBase {
 
    RQ_OBJECT("KVDBRun")
    Bool_t fBlockSignals;//!
 
 protected:
 
+   KVDBSystem* fSystem;//! system run is associated with
    KVNameValueList fParameters;//list of named parameters for run
    TDatime fDatime;             //!set dynamically with date&time of ROOT file corresponding to run
    TString fKVVersion;             //!set dynamically with KaliVeda version used to generate ROOT file corresponding to run
@@ -50,154 +50,164 @@ public:
    void SetKVVersion(const Char_t* V)
    {
       fKVVersion = V;
-   };
+   }
    const Char_t* GetKVVersion() const
    {
       return fKVVersion.Data();
-   };
+   }
    void SetUserName(const Char_t* U)
    {
       fUserName = U;
-   };
+   }
    const Char_t* GetUserName() const
    {
       return fUserName.Data();
-   };
+   }
 
    void Modified() // *SIGNAL*
    {
       // Signal sent out when run properties change (used by GUI)
       if (!fBlockSignals) Emit("Modified()");
-   };
+   }
    void BlockSignals(Bool_t yes = kTRUE)
    {
       // if yes=kTRUE, block 'Modified()' signal
       // if yes=kFALSE, allow 'Modified()' signal
       fBlockSignals = yes;
-   };
+   }
 
-   //Returns kTRUE if a parameter with the given name (either integer, floating point or string) has been set.
-   //For string parameters, if the parameter exists we also check if the string is empty (unless check_whitespace=kFALSE)
    Bool_t Has(const Char_t* param, Bool_t check_whitespace = kTRUE) const
    {
+      //Returns kTRUE if a parameter with the given name (either integer, floating point or string) has been set.
+      //For string parameters, if the parameter exists we also check if the string is empty (unless check_whitespace=kFALSE)
       if (check_whitespace && fParameters.HasStringParameter(param)) {
          return !(fParameters.GetTStringValue(param).IsWhitespace());
       }
       return (fParameters.HasIntParameter(param) || fParameters.HasDoubleParameter(param) || fParameters.HasStringParameter(param));
-   };
+   }
 
    KVDBRun();
    KVDBRun(Int_t number, const Char_t* title);
    virtual ~ KVDBRun();
 
-   void SetNumber(Int_t n)
+   void SetNumber(UInt_t n)
    {
-      KVDBRecord::SetNumber(n);
+      KVBase::SetNumber(n);
       Modified();
    }
 
    void SetTrigger(Int_t trig)
    {
       SetScaler("Trigger multiplicity", trig);
-   };
+   }
 
    Int_t GetTrigger() const
    {
       return GetScaler("Trigger multiplicity");
-   };
+   }
    const Char_t* GetTriggerString() const
    {
       if (GetTrigger() > 0) return Form("M>=%d", GetTrigger());
       else return Form("xxx");
-   };
+   }
 
    const TDatime& GetDatime() const
    {
       return fDatime;
-   };
+   }
    const Char_t* GetDatimeString()
    {
       return fDatime.AsString();
-   };
+   }
    void SetDatime(TDatime& dat)
    {
       dat.Copy(fDatime);
       Modified();
-   };
+   }
 
-   KVDBSystem* GetSystem() const;
+   KVDBSystem* GetSystem() const
+   {
+      return fSystem;
+   }
    const Char_t* GetSystemName() const
    {
       return (GetSystem() ? GetSystem()->GetName() : "");
-   };
+   }
 
    Int_t GetEvents() const
    {
       return GetScaler("Events");
-   };
+   }
    Double_t GetTime() const
    {
       return Get("Length (min.)");
-   };
+   }
    Double_t GetSize() const
    {
       return Get("Size (MB)");
-   };
+   }
 
    const Char_t* GetComments() const
    {
       return GetString("Comments");
-   };
+   }
    const Char_t* GetStartDate() const
    {
       return GetString("Start Date");
-   };
+   }
    const Char_t* GetDate() const
    {
       return GetStartDate();
-   };
+   }
    const Char_t* GetEndDate() const
    {
       return GetString("End Date");
-   };
+   }
 
    //Return target used for this run (actually target of KVDBSystem associated to run)
    KVTarget* GetTarget() const
    {
       return (GetSystem() ? GetSystem()->GetTarget() : 0);
-   };
+   }
 
    void SetEvents(Int_t evt_number)
    {
       SetScaler("Events", evt_number);
-   };
+   }
    void SetTime(Double_t time)
    {
       Set("Length (min.)", time);
-   };
+   }
    void SetSize(Double_t s)
    {
       Set("Size (MB)", s);
-   };
+   }
    void SetComments(const KVString& comments)
    {
       Set("Comments", comments);
-   };
+   }
    void SetStartDate(const KVString& date)
    {
       Set("Start Date", date);
-   };
+   }
    void SetDate(const KVString& d)
    {
       SetStartDate(d);
-   };
+   }
    void SetEndDate(const KVString& d)
    {
       Set("End Date", d);
-   };
+   }
 
-   virtual void SetSystem(KVDBSystem* system);
-   virtual void UnsetSystem();
+   virtual void SetSystem(KVDBSystem* system)
+   {
+      fSystem = system;
+   }
+
+   virtual void UnsetSystem()
+   {
+      SetSystem(nullptr);
+   }
 
    virtual void Print(Option_t* option = "") const;
 

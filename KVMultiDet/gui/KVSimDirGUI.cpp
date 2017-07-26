@@ -5,7 +5,7 @@
 #include "KVDataSetManager.h"
 #include "KVBatchSystemManager.h"
 #include "KVDataSet.h"
-#include "KVDataBase.h"
+#include "KVExpDB.h"
 #include "KVDBSystem.h"
 #include "KVDBRun.h"
 #include "KVSimFile.h"
@@ -542,8 +542,8 @@ void KVSimDirGUI::SelectDataSet(const char* name)
       } else {
          GeoType(kGTKaliVeda);
       }
-      KVSeqCollection* systems = 0;
-      if (gDataBase && gDataBase->GetTable("Systems")) systems = gDataBase->GetTable("Systems")->GetRecords();
+      const KVSeqCollection* systems = nullptr;
+      if (ds->GetDataBase()) systems = ds->GetDataBase()->GetSystems();
       fCBsystem->RemoveAll();
       fCBsystem->AddEntry("Choose system...", 0);
       if (systems) {
@@ -565,18 +565,16 @@ void KVSimDirGUI::SelectDataSet(const char* name)
 
 void KVSimDirGUI::SelectSystem(const char* sysname)
 {
-   KVDBSystem* sys = (KVDBSystem*)gDataBase->GetRecord("Systems", sysname);
+   KVDBSystem* sys = gDataSet->GetDataBase()->GetSystem(sysname);
    if (sys) {
       fSystem = sysname;
       fRun = "";
-      KVList* runs = sys->GetRuns();
-      KVDBRun* dbr;
-      TIter next(runs);
       int i = 1;
       fCBrun->RemoveAll();
       fCBrun->AddEntry("Choose run...", 0);
-      while ((dbr = (KVDBRun*)next())) {
-         fCBrun->AddEntry(Form("%4d", dbr->GetNumber()), i++);
+      sys->GetRunList().Begin();
+      while (!sys->GetRunList().End()) {
+         fCBrun->AddEntry(Form("%4d", sys->GetRunList().Next()), i++);
       }
       fCBrun->Layout();
       fCBrun->Select(0, kFALSE);

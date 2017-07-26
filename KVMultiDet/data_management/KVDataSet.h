@@ -18,7 +18,7 @@ $Author: franklan $
 #include "TSystem.h"
 #include "KVDataAnalysisTask.h"
 
-class KVDataBase;
+class KVExpDB;
 class KVDataSetManager;
 class KVDataRepository;
 class KVDBSystem;
@@ -37,10 +37,8 @@ protected:
    KVList fTasks;                //possible data analysis tasks for this dataset
    TString fCalibDir;           //directory containing database, calibration, identification parameters etc. for dataset
    Bool_t fDBBuild;             //has the database been built by us ?
-   mutable TFile* fDBase;               //file containing database
-   TString fDBName;             //name of database
    TString fDBFileName;         //name of file in which database is stored on disk
-   mutable KVDataBase* fDataBase;       //pointer to dataset's database
+   mutable KVExpDB* fDataBase;       //pointer to dataset's database
    mutable KVList fAvailableRuns;       //!list of KVAvailableRunsFile objects used to read infos on available runs
    enum {
       kAvailable = BIT(14)     //flag set if this dataset is physically present on local machine
@@ -50,18 +48,7 @@ protected:
    virtual const Char_t* GetBaseFileName(const Char_t* type, Int_t run) const;
 
    virtual void OpenDataBase(Option_t* opt = "") const;
-   virtual void OpenDBFile(const Char_t* full_path_to_dbfile) const;
    virtual void WriteDBFile(const Char_t* full_path_to_dbfile) const;
-   void SetDBFileName(const Char_t* name)
-   {
-      fDBFileName = name;
-   };
-   const Char_t* GetDBFileName() const;
-   void SetDBName(const Char_t* name)
-   {
-      fDBName = name;
-   };
-   const Char_t* GetDBName() const;
    const Char_t* GetFullPathToDB() const;
    void SetDataSetSpecificTaskParameters(KVDataAnalysisTask*) const;
 
@@ -138,8 +125,8 @@ public:
    void SetName(const char* name);
 
 
-   KVDataBase* GetDataBase(Option_t* opt = "") const;
-   virtual void SaveDataBase() const;
+   KVExpDB* GetDataBase(Option_t* opt = "") const;
+   virtual void CheckDataBasePathExists() const;
 
    const Char_t* GetDataSetEnv(const Char_t* type, const Char_t* defval = "") const;
    Double_t GetDataSetEnv(const Char_t* type, Double_t defval) const;

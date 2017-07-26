@@ -121,10 +121,10 @@ void KVINDRADBRun::UnsetSystem()
 
 KVDBTape* KVINDRADBRun::GetTape() const
 {
-   if (GetKey("Tapes")) {
-      return (KVDBTape*) GetKey("Tapes")->GetLinks()->First();
-   }
-   return 0;
+//   if (GetKey("Tapes")) {
+//      return (KVDBTape*) GetKey("Tapes")->GetLinks()->First();
+//   }
+   return nullptr;
 }
 
 Int_t KVINDRADBRun::GetTapeNumber() const

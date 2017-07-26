@@ -15,12 +15,15 @@ protected:
 
    Int_t kFirstRun;
    Int_t kLastRun;
-   KVDBTable* fRuns;            //-> table of runs
-   KVDBTable* fSystems;         //-> table of systems
+   TObjArray fRuns;//! list of KVDBRun objects for all runs
+   KVList fSystems;//! list of KVDBSystem objects for all systems
 
    Bool_t OpenCalibFile(const Char_t* type, std::ifstream& fs) const;
-   virtual void ReadSystemList();
+   void ReadSystemList();
    void init();
+
+   virtual void fill_runlist_from_database();
+   virtual void fill_systemlist_from_database();
 
 public:
 
@@ -28,29 +31,20 @@ public:
    KVExpDB(const Char_t* name);
    KVExpDB(const Char_t* name, const Char_t* title);
 
+   void connect_to_database(const TString& path);
    virtual ~KVExpDB();
-
-   virtual void LinkListToRunRanges(TList* list, UInt_t rr_number,
-                                    UInt_t run_ranges[][2]);
-   virtual void LinkRecordToRunRanges(KVDBRecord* rec, UInt_t rr_number,
-                                      UInt_t run_ranges[][2]);
-   virtual void LinkRecordToRunRange(KVDBRecord* rec, UInt_t first_run,
-                                     UInt_t last_run);
-   virtual void LinkListToRunRange(TList* list, KVNumberList nl);
-   virtual void LinkRecordToRunRange(KVDBRecord* rec,  KVNumberList nl);
-   virtual void LinkRecordToRun(KVDBRecord* rec,  Int_t run);
 
    void AddRun(KVDBRun* r)
    {
-      fRuns->AddRecord(r);
+      fRuns.Add(r);
    }
-   virtual KVSeqCollection* GetRuns() const
+   const TSeqCollection* GetRuns() const
    {
-      return fRuns->GetRecords();
+      return &fRuns;
    }
-   KVDBRun* GetDBRun(Int_t number) const
+   KVDBRun* GetRun(Int_t number) const
    {
-      return (KVDBRun*)fRuns->GetRecord(number);
+      return (KVDBRun*)fRuns[number];
    }
    Int_t GetFirstRunNumber() const
    {
@@ -61,18 +55,18 @@ public:
       return kLastRun;
    }
 
-   virtual KVDBSystem* GetSystem(const Char_t* system) const
+   KVDBSystem* GetSystem(const Char_t* system) const
    {
-      return (KVDBSystem*) fSystems->GetRecord(system);
+      return (KVDBSystem*) fSystems.FindObject(system);
    }
-   virtual KVSeqCollection* GetSystems() const
+   const KVSeqCollection* GetSystems() const
    {
-      return fSystems->GetRecords();
+      return &fSystems;
    }
 
    void AddSystem(KVDBSystem* r)
    {
-      fSystems->AddRecord(r);
+      fSystems.Add(r);
    }
    void WriteSystemsFile() const;
    void WriteRunListFile() const;
@@ -84,6 +78,8 @@ public:
    {
       return GetDBEnv(type);
    }
+
+   virtual void Build();
 
    virtual void WriteObjects(TFile*) {}
    virtual void ReadObjects(TFile*) {}

@@ -6,7 +6,7 @@
 #include "KVDataRepository.h"
 #include "KVDataSetManager.h"
 #include "KVDataSet.h"
-#include "KVDataBase.h"
+#include "KVExpDB.h"
 #include "KVDBSystem.h"
 #include "KV2Body.h"
 #include "KVDBRun.h"
@@ -273,7 +273,7 @@ void KVDataSetAnalyser::ChooseSystem(const Char_t* data_type)
    ClearRunList();
 
    //if no systems are defined for the dataset, we just want to pick from the runlist
-   if (!fDataSet->GetDataBase()->GetTable("Systems")->GetRecords()->GetSize()) {
+   if (!fDataSet->GetDataBase()->GetSystems()->GetEntries()) {
       fChoozRuns = kTRUE;
       return;
    }
@@ -498,7 +498,7 @@ KVNumberList KVDataSetAnalyser::PrintAvailableRuns(KVString& datatype)
    KVDBRun* dbrun;
    all_runs.Begin();
    while (!all_runs.End()) {
-      dbrun = (KVDBRun*)fDataSet->GetDataBase()->GetTable("Runs")->GetRecord(all_runs.Next());
+      dbrun = fDataSet->GetDataBase()->GetRun(all_runs.Next());
       if (dbrun) {
          cout << "    " << Form("%4d", dbrun->GetNumber());
          cout << Form("\t(%7d events)", dbrun->GetEvents());
@@ -535,7 +535,7 @@ void KVDataSetAnalyser::SetRuns(const KVNumberList& nl, Bool_t check)
    if (!check) {
       fRunList = nl;
       //set fSystem using first run
-      KVDBRun* run = (KVDBRun*)fDataSet->GetDataBase()->GetTable("Runs")->GetRecord(nl.First());
+      KVDBRun* run = fDataSet->GetDataBase()->GetRun(nl.First());
       if (run) fSystem = run->GetSystem();
       else fSystem = 0;
       return;
@@ -556,7 +556,7 @@ void KVDataSetAnalyser::SetRuns(const KVNumberList& nl, Bool_t check)
       } else {
          fRunList.Add(run_no);
       }
-      KVDBRun* run = (KVDBRun*)fDataSet->GetDataBase()->GetTable("Runs")->GetRecord(run_no);
+      KVDBRun* run = fDataSet->GetDataBase()->GetRun(run_no);
       if (!i) {
          fSystem = run->GetSystem();
          i = 1;

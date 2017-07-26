@@ -43,5 +43,5 @@ KVDBTape::~KVDBTape()
 void KVDBTape::AddRun(KVDBRun* run)
 {
    //add run to list of runs stored on this tape
-   AddLink("Runs", run);
+   //AddLink("Runs", run);
 }

@@ -3,7 +3,7 @@
 
 #include "KVEventFiltering.h"
 #include "KVMultiDetArray.h"
-#include "KVDataBase.h"
+#include "KVExpDB.h"
 #include "KV2Body.h"
 #include "KVDBSystem.h"
 #include "KVDBRun.h"
@@ -201,9 +201,7 @@ void KVEventFiltering::InitAnalysis()
    gDataSetManager->GetDataSet(dataset)->cd();
 
    TString system = GetOpt("System").Data();
-   KVDBSystem* sys = (gDataBase ?
-                      (gDataBase->GetTable("Systems") ? (KVDBSystem*)gDataBase->GetTable("Systems")->GetRecord(system) : nullptr)
-                         : nullptr);
+   KVDBSystem* sys = gDataSet->GetDataBase()->GetSystem(system);
    KV2Body* tb = 0;
 
    Bool_t justcreated = kFALSE;
@@ -230,7 +228,7 @@ void KVEventFiltering::InitAnalysis()
    }
    if (!run) {
       if (sys) {
-         run = ((KVDBRun*)sys->GetRuns()->First())->GetNumber();
+         run = sys->GetRunList().First();
          Info("InitAnalysis", "Using first run for system = %d", run);
       } else {
          Info("InitAnalysis", "No run information");

@@ -45,18 +45,18 @@ protected:
 
    //General information
 
-   KVDBTable* fChIoPressures;   //-> table of chio pressures
-   KVDBTable* fGains;           //(optional) table of detector gains, in case they change from run to run
-   KVDBTable* fTapes;           //-> table of data tapes
-   KVDBTable* fCsILumCorr;      //-> table of CsI gain corrections for total light output
-   KVDBTable* fPedestals;       //-> table of pedestal files
-   KVDBTable* fChanVolt;        //-> ChIo/Si channel-volt calibration parameters
-   KVDBTable* fVoltMeVChIoSi;   //-> ChIo/Si volt-energy calibration
-   KVDBTable* fLitEnerCsI;      //->CsI light-energy calibration for Z>1
-   KVDBTable* fLitEnerCsIZ1;     //->CsI light-energy calibration for Z=1
-   KVDBTable* fAbsentDet;        //(optional) Liste les detecteurs absents
-   KVDBTable* fOoODet;           //(optional) Liste les detecteurs hors service
-   KVDBTable* fOoOACQPar;     //(optional) Liste des parametres d acquisition ne marchant pas
+//   KVDBTable* fChIoPressures;   //-> table of chio pressures
+//   KVDBTable* fGains;           //(optional) table of detector gains, in case they change from run to run
+//   KVDBTable* fTapes;           //-> table of data tapes
+//   KVDBTable* fCsILumCorr;      //-> table of CsI gain corrections for total light output
+//   KVDBTable* fPedestals;       //-> table of pedestal files
+//   KVDBTable* fChanVolt;        //-> ChIo/Si channel-volt calibration parameters
+//   KVDBTable* fVoltMeVChIoSi;   //-> ChIo/Si volt-energy calibration
+//   KVDBTable* fLitEnerCsI;      //->CsI light-energy calibration for Z>1
+//   KVDBTable* fLitEnerCsIZ1;     //->CsI light-energy calibration for Z=1
+//   KVDBTable* fAbsentDet;        //(optional) Liste les detecteurs absents
+//   KVDBTable* fOoODet;           //(optional) Liste les detecteurs hors service
+//   KVDBTable* fOoOACQPar;     //(optional) Liste des parametres d acquisition ne marchant pas
 
    KVINDRAPulserDataTree* fPulserData;  //! mean values of pulsers for all detectors & runs
 
@@ -94,21 +94,21 @@ public:
 
    void AddTape(KVDBTape* r)
    {
-      fTapes->AddRecord(r);
+      //fTapes->AddRecord(r);
    }
    virtual KVDBTape* GetTape(Int_t tape) const
    {
-      return (KVDBTape*) fTapes->GetRecord(tape);
+      return nullptr;
    }
    virtual KVSeqCollection* GetTapes() const
    {
-      return fTapes->GetRecords();
+      return nullptr;
    }
 
    virtual void GoodRunLine();
    KVINDRADBRun* GetRun(Int_t run) const
    {
-      return (KVINDRADBRun*) GetDBRun(run);
+      return (KVINDRADBRun*) KVExpDB::GetRun(run);
    }
    void ReadNewRunList();
 

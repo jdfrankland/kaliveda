@@ -13,13 +13,13 @@ $Date: 2007/02/13 18:18:18 $
 #include <KVINDRADB.h>
 
 class KVINDRADB_e416a : public KVINDRADB {
-   KVDBTable* fBICPressures;   //-> table of BIC pressures
+   //KVDBTable* fBICPressures;   //-> table of BIC pressures
 public:
 
    KVINDRADB_e416a()
    {
-      fBICPressures = AddTable("BIC Pressures", "Pressures of BIC");
-   };
+      //fBICPressures = AddTable("BIC Pressures", "Pressures of BIC");
+   }
    KVINDRADB_e416a(const Char_t* name);
    virtual ~KVINDRADB_e416a();
    void Build();

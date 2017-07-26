@@ -266,6 +266,10 @@ namespace KVSQLite {
          return *this;
       }
       void show_tables() const;
+      int get_number_of_tables() const
+      {
+         return fTables.size();
+      }
       virtual ~database() {}
 
       void open(const TString& dbfile);

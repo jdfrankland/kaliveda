@@ -23,7 +23,7 @@
 #include "KVDataAnalysisTask.h"
 #include "KV2Body.h"
 #include "KVNucleus.h"
-#include "KVDataBase.h"
+#include "KVExpDB.h"
 #include "KVBatchSystemManager.h"
 #include "TSystemDirectory.h"
 #include "KVInputDialog.h"
@@ -767,7 +767,7 @@ void KVDataAnalysisLauncher::SetTaskList(Char_t* dataset)
 
    GetDataAnalyser()->SetDataSet(gDataSet);
 
-   noSystems = (!gDataBase || !((KVDBTable*)((KVDataBase*)gROOT->FindObjectAny(gDataSet->GetName()))->GetTable("Systems"))->GetRecords()->GetSize());
+   noSystems = (!gDataBase || !gDataSet->GetDataBase()->GetSystems()->GetEntries());
    if (noSystems) lvSystems->RemoveAll();
 
    Int_t i = 0;

@@ -25,7 +25,7 @@ $Id: KVDBChIoPressures.h,v 1.4 2007/02/14 14:11:15 franklan Exp $
 #define CHIO_13_17 4
 
 #include "Riostream.h"
-#include "KVDataBase.h"
+#include "KVDBRecord.h"
 
 
 class KVDBChIoPressures: public KVDBRecord {

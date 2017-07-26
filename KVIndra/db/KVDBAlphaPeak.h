@@ -19,6 +19,7 @@ $Id: KVDBAlphaPeak.h,v 1.4 2006/10/19 14:32:43 franklan Exp $
 #define __KVDBALPHA_H
 
 #include "KVDBPeak.h"
+#include "KVDBTable.h"
 
 #define PEAK_THORON_1 6.062
 #define PEAK_THORON_2 8.785
