@@ -133,6 +133,7 @@ public:
    /* MISCELLANEOUS */
    /* Generate TTree::Draw selection string */
    TString GetLogical(const Char_t* observable) const;
+   TString GetSQL(const Char_t* column) const;
    /* Convert to c-string */
    operator const char* () const
    {

@@ -331,3 +331,23 @@ void KVNamedParameter::WriteToEnv(TEnv* e, const TString& p)
    else if (IsDouble()) e->SetValue(name, GetDouble());
    else e->SetValue(name, GetString());
 }
+
+const Char_t* KVNamedParameter::GetSQLType() const
+{
+   // Returns type of parameter for use in SQLite database
+   // "INTEGER", "REAL", or "TEXT"
+
+   static TString sql_type;
+   switch (GetType()) {
+      case kIsString:
+         sql_type = "TEXT";
+         break;
+      case kIsDouble:
+         sql_type = "REAL";
+         break;
+      case kIsInt:
+      case kIsBool:
+         sql_type = "INTEGER";
+   }
+   return sql_type.Data();
+}

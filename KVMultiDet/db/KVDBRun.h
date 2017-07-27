@@ -44,9 +44,13 @@ protected:
    TDatime fDatime;             //!set dynamically with date&time of ROOT file corresponding to run
    TString fKVVersion;             //!set dynamically with KaliVeda version used to generate ROOT file corresponding to run
    TString fUserName;             //!set dynamically with name of user who generated ROOT file corresponding to run
+   Int_t fRunid;//! index in SQLiteDB 'Runs' table
 
 public:
-
+   const KVNameValueList& GetParameters() const
+   {
+      return fParameters;
+   }
    void SetKVVersion(const Char_t* V)
    {
       fKVVersion = V;
@@ -62,6 +66,14 @@ public:
    const Char_t* GetUserName() const
    {
       return fUserName.Data();
+   }
+   void SetRunid(Int_t i)
+   {
+      fRunid = i;
+   }
+   Int_t GetRunid() const
+   {
+      return fRunid;
    }
 
    void Modified() // *SIGNAL*
@@ -248,6 +260,8 @@ public:
    {
       KV__GET_STR(param)
    };
+   void GetDefaultDBColumns(KVNameValueList&);
+   void FillDefaultDBColumns(KVNameValueList&);
 
    ClassDef(KVDBRun, 10)         //Base class for an experiment run
 };

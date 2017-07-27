@@ -739,7 +739,7 @@ void KVINDRADB::Build()
 
    //Use KVINDRARunListReader utility subclass to read complete runlist
 
-   KVExpDB::Build();// read systems, setup 'Systems' table in dB
+   KVExpDB::Build();// setup 'Systems' table in dB
 
    //get full path to runlist file, using environment variables for the current dataset
    TString runlist_fullpath;
@@ -769,7 +769,7 @@ void KVINDRADB::Build()
       ReadNewRunList();
    };
 
-//   ReadSystemList();
+   ReadSystemList();
 //   ReadChIoPressures();
 //   ReadGainList();
 //   ReadChannelVolt();

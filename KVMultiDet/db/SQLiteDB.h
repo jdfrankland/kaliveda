@@ -52,6 +52,7 @@ namespace KVSQLite {
       bool fForeignKey;
       std::string fFKtable;//table for foreign key
       std::string fFKcolumn;//column for foreign key
+      mutable bool fIsNull;//for inserting NULL values
 
       void init_type_map();
       std::string _type();
@@ -60,7 +61,7 @@ namespace KVSQLite {
          : fNameType(name, type), fConstraint(""), fIndex(idx), fData(name.c_str()),
            fBlob(nullptr), fBlobSize(0),
            fPrimaryKey(false), fForeignKey(false),
-           fFKtable(""), fFKcolumn("")
+           fFKtable(""), fFKcolumn(""), fIsNull(false)
       {
          if (!inv_type_map.size()) init_type_map();
       }
@@ -95,10 +96,19 @@ namespace KVSQLite {
          std::cout << fIndex << "\t" << name() << "\t" << type_name() << "\n";
       }
       template<typename T>
-      void set_data(T x)
+      void set_data(const T& x)
       {
          fData.Set(x);
       }
+      void set_null()
+      {
+         fIsNull = true;
+      }
+      bool is_null() const
+      {
+         return fIsNull;
+      }
+
       template<typename T>
       void set_binary_data(T& x)
       {
@@ -291,6 +301,11 @@ namespace KVSQLite {
       void Dump() const;
 
       void add_table(KVSQLite::table&);
+      bool has_table(const char* table)
+      {
+         // returns true if "table" exists in database
+         return fTables.count(table);
+      }
 
       KVSQLite::table& operator[](const std::string& name)
       {

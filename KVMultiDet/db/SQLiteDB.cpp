@@ -143,9 +143,9 @@ namespace KVSQLite {
       //        db["some table"]["column"].set_data(...)
 
       std::string command("CREATE TABLE IF NOT EXISTS ");
-      command += "'";
+      command += "\"";
       command += t.name();
-      command += "'";
+      command += "\"";
       command += " (";
       for (int i = 0; i < t.number_of_columns(); ++i) {
          if (i) command += ", ";
@@ -199,7 +199,7 @@ namespace KVSQLite {
       for (int i = 0; i < ncol; ++i) {
          if (idx) com += ",";
          if (!(*fBulkTable)[i].primary_key()) {
-            com += (*fBulkTable)[i].name();
+            com += Form("\"%s\"", (*fBulkTable)[i].name().c_str());;
             ++idx;
          }
       }
@@ -213,7 +213,7 @@ namespace KVSQLite {
          }
       }
       com += ")";
-      std::cout << com << std::endl;
+      //std::cout << com << std::endl;
       fSQLstmt.reset(fDBserv->Statement(com.c_str()));
       return true;
    }
@@ -222,19 +222,19 @@ namespace KVSQLite {
    {
       switch (fInsert) {
          case KVSQLite::insert_mode::FAIL:
-            return Form("INSERT OR FAIL INTO '%s'(", name().c_str());
+            return Form("INSERT OR FAIL INTO \"%s\"(", name().c_str());
             break;
          case KVSQLite::insert_mode::IGNORE:
-            return Form("INSERT OR IGNORE INTO '%s'(", name().c_str());
+            return Form("INSERT OR IGNORE INTO \"%s\"(", name().c_str());
             break;
          case KVSQLite::insert_mode::REPLACE:
-            return Form("INSERT OR REPLACE INTO '%s'(", name().c_str());
+            return Form("INSERT OR REPLACE INTO \"%s\"(", name().c_str());
             break;
          default:
          case KVSQLite::insert_mode::DEFAULT:
             break;
       }
-      return Form("INSERT INTO '%s'(", name().c_str());
+      return Form("INSERT INTO \"%s\"(", name().c_str());
    }
 
    const char* column::get_declaration() const
@@ -242,12 +242,10 @@ namespace KVSQLite {
       // return declaration for column, including type & constraint
 
       static TString decl;
-      decl.Form("%s %s", name().c_str(), type_name().c_str());
+      decl.Form("\"%s\" %s", name().c_str(), type_name().c_str());
       if (fForeignKey) {
-         decl += ", FOREIGN KEY(";
-         decl += name().c_str();
-         decl += ") REFERENCES ";
-         decl += Form(" %s(%s)", fFKtable.c_str(), fFKcolumn.c_str());
+         decl += " REFERENCES ";
+         decl += Form("\"%s\"(\"%s\")", fFKtable.c_str(), fFKcolumn.c_str());
       } else {
          decl += " ";
          decl += fConstraint;
@@ -331,7 +329,7 @@ namespace KVSQLite {
       }
       // set up SQL statement for data retrieval
       fBulkTable = &fTables[table];
-      TString cond = Form("SELECT * FROM '%s'", table);
+      TString cond = Form("SELECT * FROM \"%s\"", table);
       if (strcmp(selection, "")) cond += Form(" WHERE %s", selection);
       if (strcmp(anything_else, "")) cond += Form(" %s", anything_else);
       fSQLstmt.reset(fDBserv->Statement(cond));
@@ -402,7 +400,7 @@ namespace KVSQLite {
 
       TString qry = "SELECT count(";
       if (distinct) qry += "DISTINCT ";
-      qry += column;
+      qry += Form("\"%s\"", column);
       qry += ") FROM '";
       qry += table;
       qry += "'";
@@ -424,7 +422,7 @@ namespace KVSQLite {
       //
       // This is equivalent to
       //
-      //    UPDATE [table] SET [col1=newval,col2=newval,...] WHERE [selection]
+      //    UPDATE [table] SET col1=newval,col2=newval,... WHERE [selection]
 
       if (fInserting) {
          Error("database::update",
@@ -438,18 +436,19 @@ namespace KVSQLite {
       }
 
       fBulkTable = &fTables[table];
-      TString query = Form("UPDATE %s SET ", table);
+      TString query = Form("UPDATE \"%s\" SET ", table);
       int ncol = fBulkTable->number_of_columns();
       int idx = 0;
       for (int i = 0; i < ncol; ++i) {
          if (columns.Contains((*fBulkTable)[i].name().c_str())) {
             if (idx) query += ",";
-            query += (*fBulkTable)[i].name().c_str();
+            query += Form("\"%s\"", (*fBulkTable)[i].name().c_str());
             query += "=?";
             ++idx;
          }
       }
       query += Form(" WHERE %s", selection);
+      std::cout << query << std::endl;
       fSQLstmt.reset(fDBserv->Statement(query));
       fSQLstmt->NextIteration();
       idx = 0;
@@ -472,7 +471,7 @@ namespace KVSQLite {
       //
       // With no selection, deletes all rows of table (clear_table())
 
-      TString query = Form("DELETE FROM %s", table);
+      TString query = Form("DELETE FROM \"%s\"", table);
       if (strcmp(selection, "")) query += Form(" WHERE %s", selection);
       fDBserv->Exec(query);
    }
@@ -498,6 +497,12 @@ namespace KVSQLite {
       // in the statement)
 
       if (idx < 0) idx = index();
+      if (fIsNull) {
+         // null parameter
+         s->SetNull(idx);
+         fIsNull = false; //reset null flag
+         return;
+      }
       switch (type()) {
          case KVSQLite::column_type::REAL:
             s->SetDouble(idx, fData.GetDouble());
@@ -518,19 +523,24 @@ namespace KVSQLite {
    void column::set_data_from_statement(TSQLStatement* s)
    {
       // set value of column according to value of parameter in statement
+      fIsNull = s->IsNull(index());
       switch (type()) {
          case KVSQLite::column_type::REAL:
-            fData.Set(s->GetDouble(index()));
+            fData.Set(fIsNull ? 0.0 : s->GetDouble(index()));
             break;
          case KVSQLite::column_type::INTEGER:
-            fData.Set(s->GetInt(index()));
+            fData.Set(fIsNull ? 0 : s->GetInt(index()));
             break;
          case KVSQLite::column_type::TEXT:
-            fData.Set(s->IsNull(index()) ? "" : s->GetString(index()));
+            fData.Set(fIsNull ? "" : s->GetString(index()));
             break;
          case KVSQLite::column_type::BLOB:
-            if (!fBlob) fBlob = (void*) new unsigned char[256];
-            s->GetBinary(index(), fBlob, fBlobSize);
+            if (fIsNull) {
+               fBlobSize = 0;
+            } else {
+               if (!fBlob) fBlob = (void*) new unsigned char[256];
+               s->GetBinary(index(), fBlob, fBlobSize);
+            }
             break;
          default:
             break;

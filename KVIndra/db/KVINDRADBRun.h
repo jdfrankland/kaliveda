@@ -22,8 +22,14 @@ public:
    KVINDRADBRun(Int_t number, const Char_t* title = "INDRA Run");
    virtual ~ KVINDRADBRun();
 
-   KVDBTape* GetTape() const;
-   Int_t GetTapeNumber() const;
+   KVDBTape* GetTape() const
+   {
+      return nullptr;
+   }
+   Int_t GetTapeNumber() const
+   {
+      return GetScaler("Tape");
+   }
    Double_t GetTMpercent() const
    {
       return Get("Dead time (%)");

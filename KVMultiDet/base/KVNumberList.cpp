@@ -608,6 +608,37 @@ TString KVNumberList::GetLogical(const Char_t* observable) const
    return cond;
 }
 
+TString KVNumberList::GetSQL(const Char_t* column) const
+{
+   // Get equivalent for SQL 'WHERE' clause
+   // e.g. 12-15 20 --> column BETWEEN 12 AND 15 OR column=20
+   // (column name will be correctly quoted in case it contains spaces)
+   // return "" if 'this' list  is empty
+
+   if (IsEmpty()) return "";
+   GetList();
+   TString qcol = Form("\"%s\"", column);
+   KVString tmp = fString;
+   static TString cond;
+   cond = "";
+   tmp.Begin(" ");
+   while (!tmp.End()) {
+      if (cond != "") cond += " OR ";
+      KVString tmp2 = tmp.Next();
+      if (tmp2.Contains("-")) {
+         cond += (qcol + " BETWEEN ");
+         tmp2.Begin("-");
+         cond += tmp2.Next();
+         cond += " AND ";
+         cond += tmp2.Next();
+      } else {
+         cond += (qcol + "=");
+         cond += tmp2;
+      }
+   }
+   return cond;
+}
+
 //____________________________________________________________________________________________//
 
 KVNumberList& KVNumberList::operator=(const KVNumberList& val)

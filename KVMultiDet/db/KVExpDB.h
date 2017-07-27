@@ -15,7 +15,7 @@ protected:
 
    Int_t kFirstRun;
    Int_t kLastRun;
-   TObjArray fRuns;//! list of KVDBRun objects for all runs
+   KVHashList fRuns;//! list of KVDBRun objects for all runs
    KVList fSystems;//! list of KVDBSystem objects for all systems
 
    Bool_t OpenCalibFile(const Char_t* type, std::ifstream& fs) const;
@@ -24,6 +24,7 @@ protected:
 
    virtual void fill_runlist_from_database();
    virtual void fill_systemlist_from_database();
+   virtual void fill_database_from_runlist();
 
 public:
 
@@ -44,7 +45,7 @@ public:
    }
    KVDBRun* GetRun(Int_t number) const
    {
-      return (KVDBRun*)fRuns[number];
+      return (KVDBRun*)fRuns.FindObject(Form("run%06d", number));
    }
    Int_t GetFirstRunNumber() const
    {
@@ -78,8 +79,6 @@ public:
    {
       return GetDBEnv(type);
    }
-
-   virtual void Build();
 
    virtual void WriteObjects(TFile*) {}
    virtual void ReadObjects(TFile*) {}

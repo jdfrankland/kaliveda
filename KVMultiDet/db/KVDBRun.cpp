@@ -38,7 +38,7 @@ KVDBRun::KVDBRun(): KVBase("DBRun", "Experiment run"), fSystem(nullptr), fDatime
 }
 
 //____________________________________________________________________________
-KVDBRun::KVDBRun(Int_t number, const Char_t* title): KVBase(Form("run%04d", number), "Experiment run"), fSystem(nullptr), fDatime()
+KVDBRun::KVDBRun(Int_t number, const Char_t* title): KVBase(Form("run%06d", number), "Experiment run"), fSystem(nullptr), fDatime()
 {
    //ctor for a given run number
 
@@ -185,6 +185,18 @@ void KVDBRun::WriteRunListHeader(ostream& outstr, Char_t) const
    //Write the version flag
 
    outstr << "Version=10" << endl;
+}
+
+void KVDBRun::GetDefaultDBColumns(KVNameValueList& l)
+{
+   // Set parameters in list with default column names/types for 'Runs' table in database
+   l.SetValue("Run Number", (Int_t)1);
+}
+
+void KVDBRun::FillDefaultDBColumns(KVNameValueList& l)
+{
+   // Set values of parameters in list for 'Runs' table in database
+   l.SetValue("Run Number", (Int_t)GetNumber());
 }
 
 

@@ -119,22 +119,6 @@ void KVINDRADBRun::UnsetSystem()
    SetTitle("INDRA run");
 }
 
-KVDBTape* KVINDRADBRun::GetTape() const
-{
-//   if (GetKey("Tapes")) {
-//      return (KVDBTape*) GetKey("Tapes")->GetLinks()->First();
-//   }
-   return nullptr;
-}
-
-Int_t KVINDRADBRun::GetTapeNumber() const
-{
-   if (GetTape())
-      return GetTape()->GetNumber();
-   else
-      return 0;
-}
-
 //___________________________________________________________________________
 
 Float_t KVINDRADBRun::GetMeanPulser(const Char_t* param)

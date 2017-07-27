@@ -40,6 +40,64 @@ void KVExpDB::fill_systemlist_from_database()
 
 }
 
+void KVExpDB::fill_database_from_runlist()
+{
+   // Called when database is built.
+   // Extract all informations from runs in fRuns to create and fill the 'Runs' table
+
+   // first loop over all runs in order to list all individual parameters
+   KVUniqueNameList full_param_list;
+   KVDBRun* r;
+   TIter next(&fRuns);
+   while ((r = (KVDBRun*)next())) {
+      int n = r->GetParameters().GetNpar();
+      for (int i = 0; i < n; ++i) {
+         KVNamedParameter* param = r->GetParameters().GetParameter(i);
+         full_param_list.Add(param);
+      }
+   }
+   KVSQLite::table t("Runs");
+   t.add_primary_key("runid");
+   t.add_foreign_key("sysid", "Systems", "sysid");
+
+   // get default list of parameters from first run
+   KVNameValueList defaultlist;
+   r = (KVDBRun*)fRuns.First();
+   r->GetDefaultDBColumns(defaultlist);
+   int ndefpar = defaultlist.GetNpar();
+   KVNamedParameter* param;
+   for (int i = 0; i < ndefpar; ++i) {
+      param = defaultlist.GetParameter(i);
+      t.add_column(param->GetName(), param->GetSQLType());
+   }
+   TIter it(&full_param_list);
+   while ((param = (KVNamedParameter*)it())) {
+      t.add_column(param->GetName(), param->GetSQLType());
+   }
+   t.print();
+   fSQLdb.add_table(t);
+
+   // now fill the table
+   fSQLdb.prepare_data_insertion("Runs");
+   next.Reset();
+   int runid = 1;
+   while ((r = (KVDBRun*)next())) {
+      r->SetRunid(runid);
+      r->FillDefaultDBColumns(defaultlist);
+      for (int i = 0; i < ndefpar; ++i) {
+         param = defaultlist.GetParameter(i);
+         fSQLdb["Runs"][param->GetName()].set_data(*param);
+         it.Reset();
+         while ((param = (KVNamedParameter*)it())) {
+            if (r->Has(param->GetName())) fSQLdb["Runs"][param->GetName()].set_data(*(r->GetParameters().FindParameter(param->GetName())));
+            else fSQLdb["Runs"][param->GetName()].set_null();
+         }
+      }
+      fSQLdb.insert_data_row();
+   }
+   fSQLdb.end_data_insertion();
+}
+
 KVExpDB::KVExpDB()
    : KVDataBase()
 {
@@ -132,20 +190,20 @@ void KVExpDB::ReadSystemList()
       Error("ReadSystemList()", "Could not open file %s",
             GetCalibFileName("Systems"));
    }
-   // if any runs are not associated with any system
-   // we create an 'unknown' system and associate it to all runs
-//   KVDBSystem* sys = 0;
-//   TIter nextRun(GetRuns());
-//   KVDBRun* run;
-//   while ((run = (KVDBRun*)nextRun())) {
-//      if (!run->GetSystem()) {
-//         if (!sys) {
-//            sys = new KVDBSystem("[unknown]");
-//            AddSystem(sys);
-//         }
-//         sys->AddRun(run->GetNumber());
-//      }
-//   }
+
+   // Create & fill 'Runs' table in sqlite-db
+   fill_database_from_runlist();
+
+   // Set up 'Systems' table in sqlite-db
+   // Columns are:
+   //        sysid (INTEGER PRIMARY KEY)
+   //        sysname (TEXT)
+   //        runlist (TEXT) : runlist in KVNumberList format
+
+   KVSQLite::table systems("Systems");
+   systems.add_primary_key("sysid");
+   systems.add_column("sysname", "TEXT");
+   fSQLdb.add_table(systems);
 
    // write systems data in dB table 'Systems'
    fSQLdb.prepare_data_insertion("Systems");
@@ -155,11 +213,20 @@ void KVExpDB::ReadSystemList()
    while ((s = (KVDBSystem*)next())) {
       s->SetSysid(sysid);
       fSQLdb["Systems"]["sysname"].set_data(s->GetName());
-      fSQLdb["Systems"]["runlist"].set_data(s->GetRunList().AsString());
       fSQLdb.insert_data_row();
       ++sysid;
    }
    fSQLdb.end_data_insertion();
+
+   // now link systems & runs
+   next.Reset();
+   while ((s = (KVDBSystem*)next())) {
+      fSQLdb["Runs"]["sysid"].set_data(s->GetSysid());
+      fSQLdb.update("Runs", s->GetRunList().GetSQL("Run Number"), "sysid");
+      s->GetRunList().Begin();
+      KVDBRun* r;
+      while (!s->GetRunList().End()) if ((r = GetRun(s->GetRunList().Next()))) r->SetSystem(s);
+   }
 }
 //__________________________________________________________________________________________________________________
 
@@ -262,24 +329,6 @@ const Char_t* KVExpDB::GetDBEnv(const Char_t*) const
 {
    Info("GetDBEnv", "To be defined in child class");
    return 0;
-}
-
-void KVExpDB::Build()
-{
-   // Read systems list
-   // Set up 'Systems' table in sqlite-db
-   // Columns are:
-   //        sysid (INTEGER PRIMARY KEY)
-   //        sysname (TEXT)
-   //        runlist (TEXT) : runlist in KVNumberList format
-
-   KVSQLite::table systems("Systems");
-   systems.add_primary_key("sysid");
-   systems.add_column("sysname", "TEXT");
-   systems.add_column("runlist", "TEXT");
-   fSQLdb.add_table(systems);
-
-   ReadSystemList();
 }
 
 //__________________________________________________________________________________________________________________

@@ -95,6 +95,8 @@ public:
    Int_t Compare(const TObject* obj) const;
    void WriteToEnv(TEnv*, const TString& p = "");
 
+   const Char_t* GetSQLType() const;
+
    ClassDef(KVNamedParameter, 1) //A generic parameter with a name and a value
 };
 

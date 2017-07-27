@@ -52,8 +52,7 @@ void KVINDRADB1::Build()
    kFirstRun = 999999;
    kLastRun = 0;
    ReadRunList(runlist_fullpath.Data());
-
-//   ReadSystemList();
+   ReadSystemList();
 //   ReadChIoPressures();
 }
 
@@ -82,26 +81,6 @@ void KVINDRADB1::GoodRunLine()
    kFirstRun = TMath::Min(kFirstRun, run_n);
 
    /*********************************************
-   IF LINE HAS A TAPE NUMBER WE
-    LOOK FOR THE TAPE IN THE DATA
-    BASE. IF IT DOESN'T EXIST WE
-    CREATE IT.
-   *********************************************/
-   KVDBTape* tape = 0;
-//   //tape number (if tape field is filled)
-//   if (csv_line->HasFieldValue("tape")) {
-//      Int_t tape_n = csv_line->GetIntField("tape");
-//      //already exists ?
-//      tape = GetTape(tape_n);
-//      if (!tape) {
-//         tape = new KVDBTape(tape_n);
-//         AddTape(tape);
-//      }
-//   } else {
-//      Error("GoodRunLine", "No tape field ? run=%d", run_n);
-//   }
-
-   /*********************************************
    WE CREATE A NEW RUN AND ADD
     IT TO THE DATABASE. WE SET ALL
     AVAILABLE INFORMATIONS ON
@@ -115,9 +94,10 @@ void KVINDRADB1::GoodRunLine()
       run = new KVINDRADBRun(run_n);
       AddRun(run);
 
-      //add run to tape ?
-      if (tape)
-         tape->AddRun(run);
+      //tape number (if tape field is filled)
+      if (csv_line->HasFieldValue("tape")) {
+         run->SetScaler("Tape", csv_line->GetIntField("tape"));
+      }
 
       if (csv_line->HasFieldValue("events"))
          run->SetEvents(csv_line->GetIntField("events"));
