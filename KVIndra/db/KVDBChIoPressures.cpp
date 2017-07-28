@@ -33,55 +33,42 @@ ClassImp(KVDBChIoPressures);
 // ChIos 13_17  p5
 //
 //____________________________________________________________________________
-UInt_t KVDBChIoPressures::fSetNumber = 0;
-//____________________________________________________________________________
-KVDBChIoPressures::KVDBChIoPressures()
+KVDBChIoPressures::KVDBChIoPressures() : fPressures(5, 0.0)
 {
-   InitCommon();
    SetPressures(0., 0., 0., 0., 0.);
 }
 
 //____________________________________________________________________________
 KVDBChIoPressures::KVDBChIoPressures(Float_t p1, Float_t p2, Float_t p3,
-                                     Float_t p4, Float_t p5)
+                                     Float_t p4, Float_t p5) : fPressures(5, 0.0)
 {
-   InitCommon();
    SetPressures(p1, p2, p3, p4, p5);
 }
 
 //____________________________________________________________________________
-KVDBChIoPressures::KVDBChIoPressures(Float_t pressure[5])
+KVDBChIoPressures::KVDBChIoPressures(Float_t pressure[5]) : fPressures(5, 0.0)
 {
-   InitCommon();
    SetPressures(pressure);
 }
 
 //____________________________________________________________________________
-KVDBChIoPressures::KVDBChIoPressures(KVDBChIoPressures& chiopres) : KVDBRecord()
+KVDBChIoPressures::KVDBChIoPressures(const KVDBChIoPressures& chiopres) : KVBase(), fPressures(5, 0.0)
 {
-   InitCommon();
-   SetPressures(chiopres.GetChIoPressures());
+   fPressures = chiopres.fPressures;
 }
 
 //____________________________________________________________________________
 KVDBChIoPressures::~KVDBChIoPressures()
 {
-   fSetNumber--;
 }
 
-//____________________________________________________________________________
-void KVDBChIoPressures::InitCommon()
+KVDBChIoPressures& KVDBChIoPressures::operator=(const KVDBChIoPressures& other)
 {
-   fSetNumber++;
-   TString name = "ChIo_Pres";
-   name.Append("_");
-   Char_t num[10];
-   sprintf(num, "%u", fSetNumber);
-   name.Append(num);
-   SetName(name.Data());
-   SetTitle("ChIo Pressures set");
-   AddKey("Runs", "List of related runs");
+   if (&other == this) return (*this);
+   fPressures = other.fPressures;
+   return (*this);
 }
+
 
 //____________________________________________________________________________
 void KVDBChIoPressures::Print(Option_t*) const

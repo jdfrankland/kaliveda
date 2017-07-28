@@ -817,6 +817,34 @@ void KVINDRADB::ReadNewRunList()
    }
    fin.close();
 }
+
+KVDBChIoPressures KVINDRADB::GetChIoPressures(int run)
+{
+   // Retrieve ChIo pressures for this run
+   KVDBChIoPressures p;
+   GetDB().select_data("Calibrations", Form("\"Run Number\"=%d", run));
+   int id = 0;
+   while (GetDB().get_next_result())
+      id = GetDB()["Calibrations"]["ChIo Pressures"].data().GetInt();
+
+   if (!id) {
+      Info("GetChIoPressures", "No ChIo pressures defined for run %d", run);
+      return p; // all pressures = 0
+   }
+
+   KVSQLite::table& pressures = GetDB()["ChIo Pressures"];
+   GetDB().select_data("ChIo Pressures", Form("id=%d", id));
+   while (GetDB().get_next_result()) {
+      p.SetPressures(
+         pressures["2_3"].data().GetDouble(),
+         pressures["4_5"].data().GetDouble(),
+         pressures["6_7"].data().GetDouble(),
+         pressures["8_12"].data().GetDouble(),
+         pressures["13_17"].data().GetDouble()
+      );
+   }
+   return p;
+}
 //____________________________________________________________________________
 
 void KVINDRADB::GoodRunLine()

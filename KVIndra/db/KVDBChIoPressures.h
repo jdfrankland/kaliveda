@@ -25,28 +25,25 @@ $Id: KVDBChIoPressures.h,v 1.4 2007/02/14 14:11:15 franklan Exp $
 #define CHIO_13_17 4
 
 #include "Riostream.h"
-#include "KVDBRecord.h"
+#include "KVBase.h"
+#include <vector>
 
 
-class KVDBChIoPressures: public KVDBRecord {
-private:
-   static UInt_t fSetNumber;
+class KVDBChIoPressures: public KVBase {
 protected:
-   Float_t fPressures[5];      //[5]
-   void InitCommon();
+   std::vector<Float_t> fPressures;
 
 public:
    KVDBChIoPressures();
    KVDBChIoPressures(Float_t p1, Float_t p2, Float_t p3, Float_t p4,
                      Float_t p5);
    KVDBChIoPressures(Float_t* pressures);
-   KVDBChIoPressures(KVDBChIoPressures& chiopres);
+   KVDBChIoPressures(const KVDBChIoPressures& chiopres);
    ~KVDBChIoPressures();
+   KVDBChIoPressures& operator=(const KVDBChIoPressures&);
 
    Float_t GetChIoPressures(UInt_t chio_number);
-   Float_t* GetChIoPressures();
    virtual Float_t GetPressure(UInt_t chio_number);
-   virtual Float_t* GetPressures();
    void SetPressures(Float_t p1 = 0, Float_t p2 = 0, Float_t p3 = 0,
                      Float_t p4 = 0, Float_t p5 = 0);
    void SetPressures(Float_t* pressures);
@@ -62,19 +59,9 @@ inline Float_t KVDBChIoPressures::GetChIoPressures(UInt_t chio_number)
    return fPressures[chio_number];
 }
 
-inline Float_t* KVDBChIoPressures::GetChIoPressures()
-{
-   return fPressures;
-}
-
 inline Float_t KVDBChIoPressures::GetPressure(UInt_t chio_number)
 {
    return fPressures[chio_number];
-}
-
-inline Float_t* KVDBChIoPressures::GetPressures()
-{
-   return fPressures;
 }
 
 inline void KVDBChIoPressures::SetPressures(Float_t p1, Float_t p2,

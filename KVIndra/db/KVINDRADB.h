@@ -29,6 +29,7 @@
 #include "KVINDRARunListReader.h"
 #include "KVINDRAPulserDataTree.h"
 #include "KVNumberList.h"
+#include "KVDBChIoPressures.h"
 
 //dimension of run_range arrays
 #define MAX_NUM_RUN_RANGES 100
@@ -111,6 +112,8 @@ public:
       return (KVINDRADBRun*) KVExpDB::GetRun(run);
    }
    void ReadNewRunList();
+
+   KVDBChIoPressures GetChIoPressures(int run);
 
    KVList* GetCalibrationPeaks(Int_t run, KVDetector* detector = 0,
                                Int_t peak_type = -1, Int_t signal_type = 0,

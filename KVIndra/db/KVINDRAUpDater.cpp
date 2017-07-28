@@ -247,53 +247,36 @@ void KVINDRAUpDater::SetChIoPressures(KVDBRun* kvrun)
    //mark the corresponding ChIo's as non detecting detector (see KVDetector::SetDetecting())
    //
 
-   KVRList* param_list;// = kvrun->GetLinks("ChIo Pressures");
-   if (!param_list) {
-      return;
-   }
    KVChIo* kvd;
-   KVDBChIoPressures* kvps;
-   TIter next_ps(param_list);
+   KVDBChIoPressures kvps = gIndraDB->GetChIoPressures(kvrun->GetNumber());
+
    KVSeqCollection* chios = gIndra->GetListOfChIo();
-   if (!chios) {
-      Error("SetChIoPressures",
-            "gIndra->GetListOfChIo() returns null list pointer");
-      return;
-   }
    cout << "--> Setting ChIo pressures" << endl;
    TIter next_chio(chios);
-   while ((kvps = (KVDBChIoPressures*) next_ps())) {
-      cout << "       Ring 2/3: " << kvps->
-           GetPressure(CHIO_2_3) << "mbar" << endl;
-      cout << "       Ring 4/5: " << kvps->
-           GetPressure(CHIO_4_5) << "mbar" << endl;
-      cout << "       Ring 6/7: " << kvps->
-           GetPressure(CHIO_6_7) << "mbar" << endl;
-      cout << "      Ring 8/12: " << kvps->
-           GetPressure(CHIO_8_12) << "mbar" << endl;
-      cout << "     Ring 13/17: " << kvps->
-           GetPressure(CHIO_13_17) << "mbar" << endl;
-      while ((kvd = (KVChIo*) next_chio())) {
-         if (!strcmp(kvd->GetType(), "CI")) {
-            //check detector type: ="CI" for standard INDRA chio
-            if (kvd->GetRingNumber() == 2)
-               kvd->SetPressure(kvps->GetPressure(CHIO_2_3));
-            if (kvd->GetRingNumber() == 4)
-               kvd->SetPressure(kvps->GetPressure(CHIO_4_5));
-            if (kvd->GetRingNumber() == 6)
-               kvd->SetPressure(kvps->GetPressure(CHIO_6_7));
-            if (kvd->GetRingNumber() >= 8 && kvd->GetRingNumber() <= 12)
-               kvd->SetPressure(kvps->GetPressure(CHIO_8_12));
-            if (kvd->GetRingNumber() >= 13 && kvd->GetRingNumber() <= 17)
-               kvd->SetPressure(kvps->GetPressure(CHIO_13_17));
-            if (kvd->GetPressure() == 0.0) {
-               kvd->SetDetecting(kFALSE);
-            } else {
-               kvd->SetDetecting(kTRUE);
-            }
+   cout << "       Ring 2/3: " << kvps.GetPressure(CHIO_2_3) << "mbar" << endl;
+   cout << "       Ring 4/5: " << kvps.GetPressure(CHIO_4_5) << "mbar" << endl;
+   cout << "       Ring 6/7: " << kvps.GetPressure(CHIO_6_7) << "mbar" << endl;
+   cout << "      Ring 8/12: " << kvps.GetPressure(CHIO_8_12) << "mbar" << endl;
+   cout << "     Ring 13/17: " << kvps.GetPressure(CHIO_13_17) << "mbar" << endl;
+   while ((kvd = (KVChIo*) next_chio())) {
+      if (!strcmp(kvd->GetType(), "CI")) {
+         //check detector type: ="CI" for standard INDRA chio
+         if (kvd->GetRingNumber() == 2)
+            kvd->SetPressure(kvps.GetPressure(CHIO_2_3));
+         if (kvd->GetRingNumber() == 4)
+            kvd->SetPressure(kvps.GetPressure(CHIO_4_5));
+         if (kvd->GetRingNumber() == 6)
+            kvd->SetPressure(kvps.GetPressure(CHIO_6_7));
+         if (kvd->GetRingNumber() >= 8 && kvd->GetRingNumber() <= 12)
+            kvd->SetPressure(kvps.GetPressure(CHIO_8_12));
+         if (kvd->GetRingNumber() >= 13 && kvd->GetRingNumber() <= 17)
+            kvd->SetPressure(kvps.GetPressure(CHIO_13_17));
+         if (kvd->GetPressure() == 0.0) {
+            kvd->SetDetecting(kFALSE);
+         } else {
+            kvd->SetDetecting(kTRUE);
          }
       }
-      next_chio.Reset();
    }
 }
 
