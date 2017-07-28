@@ -38,7 +38,7 @@ KVDBRun::KVDBRun(): KVBase("DBRun", "Experiment run"), fSystem(nullptr), fDatime
 }
 
 //____________________________________________________________________________
-KVDBRun::KVDBRun(Int_t number, const Char_t* title): KVBase(Form("run%06d", number), "Experiment run"), fSystem(nullptr), fDatime()
+KVDBRun::KVDBRun(Int_t number, const Char_t* title): KVBase("", "Experiment run"), fSystem(nullptr), fDatime()
 {
    //ctor for a given run number
 
@@ -197,6 +197,12 @@ void KVDBRun::FillDefaultDBColumns(KVNameValueList& l)
 {
    // Set values of parameters in list for 'Runs' table in database
    l.SetValue("Run Number", (Int_t)GetNumber());
+}
+
+void KVDBRun::ReadDefaultDBColumns(KVSQLite::table& t)
+{
+   // Set values of parameters in list from 'Runs' table in database
+   SetNumber(t["Run Number"].data().GetInt());
 }
 
 

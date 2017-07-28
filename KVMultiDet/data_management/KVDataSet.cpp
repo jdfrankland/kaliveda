@@ -368,7 +368,7 @@ void KVDataSet::OpenDataBase(Option_t* opt) const
    if ((!strcmp(opt, "UPDATE")) || DataBaseNeedsUpdate() || !fDataBase) {
       //check if it is the currently active database (gDataBase),
       //in which case we must 'cd()' to it after rebuilding
-      Info("OpenDataBase", "Updating database file");
+      if ((!strcmp(opt, "UPDATE")) || DataBaseNeedsUpdate()) Info("OpenDataBase", "Updating database file");
       if (fDataBase) {
          is_glob_db = (fDataBase == gDataBase);
          delete fDataBase;

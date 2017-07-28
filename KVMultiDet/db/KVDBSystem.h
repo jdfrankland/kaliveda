@@ -122,7 +122,11 @@ public:
       return fRuns;
    }
 
-   void SetRuns(KVNumberList&);
+   void SetRuns(const KVNumberList& l)
+   {
+      fRunlist = l;
+   }
+
    void RemoveRun(Int_t);
    void AddRun(Int_t);
    void RemoveAllRuns();

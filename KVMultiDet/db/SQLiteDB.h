@@ -235,6 +235,7 @@ namespace KVSQLite {
       {
          return fColumns.size();
       }
+      void prepare_data(const KVNameValueList&);
 
       ClassDef(table, 0) //Table in an SQLite database
    };
@@ -329,6 +330,8 @@ namespace KVSQLite {
       int count(const char* table, const char* column = "*", const char* selection = "", bool distinct = false);
       bool update(const char* table, const char* selection, const TString& columns);
       void delete_row(const char* table, const char* selection = "");
+
+      void add_column(const char* table, const std::string& name, const std::string& type);
 
       ClassDef(database, 0) //Interface to ROOT SQLite database backend
    };

@@ -23,6 +23,7 @@ $Id: KVDBRun.h,v 1.15 2009/03/12 14:01:02 franklan Exp $
 #include "KVString.h"
 #include "TDatime.h"
 #include "KVNameValueList.h"
+#include "SQLiteDB.h"
 #include <RQ_OBJECT.h>
 
 #define KV__GET_INT(__param) return (fParameters.HasIntParameter(__param) ? fParameters.GetIntValue(__param) : 0);
@@ -47,6 +48,10 @@ protected:
    Int_t fRunid;//! index in SQLiteDB 'Runs' table
 
 public:
+   KVNameValueList& GetParameters()
+   {
+      return fParameters;
+   }
    const KVNameValueList& GetParameters() const
    {
       return fParameters;
@@ -104,6 +109,7 @@ public:
 
    void SetNumber(UInt_t n)
    {
+      SetName(Form("run%06d", n));
       KVBase::SetNumber(n);
       Modified();
    }
@@ -260,8 +266,9 @@ public:
    {
       KV__GET_STR(param)
    };
-   void GetDefaultDBColumns(KVNameValueList&);
-   void FillDefaultDBColumns(KVNameValueList&);
+   virtual void GetDefaultDBColumns(KVNameValueList&);
+   virtual void FillDefaultDBColumns(KVNameValueList&);
+   virtual void ReadDefaultDBColumns(KVSQLite::table&);
 
    ClassDef(KVDBRun, 10)         //Base class for an experiment run
 };

@@ -467,18 +467,27 @@ void KVINDRADB::ReadChIoPressures()
    }
    Info("ReadChIoPressures()", "Reading ChIo pressures parameters...");
 
-   TString sline;
-   UInt_t frun = 0, lrun = 0;
-   UInt_t run_ranges[MAX_NUM_RUN_RANGES][2];
-   UInt_t rr_number = 0;
+   KVString sline;
+
+   KVNumberList runrange;
    Bool_t prev_rr = kFALSE;     //was the previous line a run range indication ?
    Bool_t read_pressure = kFALSE; // have we read any pressures recently ?
+   Int_t frun, lrun;
 
-   KVDBChIoPressures* parset = 0;
-   TList* par_list = new TList();
+   // set up tables in db
+   KVSQLite::table pressures("ChIo Pressures");
+   pressures.add_primary_key("id");
+   int id = 1;
+   pressures.add_column("2_3", "REAL");
+   pressures.add_column("4_5", "REAL");
+   pressures.add_column("6_7", "REAL");
+   pressures.add_column("8_12", "REAL");
+   pressures.add_column("13_17", "REAL");
+   GetDB().add_table(pressures);
 
-   //any ChIo not in list is assumed absent (pressure = 0)
-   Float_t pressure[5] = { 0, 0, 0, 0, 0 };
+   GetDB().add_column("Calibrations", "ChIo Pressures", "INTEGER");
+
+   KVNameValueList prlist;
 
    while (fin.good()) {         // parcours du fichier
 
@@ -488,15 +497,17 @@ void KVINDRADB::ReadChIoPressures()
 
             //have we just finished reading some pressures ?
             if (read_pressure) {
-               parset = new KVDBChIoPressures(pressure);
-               //GetTable("ChIo Pressures")->AddRecord(parset);
-               par_list->Add(parset);
-               //LinkListToRunRanges(par_list, rr_number, run_ranges);
-               par_list->Clear();
-               for (int zz = 0; zz < 5; zz++) pressure[zz] = 0.;
+               GetDB().prepare_data_insertion("ChIo Pressures");
+               GetDB()["ChIo Pressures"].prepare_data(prlist);
+               GetDB().insert_data_row();
+               GetDB().end_data_insertion();
+               GetDB()["Calibrations"]["ChIo Pressures"].set_data(id);
+               GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "ChIo Pressures");
+               ++id;
                read_pressure = kFALSE;
+               prlist.Clear();
+               runrange.Clear();
             }
-            rr_number = 0;
 
          }
          if (sscanf(sline.Data(), "Run Range : %u %u", &frun, &lrun) != 2) {
@@ -504,27 +515,22 @@ void KVINDRADB::ReadChIoPressures()
                     "Bad format in line :\n%s\nUnable to read run range values",
                     sline.Data());
          } else {
+            runrange.Add(Form("%d-%d", frun, lrun));
             prev_rr = kTRUE;
-            run_ranges[rr_number][0] = frun;
-            run_ranges[rr_number][1] = lrun;
-            rr_number++;
-            if (rr_number == MAX_NUM_RUN_RANGES) {
-               Error("ReadChIoPressures", "Too many run ranges (>%d)",
-                     rr_number);
-               rr_number--;
-            }
          }
       }                         // Run Range found
       if (fin.eof()) {          //fin du fichier
          //have we just finished reading some pressures ?
          if (read_pressure) {
-            parset = new KVDBChIoPressures(pressure);
-            //GetTable("ChIo Pressures")->AddRecord(parset);
-            par_list->Add(parset);
-            //LinkListToRunRanges(par_list, rr_number, run_ranges);
-            par_list->Clear();
-            for (int zz = 0; zz < 5; zz++) pressure[zz] = 0.;
+            GetDB().prepare_data_insertion("ChIo Pressures");
+            GetDB()["ChIo Pressures"].prepare_data(prlist);
+            GetDB().insert_data_row();
+            GetDB().end_data_insertion();
+            GetDB()["Calibrations"]["ChIo Pressures"].set_data(id);
+            GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "ChIo Pressures");
+            ++id;
             read_pressure = kFALSE;
+            prlist.Clear();
          }
       }
       if (sline.BeginsWith("ChIos")) {  //line with chio pressure data
@@ -535,23 +541,13 @@ void KVINDRADB::ReadChIoPressures()
          sline.Remove(0, 5);
          sline.Strip(TString::kLeading);
          //split up ChIo ring numbers and pressure
-         TObjArray* toks = sline.Tokenize(' ');
-         TString chio = ((TObjString*)(*toks)[0])->String();
-         KVString press = ((TObjString*)(*toks)[1])->String();
-         delete toks;
-
+         sline.Begin(" ");
+         TString chio = sline.Next(kTRUE);
+         KVString press = sline.Next(kTRUE);
          read_pressure = kTRUE;
-
-         if (chio == "2_3") pressure[0] = press.Atof();
-         else if (chio == "4_5") pressure[1] = press.Atof();
-         else if (chio == "6_7") pressure[2] = press.Atof();
-         else if (chio == "8_12") pressure[3] = press.Atof();
-         else if (chio == "13_17") pressure[4] = press.Atof();
-         else read_pressure = kFALSE;
-
+         prlist.SetValue(chio, press.Atof());
       }                         //line with ChIo pressure data
    }                            //parcours du fichier
-   delete par_list;
    fin.close();
 }
 
@@ -770,7 +766,7 @@ void KVINDRADB::Build()
    };
 
    ReadSystemList();
-//   ReadChIoPressures();
+   ReadChIoPressures();
 //   ReadGainList();
 //   ReadChannelVolt();
 //   ReadVoltEnergyChIoSi();

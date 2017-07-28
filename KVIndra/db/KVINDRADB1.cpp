@@ -53,7 +53,7 @@ void KVINDRADB1::Build()
    kLastRun = 0;
    ReadRunList(runlist_fullpath.Data());
    ReadSystemList();
-//   ReadChIoPressures();
+   ReadChIoPressures();
 }
 
 //____________________________________________________________________________

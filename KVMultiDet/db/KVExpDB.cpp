@@ -6,6 +6,7 @@
 #include "KVDBSystem.h"
 #include "KVNumberList.h"
 
+#include <TClass.h>
 #include <iostream>
 using namespace std;
 
@@ -32,18 +33,63 @@ void KVExpDB::init()
 
 void KVExpDB::fill_runlist_from_database()
 {
+   // Reconstruct list of KVDBRun objects from sqlitedb informations
 
+   Info("OpenDataBase", "rebuilding run table from SQLiteDB");
+   fSQLdb.select_data("Runs");
+   KVSQLite::table& runs = fSQLdb["Runs"];
+   while (fSQLdb.get_next_result()) {
+      KVDBRun* r = (KVDBRun*)TClass::GetClass(runs["class_name"].data().GetString())->New();
+      KVNameValueList default_params;
+      r->GetDefaultDBColumns(default_params);
+      r->ReadDefaultDBColumns(runs);
+      r->SetRunid(runs["runid"].data().GetInt());
+      int ncols = runs.number_of_columns();
+      for (int i = 0; i < ncols; ++i) {
+         KVSQLite::column& col = runs[i];
+         if (!default_params.HasParameter(col.name().c_str())) {
+            r->GetParameters().SetValue(col.data());
+         }
+      }
+
+      AddRun(r);
+   }
 }
 
 void KVExpDB::fill_systemlist_from_database()
 {
+   // Reconstruct list of KVDBSystem objects from sqlitedb informations
 
+   Info("OpenDataBase", "rebuilding systems table from SQLiteDB");
+   fSQLdb.select_data("Systems");
+   KVSQLite::table& systems = fSQLdb["Systems"];
+   while (fSQLdb.get_next_result()) {
+      KVDBSystem* sys = new KVDBSystem(systems["sysname"].data().GetString());
+      sys->SetSysid(systems["sysid"].data().GetInt());
+      AddSystem(sys);
+   }
+   // rebuild runlist for each system, and link run<->system
+   TIter next(&fSystems);
+   KVDBSystem* sys;
+   KVNumberList runlist;
+   KVSQLite::table& runs = fSQLdb["Runs"];
+   while ((sys = (KVDBSystem*)next())) {
+      fSQLdb.select_data("Runs", Form("sysid=%d", sys->GetSysid()));
+      while (fSQLdb.get_next_result()) {
+         int run = runs["Run Number"].data().GetInt();
+         runlist.Add(run);
+         GetRun(run)->SetSystem(sys);
+      }
+      sys->SetRuns(runlist);
+      runlist.Clear();
+   }
 }
 
 void KVExpDB::fill_database_from_runlist()
 {
    // Called when database is built.
    // Extract all informations from runs in fRuns to create and fill the 'Runs' table
+   // We also create a 'Calibrations' table with a row for each run
 
    // first loop over all runs in order to list all individual parameters
    KVUniqueNameList full_param_list;
@@ -59,6 +105,7 @@ void KVExpDB::fill_database_from_runlist()
    KVSQLite::table t("Runs");
    t.add_primary_key("runid");
    t.add_foreign_key("sysid", "Systems", "sysid");
+   t.add_column("class_name", "TEXT");
 
    // get default list of parameters from first run
    KVNameValueList defaultlist;
@@ -77,25 +124,42 @@ void KVExpDB::fill_database_from_runlist()
    t.print();
    fSQLdb.add_table(t);
 
-   // now fill the table
+   KVSQLite::table calib("Calibrations");
+   calib.add_foreign_key("Run Number", "Runs", "Run Number");
+   fSQLdb.add_table(calib);
+
+   // now fill the tables
    fSQLdb.prepare_data_insertion("Runs");
    next.Reset();
    int runid = 1;
+   KVSQLite::table& runtable = fSQLdb["Runs"];
    while ((r = (KVDBRun*)next())) {
       r->SetRunid(runid);
       r->FillDefaultDBColumns(defaultlist);
       for (int i = 0; i < ndefpar; ++i) {
          param = defaultlist.GetParameter(i);
-         fSQLdb["Runs"][param->GetName()].set_data(*param);
-         it.Reset();
-         while ((param = (KVNamedParameter*)it())) {
-            if (r->Has(param->GetName())) fSQLdb["Runs"][param->GetName()].set_data(*(r->GetParameters().FindParameter(param->GetName())));
-            else fSQLdb["Runs"][param->GetName()].set_null();
-         }
+         runtable[param->GetName()].set_data(*param);
       }
+      it.Reset();
+      while ((param = (KVNamedParameter*)it())) {
+         if (r->Has(param->GetName())) runtable[param->GetName()].set_data(*(r->GetParameters().FindParameter(param->GetName())));
+         else runtable[param->GetName()].set_null();
+      }
+      runtable["sysid"].set_null();// no links to systems for the moment
+      runtable["class_name"].set_data(r->ClassName());
       fSQLdb.insert_data_row();
    }
    fSQLdb.end_data_insertion();
+
+   next.Reset();
+   fSQLdb.prepare_data_insertion("Calibrations");
+   KVSQLite::table& calibs = fSQLdb["Calibrations"];
+   while ((r = (KVDBRun*)next())) {
+      calibs["Run Number"].set_data((int)r->GetNumber());
+      fSQLdb.insert_data_row();
+   }
+   fSQLdb.end_data_insertion();
+
 }
 
 KVExpDB::KVExpDB()

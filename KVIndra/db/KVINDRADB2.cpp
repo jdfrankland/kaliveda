@@ -95,24 +95,6 @@ void KVINDRADB2::GoodRunLine()
    kFirstRun = TMath::Min(kFirstRun, run_n);
 
    /*********************************************
-   IF LINE HAS A TAPE NUMBER WE
-    LOOK FOR THE TAPE IN THE DATA
-    BASE. IF IT DOESN'T EXIST WE
-    CREATE IT.
-   *********************************************/
-   KVDBTape* tape = 0;
-   //tape number (if tape field is filled)
-   if (csv_line->HasFieldValue("Tape")) {
-      Int_t tape_n = csv_line->GetIntField("Tape");
-      //already exists ?
-      tape = GetTape(tape_n);
-      if (!tape) {
-         tape = new KVDBTape(tape_n);
-         AddTape(tape);
-      }
-   }
-
-   /*********************************************
    WE CREATE A NEW RUN AND ADD
     IT TO THE DATABASE. WE SET ALL
     AVAILABLE INFORMATIONS ON
@@ -126,9 +108,10 @@ void KVINDRADB2::GoodRunLine()
       run = new KVINDRADBRun(run_n);
       AddRun(run);
 
-      //add run to tape ?
-      if (tape)
-         tape->AddRun(run);
+      //tape number (if tape field is filled)
+      if (csv_line->HasFieldValue("Tape")) {
+         run->SetScaler("Tape", csv_line->GetIntField("Tape"));
+      }
 
       if (csv_line->HasFieldValue("Events"))
          run->SetEvents(csv_line->GetIntField("Events"));

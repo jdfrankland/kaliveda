@@ -476,6 +476,14 @@ namespace KVSQLite {
       fDBserv->Exec(query);
    }
 
+   void database::add_column(const char* table, const std::string& name, const std::string& type)
+   {
+      // add column to existing table
+      TString query = Form("ALTER TABLE \"%s\" ADD COLUMN \"%s\" %s", table, name.c_str(), type.c_str());
+      fDBserv->Exec(query);
+      (*this)[table].add_column(name, type);
+   }
+
    void column::init_type_map()
    {
       inv_type_map[KVSQLite::column_type::REAL] = "REAL";
@@ -632,6 +640,17 @@ namespace KVSQLite {
       column& c = add_column(name, KVSQLite::column_type::INTEGER);
       c.set_foreign_key(other_table, other_column);
       return c;
+   }
+
+   void table::prepare_data(const KVNameValueList& l)
+   {
+      // fill all columns in table with data contained in KVNameValueList parameters having the same name.
+      // any columns which do not appear in the KVNameValueList will be set to 'null'
+
+      for (int i = 0; i < number_of_columns(); ++i) {
+         if (l.HasParameter((*this)[i].name().c_str()))(*this)[i].set_data(*l.FindParameter((*this)[i].name().c_str()));
+         else (*this)[i].set_null();
+      }
    }
 
 

@@ -13,6 +13,10 @@ protected:
    KVSQLite::database fSQLdb;//! interface to SQLite backend
    TString fDataSet;//the name of the dataset to which this database is associated
    TString fDataSetDir;//the directory containing the dataset files
+   KVSQLite::database& GetDB() const
+   {
+      return const_cast<KVSQLite::database&>(fSQLdb);
+   }
 
 public:
    KVDataBase() {}
