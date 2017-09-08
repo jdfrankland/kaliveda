@@ -184,6 +184,11 @@ namespace KVSQLite {
       {
          return fName;
       }
+      void set_name(const std::string& name)
+      {
+         fName = name;
+      }
+
       void show_columns() const;
       void set_insert_mode(KVSQLite_insert_mode i)
       {

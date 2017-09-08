@@ -365,7 +365,7 @@ public:
    }
    KVClassMethod* GetMethod(const Char_t* name) const
    {
-      return (KVClassMethod*)fMethods.FindObject(name);
+      return fMethods.get_object<KVClassMethod>(name);
    }
    KVClassConstructor* GetDefaultCtor() const
    {

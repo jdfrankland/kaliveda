@@ -271,7 +271,7 @@ KVHashList* KVPROOFSelector::GetHistoList() const
 TH1* KVPROOFSelector::GetHisto(const Char_t* histo_name) const
 {
 
-   return (TH1*)lhisto->FindObject(histo_name);
+   return lhisto->get_object<TH1>(histo_name);
 
 }
 
@@ -440,7 +440,7 @@ KVHashList* KVPROOFSelector::GetTreeList() const
 TTree* KVPROOFSelector::GetTree(const Char_t* tree_name) const
 {
    //return the tree named tree_name
-   return (TTree*)ltree->FindObject(tree_name);
+   return ltree->get_object<TTree>(tree_name);
 
 }
 

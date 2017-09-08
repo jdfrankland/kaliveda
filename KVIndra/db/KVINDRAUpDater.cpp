@@ -199,22 +199,21 @@ void KVINDRAUpDater::SetGains(KVDBRun* kvrun)
    KVDetector* kvd;
    while ((kvd = (KVDetector*) next()))
       kvd->SetGain(1.00);
-   KVRList* gain_list;// = kvrun->GetLinks("Gains");
-   if (!gain_list) {
-      return;
-   }
+
+   KVNameValueList gains = gIndraDB->GetGains(kvrun->GetNumber());
+   if (!gains.GetNpar()) return;
+
    cout << "--> Setting Gains:" << endl;
-   Int_t ndets = gain_list->GetSize();
+   Int_t ndets = gains.GetNpar();
    cout << "      Setting gains for " << ndets << " detectors : " << endl;
    for (int i = 0; i < ndets; i++) {
-      KVDBParameterSet* dbps = (KVDBParameterSet*) gain_list->At(i);
-      kvd = gIndra->GetDetector(dbps->GetName());
+      kvd = gIndra->GetDetector(gains.GetNameAt(i));
       if (kvd) {
-         kvd->SetGain(dbps->GetParameter(0));
+         kvd->SetGain(gains.GetDoubleValue(i));
          cout << "             " << kvd->GetName() << " : G=" << kvd->
               GetGain() << endl;
       } else {
-         Error("SetGains", "le detecteur %s n ext pas present", dbps->GetName());
+         Error("SetGains", "Detector %s is not present", gains.GetNameAt(i));
       }
    }
 }

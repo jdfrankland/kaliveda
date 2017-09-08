@@ -92,7 +92,7 @@ void KVEventListMaker::Process()
             }
          }
 
-         if (!(el = (TEventList*)kevtlist->FindObject(evtname.Data()))) {
+         if (!(el = kevtlist->get_object<TEventList>(evtname.Data()))) {
             printf("creation de %s \n", evtname.Data());
             kevtlist->Add(new TEventList(evtname.Data()));
             el = (TEventList*)kevtlist->Last();

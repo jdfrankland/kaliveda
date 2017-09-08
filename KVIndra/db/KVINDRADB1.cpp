@@ -8,12 +8,8 @@ $Id: KVINDRADB1.cpp,v 1.19 2007/04/26 16:40:57 franklan Exp $
  *                                                                         *
  ***************************************************************************/
 #include "Riostream.h"
-#include "KVINDRA.h"
 #include "KVINDRADB1.h"
 #include "KVINDRADBRun.h"
-#include "KVDBParameterSet.h"
-#include "KVRunListLine.h"
-#include "TString.h"
 
 using namespace std;
 
@@ -38,7 +34,6 @@ KVINDRADB1::KVINDRADB1(const Char_t* name): KVINDRADB(name)
 
 void KVINDRADB1::Build()
 {
-   KVExpDB::Build();
    //Use KVINDRARunListReader utility subclass to read complete runlist
    TString runlist_fullpath;
    KVBase::SearchKVFile(GetDBEnv("Runlist"), runlist_fullpath, fDataSet);

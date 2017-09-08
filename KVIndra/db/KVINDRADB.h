@@ -81,7 +81,7 @@ protected:
    std::ifstream& GetPeakFileStream()
    {
       return __ifpeaks;
-   };
+   }
 
    void init();
 
@@ -93,19 +93,6 @@ public:
    virtual void Build();
    virtual void cd();
 
-   void AddTape(KVDBTape* r)
-   {
-      //fTapes->AddRecord(r);
-   }
-   virtual KVDBTape* GetTape(Int_t tape) const
-   {
-      return nullptr;
-   }
-   virtual KVSeqCollection* GetTapes() const
-   {
-      return nullptr;
-   }
-
    virtual void GoodRunLine();
    KVINDRADBRun* GetRun(Int_t run) const
    {
@@ -114,6 +101,7 @@ public:
    void ReadNewRunList();
 
    KVDBChIoPressures GetChIoPressures(int run);
+   KVNameValueList GetGains(int run);
 
    KVList* GetCalibrationPeaks(Int_t run, KVDetector* detector = 0,
                                Int_t peak_type = -1, Int_t signal_type = 0,

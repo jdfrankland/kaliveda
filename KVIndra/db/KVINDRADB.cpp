@@ -363,7 +363,13 @@ void KVINDRADB::CloseCalibrationPeakFile()
 void KVINDRADB::ReadGainList()
 {
 
-   // Read the file listing any detectors whose gain value changes during exeriment
+   // Read the file listing any detectors whose gain value changes during experiment
+   // For each defined range of runs, the corresponding gain settings will be stored
+   // in tables called "GainSettings_1", "GainSettings_2", etc.
+   // In the "Calibrations" table the name of the table will appear in column "Gains"
+   // for all concerned runs.
+   // The "GainSettings_x" tables have the structure:
+   //   | detName [TEXT] | gain [REAL] |
 
    ifstream fin;
    if (!OpenCalibFile("Gains", fin)) {
@@ -373,37 +379,45 @@ void KVINDRADB::ReadGainList()
    }
    Info("ReadGainList()", "Reading gains ...");
 
-   //Add table for gains
-   //fGains = AddTable("Gains", "Gains of detectors during runs");
+   GetDB().add_column("Calibrations", "Gains", "TEXT");
+
+   Int_t gain_table_num(0);
+
+   KVSQLite::table gain_table(Form("GainSettings_%d", gain_table_num));
+   gain_table.add_column("detName", "TEXT");
+   gain_table.add_column("gain", "REAL");
 
    TString sline;
 
-   UInt_t frun = 0, lrun = 0;
-   UInt_t run_ranges[MAX_NUM_RUN_RANGES][2];
-   UInt_t rr_number = 0;
-   Bool_t prev_rr = kFALSE;     // was the last line a run range indication ?
+   KVNumberList runrange;
+   Int_t frun = 0, lrun = 0;
+   Bool_t prev_rr = kTRUE;
+   Bool_t got_data = kFALSE;
 
    Float_t gain;
 
    Char_t det_name[80];
-   KVDBParameterSet* parset = 0;
-   TList* par_list = new TList();
 
    while (fin.good()) {         //reading the file
       sline.ReadLine(fin);
       if (fin.eof()) {          //fin du fichier
-         //LinkListToRunRanges(par_list, rr_number, run_ranges);
-         par_list->Clear();
-         delete par_list;
+         if (got_data) {
+            GetDB().end_data_insertion();
+            GetDB()["Calibrations"]["Gains"].set_data(gain_table.name().c_str());
+            GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "Gains");
+            got_data = kFALSE;
+         }
          fin.close();
          return;
       }
       if (sline.BeginsWith("Run Range :")) {    // Run Range found
          if (!prev_rr) {        // new run ranges set
-            /*if (par_list->GetSize() > 0)
-               LinkListToRunRanges(par_list, rr_number, run_ranges);*/
-            par_list->Clear();
-            rr_number = 0;
+            if (got_data) {
+               GetDB().end_data_insertion();
+               GetDB()["Calibrations"]["Gains"].set_data(gain_table.name().c_str());
+               GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "Gains");
+               got_data = kFALSE;
+            }
          }
          if (sscanf(sline.Data(), "Run Range : %u %u", &frun, &lrun) != 2) {
             Warning("ReadGainList()",
@@ -413,14 +427,7 @@ void KVINDRADB::ReadGainList()
                                         &frun, &lrun) << endl;
          } else {
             prev_rr = kTRUE;
-            run_ranges[rr_number][0] = frun;
-            run_ranges[rr_number][1] = lrun;
-            rr_number++;
-            if (rr_number == MAX_NUM_RUN_RANGES) {
-               Error("ReadGainList", "Too many run ranges (>%d)",
-                     rr_number);
-               rr_number--;
-            }
+            runrange.Add(Form("%d-%d", frun, lrun));
          }
       }                         //Run Range found
       else if (sline.Sizeof() > 1 && !sline.BeginsWith("#")) {  //non void nor comment line
@@ -429,15 +436,20 @@ void KVINDRADB::ReadGainList()
                     "Bad format in line :\n%s\nUnable to read",
                     sline.Data());
          } else {               //parameters correctly read
-            parset = new KVDBParameterSet(det_name, "Gains", 1);
-            parset->SetParameters((Double_t) gain);
+            if (!got_data) {
+               ++gain_table_num;
+               gain_table.set_name(Form("GainSettings_%d", gain_table_num));
+               GetDB().add_table(gain_table);
+               GetDB().prepare_data_insertion(gain_table.name().c_str());
+            }
+            GetDB()[gain_table.name()]["detName"].set_data(TString(det_name));
+            GetDB()[gain_table.name()]["gain"].set_data(gain);
+            GetDB().insert_data_row();
             prev_rr = kFALSE;
-            //fGains->AddRecord(parset);
-            par_list->Add(parset);
+            got_data = kTRUE;
          }                      //parameters correctly read
       }                         //non void nor comment line
    }                            //reading the file
-   delete par_list;
    fin.close();
 }
 
@@ -735,8 +747,6 @@ void KVINDRADB::Build()
 
    //Use KVINDRARunListReader utility subclass to read complete runlist
 
-   KVExpDB::Build();// setup 'Systems' table in dB
-
    //get full path to runlist file, using environment variables for the current dataset
    TString runlist_fullpath;
    KVBase::SearchKVFile(GetDBEnv("Runlist"), runlist_fullpath, fDataSet.Data());
@@ -761,13 +771,12 @@ void KVINDRADB::Build()
    kLastRun = 0;
    ReadRunList(runlist_fullpath.Data());
    //new style runlist
-   if (IsNewRunList()) {
+   if (IsNewRunList())
       ReadNewRunList();
-   };
 
    ReadSystemList();
    ReadChIoPressures();
-//   ReadGainList();
+   ReadGainList();
 //   ReadChannelVolt();
 //   ReadVoltEnergyChIoSi();
 //   ReadCalibCsI();
@@ -845,6 +854,26 @@ KVDBChIoPressures KVINDRADB::GetChIoPressures(int run)
    }
    return p;
 }
+
+KVNameValueList KVINDRADB::GetGains(int run)
+{
+   // Returns detector gains for run in the form DET_NAME=[gain]
+
+   KVNameValueList gains;
+   GetDB().select_data("Calibrations", Form("\"Run Number\"=%d", run));
+   TString tablename;
+   while (GetDB().get_next_result())
+      tablename = GetDB()["Calibrations"]["Gains"].data().GetString();
+
+   if (tablename != "") {
+      GetDB().select_data(tablename);
+      KVSQLite::table& t = GetDB()[tablename.Data()];
+      while (GetDB().get_next_result()) {
+         gains.SetValue(t["detName"].data().GetString(), t["gain"].data().GetDouble());
+      }
+   }
+   return gains;
+}
 //____________________________________________________________________________
 
 void KVINDRADB::GoodRunLine()
@@ -870,24 +899,6 @@ void KVINDRADB::GoodRunLine()
    kFirstRun = TMath::Min(kFirstRun, run_n);
 
    /*********************************************
-   IF LINE HAS A TAPE NUMBER WE
-    LOOK FOR THE TAPE IN THE DATA
-    BASE. IF IT DOESN'T EXIST WE
-    CREATE IT.
-   *********************************************/
-   KVDBTape* tape = 0;
-   //tape number (if tape field is filled)
-   if (csv_line->HasFieldValue(GetDBEnv("Runlist.Tape"))) {
-      Int_t tape_n = csv_line->GetIntField(GetDBEnv("Runlist.Tape"));
-      //already exists ?
-      tape = GetTape(tape_n);
-      if (!tape) {
-         tape = new KVDBTape(tape_n);
-         AddTape(tape);
-      }
-   }
-
-   /*********************************************
    WE CREATE A NEW RUN AND ADD
     IT TO THE DATABASE. WE SET ALL
     AVAILABLE INFORMATIONS ON
@@ -901,13 +912,12 @@ void KVINDRADB::GoodRunLine()
       run = new KVINDRADBRun(run_n);
       AddRun(run);
 
-      //add run to tape ?
-      if (tape)
-         tape->AddRun(run);
-
       TString key = GetDBEnv("Runlist.Buffers");
       if (csv_line->HasFieldValue(key.Data()))
          run->SetScaler("Buffers", csv_line->GetIntField(key.Data()));
+      key = GetDBEnv("Runlist.Tape");
+      if (csv_line->HasFieldValue(key.Data()))
+         run->SetScaler("Tape", csv_line->GetIntField(key.Data()));
       key = GetDBEnv("Runlist.Events");
       if (csv_line->HasFieldValue(key.Data()))
          run->SetEvents(csv_line->GetIntField(key.Data()));

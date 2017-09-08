@@ -19,21 +19,14 @@ $Id: KVINDRADB1.h,v 1.9 2006/10/19 14:32:43 franklan Exp $
 #define KV_DATA_BASE_1_H
 
 #include "KVINDRADB.h"
-#include "KVDBRun.h"
-#include "KVDBSystem.h"
-#include "KVDBTape.h"
 
 class KVINDRADB1: public KVINDRADB {
 
 public:
 
-   KVINDRADB1()
-   {
-   };
+   KVINDRADB1() {}
    KVINDRADB1(const Char_t* name);
-   virtual ~ KVINDRADB1()
-   {
-   };
+   virtual ~KVINDRADB1() {}
 
    virtual void Build();
    virtual void GoodRunLine();

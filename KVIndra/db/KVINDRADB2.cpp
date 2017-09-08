@@ -16,10 +16,8 @@ $Id: KVINDRADB2.cpp,v 1.16 2007/04/26 16:40:58 franklan Exp $
  *                                                                         *
  ***************************************************************************/
 #include "Riostream.h"
-#include "KVINDRA.h"
 #include "KVINDRADB2.h"
 #include "KVINDRADBRun.h"
-#include "KVDBParameterSet.h"
 #include "TString.h"
 
 using namespace std;
@@ -41,13 +39,6 @@ ClassImp(KVINDRADB2)
 KVINDRADB2::KVINDRADB2(const Char_t* name): KVINDRADB(name)
 {
    //default ctor
-}
-
-//___________________________________________________________________________
-
-KVINDRADB2::~KVINDRADB2()
-{
-
 }
 
 //___________________________________________________________________________
