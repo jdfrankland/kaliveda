@@ -181,6 +181,12 @@ public:
    {
       return fCollection->FindObject(name);
    }
+   template
+   <typename T>
+   T* get_object(const char* name) const
+   {
+      return dynamic_cast<T*>(FindObject(name));
+   }
    virtual TObject* FindObject(const TObject* obj) const
    {
       return fCollection->FindObject(obj);

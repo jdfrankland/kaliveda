@@ -556,7 +556,7 @@ void KVDBSystemDialog::AddNewTargetLayer()
       }
    }
    //add layer with default area density 0.1 mg/cm2
-   fTarget->AddLayer(mat->GetTitle() , 0.1);
+   fTarget->AddLayer(mat->GetTitle(), 0.1);
    //update list of layers in target
    Int_t nlay = fComboBox1515->GetNumberOfEntries();
    fComboBox1515->AddEntry(mat->GetName(), nlay);
@@ -573,9 +573,13 @@ void KVDBSystemDialog::RemoveTargetLayer()
    cout << "Removing layer : " << fLayer->GetName() << " from target !" << endl;
    if (fTarget->NumberOfLayers() == 1) {
       //last layer in target - destroy target
-      delete fTarget;
-      fTarget = 0;
-      if (fSystem) fSystem->SetTarget(0);
+      if (fSystem && (fSystem->GetTarget() == fTarget)) {
+         // target belongs to system
+         fSystem->SetTarget(nullptr);//effectively deletes target
+      } else {
+         delete fTarget;
+      }
+      fTarget = nullptr;
       fLayer = 0;
    } else {
       KVTarget* new_target = new KVTarget;
@@ -587,9 +591,12 @@ void KVDBSystemDialog::RemoveTargetLayer()
          }
       }
       new_target->SetAngleToBeam(fTarget->GetAngleToBeam());
-      delete fTarget;
-      fTarget = 0;
-      if (fSystem) fSystem->SetTarget(new_target);
+      if (!(fSystem && (fSystem->GetTarget() == fTarget))) {
+         // check target is not owned by fSystem
+         delete fTarget;
+      }
+      fTarget = nullptr;
+      if (fSystem) fSystem->SetTarget(new_target);// will delete any previous target set for system
       fLayer = 0;
    }
    UpdateTargetProperties();

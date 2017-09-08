@@ -40,37 +40,20 @@ KVDBSystem::KVDBSystem()
 {
    fZtarget = fAtarget = fZbeam = fAbeam = 0;
    fEbeam = 0.;
-   fCinema = 0;
-   fTarget = 0;
-   fRunlist = 0;
    fRuns = 0;
 }
 
 //___________________________________________________________________________
-KVDBSystem::KVDBSystem(const Char_t* name): KVBase(name,
-         "Physical System")
+KVDBSystem::KVDBSystem(const Char_t* name): KVBase(name, "Physical System")
 {
    fZtarget = fAtarget = fZbeam = fAbeam = 0;
    fEbeam = 0.;
-   fCinema = 0;
-   fTarget = 0;
    fRuns = 0;
-}
-
-//____________________________________________________________________________
-KVDBSystem::~KVDBSystem()
-{
-   //Delete kinematics, target and associated runlist if they exist
-   if (fCinema) {
-      delete fCinema;
-      fCinema = 0;
-   }
-   delete fTarget;
 }
 
 //___________________________________________________________________________
 
-KV2Body* KVDBSystem::GetKinematics()
+KV2Body* KVDBSystem::GetKinematics() const
 {
    // Create (if it doesn't already exist) and return pointer to a KV2Body object initialised
    // with the entrance channel corresponding to this system. Use this to obtain information
@@ -78,16 +61,16 @@ KV2Body* KVDBSystem::GetKinematics()
    //
    // If no projectile and/or target are defined for the system, we return 0x0.
 
-   if (GetZbeam()*GetZtarget() == 0) return 0;
+   if (GetZbeam()*GetZtarget() == 0) return nullptr;
 
-   if (!fCinema) {
-      fCinema = new KV2Body();
+   if (!fCinema.get()) {
+      fCinema.reset(new KV2Body());
       fCinema->SetProjectile(GetZbeam(), GetAbeam());
       fCinema->SetTarget(GetZtarget(), GetAtarget());
       fCinema->GetNucleus(1)->SetEnergy(GetEbeam() * GetAbeam());
       fCinema->CalculateKinematics();
    }
-   return fCinema;
+   return fCinema.get();
 }
 //___________________________________________________________________________
 
@@ -104,7 +87,7 @@ Double_t KVDBSystem::GetZVtot() const
 {
    //Returns product of atomic number and velocity component parallel to beam axis of projectile nucleus in laboratory frame
    //Units are cm/ns (velocity units)
-   KV2Body* kin = const_cast < KVDBSystem* >(this)->GetKinematics();
+   KV2Body* kin = GetKinematics();
    if (!kin) return 0.;
    return (fZbeam * kin->GetNucleus(1)->GetVpar());
 }
@@ -115,7 +98,7 @@ Double_t KVDBSystem::GetPtot() const
 {
    //Returns momentum component parallel to beam axis of projectile nucleus in laboratory frame
    //Units are MeV/c
-   KV2Body* kin = const_cast < KVDBSystem* >(this)->GetKinematics();
+   KV2Body* kin = GetKinematics();
    if (!kin) return 0.;
    return (kin->GetNucleus(1)->GetMomentum().Z());
 }
@@ -126,7 +109,7 @@ Double_t KVDBSystem::GetEtot() const
 {
    //Returns total (mass + kinetic) energy of entrance channel corresponding to system
    //Units are MeV
-   KV2Body* kin = const_cast < KVDBSystem* >(this)->GetKinematics();
+   KV2Body* kin = GetKinematics();
    if (!kin) return 0.;
    return (kin->GetNucleus(1)->E() + kin->GetNucleus(2)->E());
 }
@@ -137,7 +120,7 @@ Double_t KVDBSystem::GetECM() const
 {
    //Returns total available (CM) kinetic energy of entrance channel corresponding to system
    //Units are MeV
-   KV2Body* kin = const_cast < KVDBSystem* >(this)->GetKinematics();
+   KV2Body* kin = GetKinematics();
    if (!kin) return 0.;
    return (kin->GetCMEnergy());
 }
@@ -176,7 +159,7 @@ void KVDBSystem::Save(ostream& f) const
 
    f << "+" << GetName() << endl;
    if (fZbeam) f << fAbeam << " " << fZbeam << " " << fAtarget << " " << fZtarget << " " << fEbeam << endl;
-   if (fTarget) {
+   if (fTarget.get()) {
       f << "Target: " << fTarget->NumberOfLayers() << " " <<  fTarget->GetAngleToBeam() << endl;
       TIter next(fTarget->GetLayers());
       KVMaterial* lay;
@@ -231,7 +214,7 @@ void KVDBSystem::Load(istream& f)
       } else {
          line.ReadLine(f, kFALSE);
          if (line.BeginsWith("Target")) {
-            fTarget = new KVTarget;
+            fTarget.reset(new KVTarget);
             line.Remove(0, line.Index(":") + 1);
             Int_t nlay;
             Float_t angle;
@@ -260,9 +243,9 @@ void KVDBSystem::Load(istream& f)
       next_char = f.peek();
    }
    //set target if not already done (old versions)
-   if (!fTarget && target_thickness > 0 && fZtarget > 0) {
+   if (!fTarget.get() && target_thickness > 0 && fZtarget > 0) {
       KVNucleus n(fZtarget, fAtarget);
-      fTarget = new KVTarget(n.GetSymbol(), target_thickness);
+      fTarget.reset(new KVTarget(n.GetSymbol(), target_thickness));
       fTarget->Print();
    }
 }
@@ -299,9 +282,6 @@ void KVDBSystem::Print(Option_t*) const
         << endl << "  Abeam : " << fAbeam << endl << "  Ebeam : " << fEbeam
         << " A.MeV" << endl << "  Ztarget : " << fZtarget << endl <<
         "  Atarget : " << fAtarget << endl << "  Target Thickness : " <<
-        const_cast <
-        KVDBSystem*
-        >(this)->
         GetTargetThickness() << " mg/cm2" << endl <<
         "________________________________________________________" << endl;
 

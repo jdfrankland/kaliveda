@@ -3,7 +3,7 @@
 #include "KVBase.h"
 #include "TString.h"
 #include "SQLiteDB.h"
-
+#include "KVList.h"
 class TFile;
 class KVNumberList;
 
@@ -13,10 +13,17 @@ protected:
    KVSQLite::database fSQLdb;//! interface to SQLite backend
    TString fDataSet;//the name of the dataset to which this database is associated
    TString fDataSetDir;//the directory containing the dataset files
+   TString fDataBaseDir;//the directory containing the database and associated files
+   KVList  fROOTFiles;//associated files containing ROOT objects
    KVSQLite::database& GetDB() const
    {
       return const_cast<KVSQLite::database&>(fSQLdb);
    }
+
+   TFile* access_root_file(const TString& name, const TString& mode = "READ");
+   void create_root_object_table(const TString& name);
+   void write_object_in_root_file(TObject*, Int_t id, const TString& root_file_name, const TString& object_table);
+   TObject* read_object_from_root_file(Int_t id, const TString& object_table);
 
 public:
    KVDataBase() {}
@@ -24,6 +31,10 @@ public:
    KVDataBase(const Char_t* name, const Char_t* title);
    virtual ~ KVDataBase();
    virtual void connect_to_database(const TString& path);
+   const TString& GetDataBaseDir() const
+   {
+      return fDataBaseDir;
+   }
 
    virtual void Build();
    virtual void Print(Option_t* option = "") const;

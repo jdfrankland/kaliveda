@@ -212,12 +212,12 @@ KVDataSet* gDataSet;
 KVDataSet::KVDataSet()
 {
    //Default constructor
-   fRepository = 0;
-   fDataBase = 0;
+   fRepository = nullptr;
 }
 
 KVDataSet::~KVDataSet()
 {
+   // delete associated analysis tasks
    fTasks.Delete();
 }
 
@@ -338,7 +338,7 @@ KVExpDB* KVDataSet::GetDataBase(Option_t* opt) const
    } else {
       OpenDataBase();
    }
-   return fDataBase;
+   return fDataBase.get();
 }
 
 void KVDataSet::OpenDataBase(Option_t* opt) const
@@ -365,26 +365,22 @@ void KVDataSet::OpenDataBase(Option_t* opt) const
 
    Bool_t is_glob_db = kFALSE;
    //if option="update" or database out of date or does not exist, (re)build the database
-   if ((!strcmp(opt, "UPDATE")) || DataBaseNeedsUpdate() || !fDataBase) {
+   if ((!strcmp(opt, "UPDATE")) || DataBaseNeedsUpdate() || !fDataBase.get()) {
       //check if it is the currently active database (gDataBase),
       //in which case we must 'cd()' to it after rebuilding
       if ((!strcmp(opt, "UPDATE")) || DataBaseNeedsUpdate()) Info("OpenDataBase", "Updating database file");
-      if (fDataBase) {
-         is_glob_db = (fDataBase == gDataBase);
-         delete fDataBase;
-         fDataBase = 0;
-      }
+      is_glob_db = (fDataBase.get() == gDataBase);
       // make sure gDataSet is set & points to us
       gDataSet = const_cast<KVDataSet*>(this);
-      fDataBase = (KVExpDB*)KVDataBase::MakeDataBase(GetName(), GetDataSetDir());
-      if (!fDataBase) {
+      fDataBase.reset((KVExpDB*)KVDataBase::MakeDataBase(GetName(), GetDataSetDir()));
+      if (!fDataBase.get()) {
          // no database defined for dataset
          Info("OpenDataBase", "No database defined for dataset");
          return;
       }
       CheckDataBasePathExists();
       fDataBase->connect_to_database(GetFullPathToDB());
-      if (fDataBase && is_glob_db) fDataBase->cd();
+      if (fDataBase.get() && is_glob_db) fDataBase->cd();
    }
 }
 
@@ -602,12 +598,14 @@ const Char_t* KVDataSet::GetDataSetDir() const
 
 void KVDataSet::cd() const
 {
-   //Data analysis can only be performed if the data set in question
-   //is "activated" or "selected" using this method.
-   //At the same time, the data repository, dataset manager and database associated with
-   //this dataset also become the "active" ones (pointed to by the respective global
-   //pointers, gDataRepository, gDataBase, etc. etc.)
+   // Data analysis can only be performed if the data set in question is "activated" or "selected" using this method.
+   // At the same time, the data repository, dataset manager and database associated with
+   // this dataset also become the "active" ones (pointed to by the respective global
+   // pointers, gDataRepository, gDataBase, etc. etc.)
+   // Database for any previously active dataset will be deleted
 
+   if (gDataSet && gDataSet != this)
+      gDataSet->fDataBase.reset(nullptr);
    gDataSet = const_cast<KVDataSet*>(this);
    if (fRepository) fRepository->cd();
    KVDataBase* db = GetDataBase();

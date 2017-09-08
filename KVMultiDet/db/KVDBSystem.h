@@ -21,18 +21,15 @@ $Id: KVDBSystem.h,v 1.12 2008/03/07 15:01:34 ebonnet Exp $
 #include "Riostream.h"
 #include "KVTarget.h"
 #include "KVList.h"
-
-class KV2Body;
-class KVNumberList;
+#include "KV2Body.h"
+#include "KVNumberList.h"
 
 class KVDBSystem: public KVBase {
 
 private:
 
-   KV2Body* fCinema;            //! used to calculate kinematics of entrance channel
-
-   KVTarget* fTarget;           //-> physical target used for experiment run
-
+   mutable unique_ptr<KV2Body> fCinema; // used to calculate kinematics of entrance channel
+   unique_ptr<KVTarget> fTarget;// physical target used for experiment run
    KVNumberList fRunlist;       //sorted list of run numbers
    Int_t fRuns;                 //!temporary variable used to stock number of associated runs
 
@@ -46,15 +43,17 @@ protected:
 public:
    KVDBSystem();
    KVDBSystem(const Char_t* name);
-   virtual ~ KVDBSystem();
+   virtual ~KVDBSystem() {}
 
    KVTarget* GetTarget() const
    {
-      return fTarget;
+      return fTarget.get();
    }
    void SetTarget(KVTarget* targ)
    {
-      fTarget = targ;
+      // Set target for system.
+      // Ownership of the KVTarget object is taken over by this KVDBSystem object
+      fTarget.reset(targ);
    }
 
    void SetSysid(Int_t i)
@@ -105,7 +104,7 @@ public:
 
    Int_t Compare(const TObject*) const;
 
-   KV2Body* GetKinematics();
+   KV2Body* GetKinematics() const;
 
    virtual void Print(Option_t* option = "") const;
 

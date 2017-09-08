@@ -110,7 +110,7 @@ KVINDRADB::~KVINDRADB()
    //reset global pointer gIndraDB if it was pointing to this database
 
    if (gIndraDB == this)
-      gIndraDB = 0;
+      gIndraDB = nullptr;
    SafeDelete(fPulserData);
 }
 

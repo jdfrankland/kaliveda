@@ -38,7 +38,7 @@ protected:
    TString fCalibDir;           //directory containing database, calibration, identification parameters etc. for dataset
    Bool_t fDBBuild;             //has the database been built by us ?
    TString fDBFileName;         //name of file in which database is stored on disk
-   mutable KVExpDB* fDataBase;       //pointer to dataset's database
+   mutable unique_ptr<KVExpDB> fDataBase;       //pointer to dataset's database
    mutable KVList fAvailableRuns;       //!list of KVAvailableRunsFile objects used to read infos on available runs
    enum {
       kAvailable = BIT(14)     //flag set if this dataset is physically present on local machine

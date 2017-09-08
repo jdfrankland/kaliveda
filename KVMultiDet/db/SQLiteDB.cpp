@@ -531,6 +531,8 @@ namespace KVSQLite {
    void column::set_data_from_statement(TSQLStatement* s)
    {
       // set value of column according to value of parameter in statement
+      // any column which has a NULL value will be given value 0, 0.0 or ""
+      // (for INTEGER, REAL or TEXT type, respectively)
       fIsNull = s->IsNull(index());
       switch (type()) {
          case KVSQLite::column_type::REAL:

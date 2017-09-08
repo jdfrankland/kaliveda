@@ -63,16 +63,24 @@ void KVExpDB::fill_systemlist_from_database()
    Info("OpenDataBase", "rebuilding systems table from SQLiteDB");
    fSQLdb.select_data("Systems");
    KVSQLite::table& systems = fSQLdb["Systems"];
+   std::vector<int> target_id;
    while (fSQLdb.get_next_result()) {
       KVDBSystem* sys = new KVDBSystem(systems["sysname"].data().GetString());
       sys->SetSysid(systems["sysid"].data().GetInt());
+      sys->SetZbeam(systems["Zbeam"].data().GetInt());
+      sys->SetAbeam(systems["Abeam"].data().GetInt());
+      sys->SetEbeam(systems["Ebeam"].data().GetDouble());
+      sys->SetZtarget(systems["Ztarget"].data().GetInt());
+      sys->SetAtarget(systems["Atarget"].data().GetInt());
       AddSystem(sys);
+      target_id.push_back(systems["target"].data().GetInt());
    }
    // rebuild runlist for each system, and link run<->system
    TIter next(&fSystems);
    KVDBSystem* sys;
    KVNumberList runlist;
    KVSQLite::table& runs = fSQLdb["Runs"];
+   std::vector<int>::iterator target_id_it = target_id.begin();
    while ((sys = (KVDBSystem*)next())) {
       fSQLdb.select_data("Runs", Form("sysid=%d", sys->GetSysid()));
       while (fSQLdb.get_next_result()) {
@@ -82,6 +90,9 @@ void KVExpDB::fill_systemlist_from_database()
       }
       sys->SetRuns(runlist);
       runlist.Clear();
+      // retrieve target from file
+      sys->SetTarget(dynamic_cast<KVTarget*>(read_object_from_root_file(*target_id_it, "Targets")));
+      ++target_id_it;
    }
 }
 
@@ -230,6 +241,9 @@ void KVExpDB::ReadSystemList()
    //
    //Lines beginning '#' are comments.
 
+   // create object table for targets
+   create_root_object_table("Targets");
+   int target_id = 1;
 
    std::ifstream fin;
    if (OpenCalibFile("Systems", fin)) {
@@ -247,6 +261,11 @@ void KVExpDB::ReadSystemList()
          KVDBSystem* sys = new KVDBSystem("NEW SYSTEM");
          AddSystem(sys);
          sys->Load(fin);
+         if (sys->GetTarget()) {
+            // store targets in ROOT file
+            write_object_in_root_file(sys->GetTarget(), target_id, "Targets.root", "Targets");
+            ++target_id;
+         }
          next_char = fin.peek();
       }
       fin.close();
@@ -262,11 +281,17 @@ void KVExpDB::ReadSystemList()
    // Columns are:
    //        sysid (INTEGER PRIMARY KEY)
    //        sysname (TEXT)
-   //        runlist (TEXT) : runlist in KVNumberList format
+   //        target (INTEGER) : target id in Targets table
 
    KVSQLite::table systems("Systems");
    systems.add_primary_key("sysid");
    systems.add_column("sysname", "TEXT");
+   systems.add_column("target", "INTEGER");
+   systems.add_column("Zbeam", "INTEGER");
+   systems.add_column("Abeam", "INTEGER");
+   systems.add_column("Ztarget", "INTEGER");
+   systems.add_column("Atarget", "INTEGER");
+   systems.add_column("Ebeam", "REAL");
    fSQLdb.add_table(systems);
 
    // write systems data in dB table 'Systems'
@@ -274,9 +299,22 @@ void KVExpDB::ReadSystemList()
    TIter next(&fSystems);
    KVDBSystem* s;
    int sysid = 1;
+   target_id = 1;
+   KVSQLite::table& systab = fSQLdb["Systems"];
    while ((s = (KVDBSystem*)next())) {
       s->SetSysid(sysid);
-      fSQLdb["Systems"]["sysname"].set_data(s->GetName());
+      systab["sysname"].set_data(s->GetName());
+      systab["Zbeam"].set_data((int)s->GetZbeam());
+      systab["Abeam"].set_data((int)s->GetAbeam());
+      systab["Ebeam"].set_data(s->GetEbeam());
+      systab["Ztarget"].set_data((int)s->GetZtarget());
+      systab["Atarget"].set_data((int)s->GetAtarget());
+      if (s->GetTarget()) {
+         systab["target"].set_data(target_id);
+         ++target_id;
+      } else {
+         systab["target"].set_null();
+      }
       fSQLdb.insert_data_row();
       ++sysid;
    }
