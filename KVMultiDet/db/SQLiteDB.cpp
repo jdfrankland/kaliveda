@@ -448,7 +448,7 @@ namespace KVSQLite {
          }
       }
       query += Form(" WHERE %s", selection);
-      std::cout << query << std::endl;
+      //std::cout << query << std::endl;
       fSQLstmt.reset(fDBserv->Statement(query));
       fSQLstmt->NextIteration();
       idx = 0;

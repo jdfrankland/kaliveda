@@ -371,86 +371,8 @@ void KVINDRADB::ReadGainList()
    // The "GainSettings_x" tables have the structure:
    //   | detName [TEXT] | gain [REAL] |
 
-   ifstream fin;
-   if (!OpenCalibFile("Gains", fin)) {
-      Error("ReadGainList()", "Could not open file %s",
-            GetCalibFileName("Gains"));
-      return;
-   }
-   Info("ReadGainList()", "Reading gains ...");
-
-   GetDB().add_column("Calibrations", "Gains", "TEXT");
-
-   Int_t gain_table_num(0);
-
-   KVSQLite::table gain_table(Form("GainSettings_%d", gain_table_num));
-   gain_table.add_column("detName", "TEXT");
-   gain_table.add_column("gain", "REAL");
-
-   TString sline;
-
-   KVNumberList runrange;
-   Int_t frun = 0, lrun = 0;
-   Bool_t prev_rr = kTRUE;
-   Bool_t got_data = kFALSE;
-
-   Float_t gain;
-
-   Char_t det_name[80];
-
-   while (fin.good()) {         //reading the file
-      sline.ReadLine(fin);
-      if (fin.eof()) {          //fin du fichier
-         if (got_data) {
-            GetDB().end_data_insertion();
-            GetDB()["Calibrations"]["Gains"].set_data(gain_table.name().c_str());
-            GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "Gains");
-            got_data = kFALSE;
-         }
-         fin.close();
-         return;
-      }
-      if (sline.BeginsWith("Run Range :")) {    // Run Range found
-         if (!prev_rr) {        // new run ranges set
-            if (got_data) {
-               GetDB().end_data_insertion();
-               GetDB()["Calibrations"]["Gains"].set_data(gain_table.name().c_str());
-               GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "Gains");
-               got_data = kFALSE;
-            }
-         }
-         if (sscanf(sline.Data(), "Run Range : %u %u", &frun, &lrun) != 2) {
-            Warning("ReadGainList()",
-                    "Bad format in line :\n%s\nUnable to read run range values",
-                    sline.Data());
-            cout << "sscanf=" << sscanf(sline.Data(), "Run Range : %u %u",
-                                        &frun, &lrun) << endl;
-         } else {
-            prev_rr = kTRUE;
-            runrange.Add(Form("%d-%d", frun, lrun));
-         }
-      }                         //Run Range found
-      else if (sline.Sizeof() > 1 && !sline.BeginsWith("#")) {  //non void nor comment line
-         if (sscanf(sline.Data(), "%7s %f", det_name, &gain) != 2) {
-            Warning("ReadGainList()",
-                    "Bad format in line :\n%s\nUnable to read",
-                    sline.Data());
-         } else {               //parameters correctly read
-            if (!got_data) {
-               ++gain_table_num;
-               gain_table.set_name(Form("GainSettings_%d", gain_table_num));
-               GetDB().add_table(gain_table);
-               GetDB().prepare_data_insertion(gain_table.name().c_str());
-            }
-            GetDB()[gain_table.name()]["detName"].set_data(TString(det_name));
-            GetDB()[gain_table.name()]["gain"].set_data(gain);
-            GetDB().insert_data_row();
-            prev_rr = kFALSE;
-            got_data = kTRUE;
-         }                      //parameters correctly read
-      }                         //non void nor comment line
-   }                            //reading the file
-   fin.close();
+   gain_list_reader glr(this);
+   glr.ReadCalib("Gains", "ReadGainList()", "Reading gains ...");
 }
 
 //____________________________________________________________________________
@@ -777,7 +699,7 @@ void KVINDRADB::Build()
    ReadSystemList();
    ReadChIoPressures();
    ReadGainList();
-//   ReadChannelVolt();
+   ReadChannelVolt();
 //   ReadVoltEnergyChIoSi();
 //   ReadCalibCsI();
 //   ReadPedestalList();
@@ -1155,168 +1077,13 @@ void KVINDRADB::ReadChannelVolt()
    //        [dataset name].INDRADB.ElectronicCalibration:     [chio & si detectors]
    //        [dataset name].INDRADB.ElectronicCalibration.Etalons:   [etalons]
 
-   ifstream fin;
-   if (!OpenCalibFile("ElectronicCalibration", fin)) {
-      Error("ReadChannelVolt()", "Could not open file %s",
-            GetCalibFileName("ElectronicCalibration"));
-      return;
-   }
-   Info("ReadChannelVolt()",
-        "Reading electronic calibration for ChIo and Si...");
+   channel_volt_reader cvr(this);
+   cvr.ReadCalib("ElectronicCalibration", "ReadChannelVolt",
+                 "Reading electronic calibration for ChIo and Si...");
 
-   TString sline;
-
-   UInt_t frun = 0, lrun = 0;
-   UInt_t run_ranges[MAX_NUM_RUN_RANGES][2];
-   UInt_t rr_number = 0;
-   Bool_t prev_rr = kFALSE;     // was the last line a run range indication ?
-
-   UInt_t cour, modu, sign;
-   Float_t a0, a1, a2, dum1, dum2;
-
-   Char_t det_name[80];
-   Char_t cal_type[80];
-   KVDBParameterSet* parset;
-   TList* par_list = new TList();
-
-
-   while (fin.good()) {         //reading the file
-      sline.ReadLine(fin);
-      if (fin.eof()) {          //fin du fichier
-         //LinkListToRunRanges(par_list, rr_number, run_ranges);
-         par_list->Clear();
-         break;
-      }
-      if (sline.BeginsWith("Run Range :")) {    // Run Range found
-         if (!prev_rr) {        // new run ranges set
-//            if (par_list->GetSize() > 0)
-//               LinkListToRunRanges(par_list, rr_number, run_ranges);
-            par_list->Clear();
-            rr_number = 0;
-         }
-         if (sscanf(sline.Data(), "Run Range : %u %u", &frun, &lrun) != 2) {
-            Warning("ReadChannelVolt()",
-                    "Bad format in line :\n%s\nUnable to read run range values",
-                    sline.Data());
-         } else {
-            prev_rr = kTRUE;
-            run_ranges[rr_number][0] = frun;
-            run_ranges[rr_number][1] = lrun;
-            rr_number++;
-            if (rr_number == MAX_NUM_RUN_RANGES) {
-               Error("ReadChannelVolt", "Too many run ranges (>%d)",
-                     rr_number);
-               rr_number--;
-            }
-         }
-      }                         //Run Range foundTObjString
-      else if (sline.Sizeof() > 1 && !sline.BeginsWith("#")) {  //non void nor comment line
-         if (sscanf(sline.Data(), "%u %u %u %f %f %f %f %f",
-                    &cour, &modu, &sign, &a0, &a1, &a2, &dum1,
-                    &dum2) != 8) {
-            Warning("ReadChannelVolt()",
-                    "Bad format in line :\n%s\nUnable to read",
-                    sline.Data());
-         } else {               //parameters correctly read
-            // naming detector
-            switch (sign) {
-               case ChIo_GG:
-                  sprintf(det_name, "CI_%02u%02u_GG", cour, modu);
-                  strcpy(cal_type, "Channel-Volt GG");
-                  break;
-               case ChIo_PG:
-                  sprintf(det_name, "CI_%02u%02u_PG", cour, modu);
-                  strcpy(cal_type, "Channel-Volt PG");
-                  break;
-               case Si_GG:
-                  sprintf(det_name, "SI_%02u%02u_GG", cour, modu);
-                  strcpy(cal_type, "Channel-Volt GG");
-                  break;
-               case Si_PG:
-                  sprintf(det_name, "SI_%02u%02u_PG", cour, modu);
-                  strcpy(cal_type, "Channel-Volt PG");
-                  break;
-            }
-            parset = new KVDBParameterSet(det_name, cal_type, 5);
-            parset->SetParameters(a0, a1, a2, dum1, dum2);
-            prev_rr = kFALSE;
-            //fChanVolt->AddRecord(parset);
-            par_list->Add(parset);
-         }                      //parameters correctly read
-      }                         //non void nor comment line
-   }                            //reading the file
-   delete par_list;
-   fin.close();
-
-   /********** ETALONS ***************/
-
-   ifstream fin2;
-   if (!OpenCalibFile("ElectronicCalibration.Etalons", fin2)) {
-      Error("ReadChannelVolt()", "Could not open file %s",
-            GetCalibFileName("ElectronicCalibration.Etalons"));
-      return;
-   }
-   Info("ReadChannelVolt()",
-        "Reading electronic calibration for Si75 and SiLi...");
-   frun = lrun = 0;
-   rr_number = 0;
-   prev_rr = kFALSE;     // was the last line a run range indication ?
-   par_list = new TList;
-   TObjArray* toks = 0;
-   while (fin2.good()) {         //reading the file
-      sline.ReadLine(fin2);
-      if (fin2.eof()) {          //fin du fichier
-         //LinkListToRunRanges(par_list, rr_number, run_ranges);
-         par_list->Clear();
-         delete par_list;
-         fin2.close();
-         return;
-      }
-      if (sline.BeginsWith("Run Range :")) {    // Run Range found
-         if (!prev_rr) {        // new run ranges set
-//            if (par_list->GetSize() > 0)
-//               LinkListToRunRanges(par_list, rr_number, run_ranges);
-            par_list->Clear();
-            rr_number = 0;
-         }
-         if (sscanf(sline.Data(), "Run Range : %u %u", &frun, &lrun) != 2) {
-            Warning("ReadChannelVolt()",
-                    "Bad format in line :\n%s\nUnable to read run range values",
-                    sline.Data());
-         } else {
-            prev_rr = kTRUE;
-            run_ranges[rr_number][0] = frun;
-            run_ranges[rr_number][1] = lrun;
-            rr_number++;
-            if (rr_number == MAX_NUM_RUN_RANGES) {
-               Error("ReadChannelVolt", "Too many run ranges (>%d)",
-                     rr_number);
-               rr_number--;
-            }
-         }
-      }                         //Run Range found
-      else if (sline.Sizeof() > 1 && !sline.BeginsWith("#")) {  //non void nor comment line
-         if (sscanf(sline.Data(), "%s %f %f %f",
-                    det_name, &a0, &a1, &a2) != 4) {
-            Warning("ReadChannelVolt()",
-                    "Bad format in line :\n%s\nUnable to read",
-                    sline.Data());
-         } else {               //parameters correctly read
-            KVString gain;
-            gain.Form("%s", det_name);
-            toks = gain.Tokenize("_");
-            KVString scal_type;
-            scal_type.Form("Channel-Volt %s", ((TObjString*)toks->At(2))->GetString().Data());
-            delete toks;
-            parset = new KVDBParameterSet(det_name, scal_type.Data(), 3);
-            parset->SetParameters(a0, a1, a2);
-            prev_rr = kFALSE;
-            //fChanVolt->AddRecord(parset);
-            par_list->Add(parset);
-         }                      //parameters correctly read
-      }                         //non void nor comment line
-   }                            //reading the file
-   delete par_list;
+   etalon_channel_volt_reader ecvr(this);
+   ecvr.ReadCalib("ElectronicCalibration.Etalons",
+                  "ReadChannelVolt()", "Reading electronic calibration for Si75 and SiLi...");
 }
 
 //__________________________________________________________________________________
@@ -1733,3 +1500,184 @@ void KVINDRADB::ReadOoOACQParams()
 
 }
 
+
+void KVINDRADB::calib_file_reader::ReadCalib(const TString& calib_type,
+      const TString& caller_method_name,
+      const TString& informational_message)
+{
+   // Generic method to read an INDRA calibration file
+
+   ifstream fin;
+   if (!mydb->OpenCalibFile(calib_type, fin)) {
+      mydb->Error(caller_method_name, "Could not open file %s",
+                  mydb->GetCalibFileName(calib_type));
+      return;
+   }
+   mydb->Info(caller_method_name, informational_message);
+
+   GetDB().add_column("Calibrations", calib_type.Data(), "TEXT");
+
+   get_table().set_name(Form("%s_%d", calib_type.Data(), new_table_num));
+   initial_setup_new_table();
+
+   TString sline;
+
+   Int_t frun = 0, lrun = 0;
+   Bool_t prev_rr = kTRUE;
+   Bool_t got_data = kFALSE;
+
+   while (fin.good()) {         //reading the file
+      sline.ReadLine(fin);
+      if (fin.eof()) {          //fin du fichier
+         if (got_data) {
+            write_data_to_db(calib_type);
+            got_data = kFALSE;
+         }
+         fin.close();
+         return;
+      }
+      if (sline.BeginsWith("Run Range :")) {    // Run Range found
+         if (!prev_rr) {        // new run ranges set
+            if (got_data) {
+               write_data_to_db(calib_type);
+               got_data = kFALSE;
+            }
+         }
+         if (sscanf(sline.Data(), "Run Range : %u %u", &frun, &lrun) != 2) {
+            mydb->Warning(caller_method_name,
+                          "Bad format in line :\n%s\nUnable to read run range values",
+                          sline.Data());
+            cout << "sscanf=" << sscanf(sline.Data(), "Run Range : %u %u",
+                                        &frun, &lrun) << endl;
+         } else {
+            prev_rr = kTRUE;
+            runrange.Add(Form("%d-%d", frun, lrun));
+         }
+      }                         //Run Range found
+      else if (sline.Sizeof() > 1 && !sline.BeginsWith("#")) {  //non void nor comment line
+         if (!read_data_line(sline.Data())) {
+            mydb->Warning(caller_method_name,
+                          "Bad format in line :\n%s\nUnable to read",
+                          sline.Data());
+         } else {               //parameters correctly read
+            if (!got_data) {
+               add_new_table(calib_type);
+            }
+            insert_data_into_table();
+            prev_rr = kFALSE;
+            got_data = kTRUE;
+         }                      //parameters correctly read
+      }                         //non void nor comment line
+   }                            //reading the file
+   fin.close();
+}
+
+void KVINDRADB::gain_list_reader::initial_setup_new_table()
+{
+   get_table().add_column("detName", "TEXT");
+   get_table().add_column("gain", "REAL");
+}
+
+void KVINDRADB::calib_file_reader::write_data_to_db(const TString& calib_type)
+{
+   GetDB().end_data_insertion();
+   GetDB()["Calibrations"][calib_type.Data()].set_data(get_table().name().c_str());
+   GetDB().update("Calibrations", runrange.GetSQL("Run Number"), calib_type.Data());
+}
+
+bool KVINDRADB::gain_list_reader::read_data_line(const char* ss)
+{
+   return (sscanf(ss, "%7s %f", det_name, &gain) == 2);
+}
+
+void KVINDRADB::calib_file_reader::add_new_table(const TString& calib_type)
+{
+   ++new_table_num;
+   get_table().set_name(Form("%s_%d", calib_type.Data(), new_table_num));
+   GetDB().add_table(get_table());
+   GetDB().prepare_data_insertion(get_table().name().c_str());
+}
+
+void KVINDRADB::gain_list_reader::insert_data_into_table()
+{
+   GetDB()[get_table().name()]["detName"].set_data(TString(det_name));
+   GetDB()[get_table().name()]["gain"].set_data(gain);
+   GetDB().insert_data_row();
+}
+
+void KVINDRADB::channel_volt_reader::initial_setup_new_table()
+{
+   get_table().add_column("detName", "TEXT");
+   get_table().add_column("parName", "TEXT");
+   get_table().add_column("type", "TEXT");
+   get_table().add_column("npar", "INTEGER");
+   get_table().add_column("a0", "REAL");
+   get_table().add_column("a1", "REAL");
+   get_table().add_column("a2", "REAL");
+}
+
+bool KVINDRADB::channel_volt_reader::read_data_line(const char* s)
+{
+   return (sscanf(s, "%u %u %u %f %f %f %f %f",
+                  &cour, &modu, &sign, &a0, &a1, &a2, &dum1,
+                  &dum2) == 8);
+}
+
+void KVINDRADB::channel_volt_reader::insert_data_into_table()
+{
+   TString det_name, par_name, cal_type;
+   switch (sign) {
+      case ChIo_GG:
+         det_name.Form("CI_%02u%02u", cour, modu);
+         par_name = det_name + "_GG";
+         cal_type = "Channel-Volt GG";
+         break;
+      case ChIo_PG:
+         det_name.Form("CI_%02u%02u", cour, modu);
+         par_name = det_name + "_PG";
+         cal_type = "Channel-Volt PG";
+         break;
+      case Si_GG:
+         det_name.Form("SI_%02u%02u", cour, modu);
+         par_name = det_name + "_GG";
+         cal_type = "Channel-Volt GG";
+         break;
+      case Si_PG:
+         det_name.Form("SI_%02u%02u", cour, modu);
+         par_name = det_name + "_PG";
+         cal_type = "Channel-Volt PG";
+         break;
+   }
+   GetDB()[get_table().name()]["detName"].set_data(det_name);
+   GetDB()[get_table().name()]["parName"].set_data(par_name);
+   GetDB()[get_table().name()]["type"].set_data(cal_type);
+   GetDB()[get_table().name()]["npar"].set_data(3);
+   GetDB()[get_table().name()]["a0"].set_data(a0);
+   GetDB()[get_table().name()]["a1"].set_data(a1);
+   GetDB()[get_table().name()]["a2"].set_data(a2);
+   GetDB().insert_data_row();
+}
+
+bool KVINDRADB::etalon_channel_volt_reader::read_data_line(const char* s)
+{
+   return (sscanf(s, "%s %f %f %f", det_name, &a0, &a1, &a2) == 4);
+}
+
+void KVINDRADB::etalon_channel_volt_reader::insert_data_into_table()
+{
+   TString cal_type, detName;
+   KVString par_name = det_name;
+   par_name.Begin("_");
+   detName += par_name.Next();
+   detName += "_";
+   detName += par_name.Next();
+   cal_type = "Channel-Volt " + par_name.Next();
+   GetDB()[get_table().name()]["detName"].set_data(detName);
+   GetDB()[get_table().name()]["parName"].set_data(par_name);
+   GetDB()[get_table().name()]["type"].set_data(cal_type);
+   GetDB()[get_table().name()]["npar"].set_data(3);
+   GetDB()[get_table().name()]["a0"].set_data(a0);
+   GetDB()[get_table().name()]["a1"].set_data(a1);
+   GetDB()[get_table().name()]["a2"].set_data(a2);
+   GetDB().insert_data_row();
+}

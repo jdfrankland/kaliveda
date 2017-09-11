@@ -283,44 +283,47 @@ void KVINDRAUpDater::SetChIoPressures(KVDBRun* kvrun)
 
 void KVINDRAUpDater::SetChVoltParameters(KVDBRun* kvrun)
 {
+   // Read and set channel<->volt conversion parameters for ChIo, Si and Etalon detectors for run
+   // For ChIo & Si detectors, the name of the table to use is in column "ElectronicCalibration" of
+   // table "Calibrations". For etalon detectors, it is in column "ElectronicCalibration.Etalons".
 
+   gIndraDB->GetDB().select_data("Calibrations", Form("\"Run Number\"=%d", kvrun->GetNumber()));
+   TString calib_table[2];
+   while (gIndraDB->GetDB().get_next_result()) {
+      calib_table[0] = gIndraDB->GetDB()["Calibrations"]["ElectronicCalibration"].data().GetString();
+      calib_table[1] = gIndraDB->GetDB()["Calibrations"]["ElectronicCalibration.Etalons"].data().GetString();
+   }
 
-   KVRList* param_list;// = kvrun->GetLinks("Channel-Volt");
-   if (!param_list)
-      return;
-   if (!param_list->GetSize())
-      return;
+   for (int calib = 0; calib < 2; ++calib) {
+      gIndraDB->GetDB().select_data(calib_table[calib]);
+      KVSQLite::table& caltab = gIndraDB->GetDB()[calib_table[calib].Data()];
 
-   KVDetector* kvd;
-   KVDBParameterSet* kvps;
-   KVCalibrator* kvc;
-   TIter next_ps(param_list);
+      while (gIndraDB->GetDB().get_next_result()) {
 
-
-   TString str;
-
-   // Setting Channel-Volts calibration parameters
-   while ((kvps = (KVDBParameterSet*) next_ps())) {     // boucle sur les parametres
-      str = kvps->GetName();
-      str.Remove(str.Sizeof() - 4, 3);  //Removing 3 last letters (ex : "_PG")
-      kvd = gIndra->GetDetector(str.Data());
-      if (!kvd)
-         Warning("SetChVoltParameters(UInt_t)", "Dectector %s not found !",
-                 str.Data());
-      else {                    // detector found
-         kvc = kvd->GetCalibrator(kvps->GetName(), kvps->GetTitle());
-         if (!kvc)
-            Warning("SetChVoltParameters(UInt_t)",
-                    "Calibrator %s %s not found !", kvps->GetName(),
-                    kvps->GetTitle());
-         else {                 //calibrator found
-            for (Int_t i = 0; i < kvc->GetNumberParams(); i++) {
-               kvc->SetParameter(i, kvps->GetParameter(i));
-            }
-            kvc->SetStatus(kTRUE);   // calibrator ready
-         }                      //calibrator found
-      }                         //detector found
-   }                            //boucle sur les parameters
+         KVDetector* kvd = gIndra->GetDetector(caltab["detName"].data().GetString());
+         if (!kvd)
+            Warning("SetChVoltParameters(UInt_t)", "Dectector %s not found !",
+                    caltab["detName"].data().GetString());
+         else {                    // detector found
+            KVCalibrator* kvc = kvd->GetCalibrator(caltab["parName"].data().GetString(), caltab["type"].data().GetString());
+            if (!kvc)
+               Warning("SetChVoltParameters(UInt_t)",
+                       "Calibrator %s %s not found !", caltab["parName"].data().GetString(), caltab["type"].data().GetString());
+            else {                 //calibrator found
+               Int_t npars = caltab["npar"].data().GetInt();
+               if (npars != kvc->GetNumberParams())
+                  Warning("SetChVoltParameters(UInt_t)",
+                          "Mismatch for calibrator with %d parameters, database provides %d",
+                          kvc->GetNumberParams(), npars);
+               Int_t imax = TMath::Min(npars, kvc->GetNumberParams());
+               for (Int_t i = 0; i < imax; i++) {
+                  kvc->SetParameter(i, caltab[Form("a%d", i)].data().GetDouble());
+               }
+               kvc->SetStatus(kTRUE);   // calibrator ready
+            }                      //calibrator found
+         }                         //detector found
+      }                            //boucle sur les parameters
+   }
 }
 
 //______________________________________________________________________________

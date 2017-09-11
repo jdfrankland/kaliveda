@@ -61,10 +61,72 @@ protected:
 
    KVINDRAPulserDataTree* fPulserData;  //! mean values of pulsers for all detectors & runs
 
+   class calib_file_reader {
+      KVINDRADB* mydb;
+      KVSQLite::table new_table;
+   protected:
+      KVSQLite::database& GetDB() const
+      {
+         return mydb->GetDB();
+      }
+      KVNumberList runrange;
+      Int_t new_table_num;
+      KVSQLite::table& get_table()
+      {
+         return new_table;
+      }
+   public:
+      calib_file_reader(KVINDRADB* a) : mydb(a), new_table_num(0) {}
+      virtual ~calib_file_reader() {}
+
+      void ReadCalib(const TString& calib_type,
+                     const TString& caller_method_name,
+                     const TString& informational_message);
+
+      virtual void initial_setup_new_table() = 0;
+      virtual void write_data_to_db(const TString&);
+      virtual bool read_data_line(const char*) = 0;
+      virtual void add_new_table(const TString&);
+      virtual void insert_data_into_table() = 0;
+   };
+
    virtual void ReadGainList();
+   class gain_list_reader : public calib_file_reader {
+      Float_t gain;
+      Char_t det_name[80];
+
+   public:
+      gain_list_reader(KVINDRADB* a) : calib_file_reader(a) {}
+      virtual ~gain_list_reader() {}
+
+      void initial_setup_new_table();
+      bool read_data_line(const char*);
+      void insert_data_into_table();
+   };
+
    virtual void ReadChIoPressures();
    virtual void ReadCsITotalLightGainCorrections();
    virtual void ReadChannelVolt();
+   class channel_volt_reader : public calib_file_reader {
+   protected:
+      UInt_t cour, modu, sign;
+      Float_t a0, a1, a2, dum1, dum2;
+   public:
+      channel_volt_reader(KVINDRADB* a) : calib_file_reader(a) {}
+      virtual ~channel_volt_reader() {}
+      void initial_setup_new_table();
+      bool read_data_line(const char*);
+      void insert_data_into_table();
+   };
+   class etalon_channel_volt_reader : public channel_volt_reader {
+      Char_t det_name[80];
+   public:
+      etalon_channel_volt_reader(KVINDRADB* a) : channel_volt_reader(a) {}
+      virtual ~etalon_channel_volt_reader() {}
+      bool read_data_line(const char*);
+      void insert_data_into_table();
+   };
+
    virtual void ReadVoltEnergyChIoSi();
    virtual void ReadLightEnergyCsI(const Char_t*, KVDBTable*);
    virtual void ReadCalibCsI();

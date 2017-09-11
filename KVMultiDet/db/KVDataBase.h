@@ -15,10 +15,6 @@ protected:
    TString fDataSetDir;//the directory containing the dataset files
    TString fDataBaseDir;//the directory containing the database and associated files
    KVList  fROOTFiles;//associated files containing ROOT objects
-   KVSQLite::database& GetDB() const
-   {
-      return const_cast<KVSQLite::database&>(fSQLdb);
-   }
 
    TFile* access_root_file(const TString& name, const TString& mode = "READ");
    void create_root_object_table(const TString& name);
@@ -34,6 +30,10 @@ public:
    const TString& GetDataBaseDir() const
    {
       return fDataBaseDir;
+   }
+   KVSQLite::database& GetDB() const
+   {
+      return const_cast<KVSQLite::database&>(fSQLdb);
    }
 
    virtual void Build();
