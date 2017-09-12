@@ -340,6 +340,7 @@ void KVINDRAUpDater::SetVoltEnergyChIoSiParameters(KVDBRun* kvrun)
 
    // Setting Channel-Volts calibration parameters
    KVSQLite::table& caltab = gIndraDB->GetDB()[calib_table.Data()];
+   gIndraDB->GetDB().select_data(calib_table.Data());
 
    while (gIndraDB->GetDB().get_next_result()) {
 
@@ -355,7 +356,13 @@ void KVINDRAUpDater::SetVoltEnergyChIoSiParameters(KVDBRun* kvrun)
             Warning("SetVoltEnergyParameters(UInt_t)",
                     "Detector %s: Volt-Energy calibrator not found !", kvd->GetName());
          else {                 //calibrator found
-            for (Int_t i = 0; i < kvc->GetNumberParams(); i++) {
+            Int_t npars = caltab["npar"].data().GetInt();
+            if (npars != kvc->GetNumberParams())
+               Warning("SetVoltEnergyChIoSiParameters(UInt_t)",
+                       "Mismatch for calibrator with %d parameters, database provides %d",
+                       kvc->GetNumberParams(), npars);
+            Int_t imax = TMath::Min(npars, kvc->GetNumberParams());
+            for (Int_t i = 0; i < imax; i++) {
                kvc->SetParameter(i, caltab[Form("a%d", i)].data().GetDouble());
             }
             kvc->SetStatus(kTRUE);      // calibrator ready
@@ -436,73 +443,47 @@ void KVINDRAUpDater::SetCsIGainCorrectionParameters(KVDBRun* kvrun)
 void KVINDRAUpDater::SetLitEnergyCsIParameters(KVDBRun* kvrun)
 {
 
-   // Setting Light- Energy CsI calibration parameters for Z=1
-   KVRList* param_list;// = kvrun->GetLinks("Light-Energy CsI Z=1");
+   Info("SetLitEnergyCsIParameters", "Setting CsI calibrations...");
 
-   if (param_list && param_list->GetSize()) {
+   gIndraDB->GetDB().select_data("Calibrations", Form("\"Run Number\"=%d", kvrun->GetNumber()));
+   TString calib_table[2];
+   while (gIndraDB->GetDB().get_next_result()) {
+      calib_table[0] = gIndraDB->GetDB()["Calibrations"]["CalibCsI.Z_eq_1"].data().GetString();
+      calib_table[1] = gIndraDB->GetDB()["Calibrations"]["CalibCsI.Z_gt_1"].data().GetString();
+   }
 
-      KVDetector* kvd;
-      KVDBParameterSet* kvps;
-      KVCalibrator* kvc;
-      TIter next_ps(param_list);
-      TString str;
+   for (int calib = 0; calib < 2; ++calib) {
+      gIndraDB->GetDB().select_data(calib_table[calib]);
+      KVSQLite::table& caltab = gIndraDB->GetDB()[calib_table[calib].Data()];
 
-      while ((kvps = (KVDBParameterSet*) next_ps())) {     // boucle sur les parametres
-         str = kvps->GetName();
-         kvd = gIndra->GetDetector(str.Data());
+      while (gIndraDB->GetDB().get_next_result()) {
+
+         KVDetector* kvd = gIndra->GetDetector(caltab["detName"].data().GetString());
          if (!kvd)
             Warning("SetLitEnergyCsIParameters(UInt_t)",
-                    "Dectector %s not found !", str.Data());
+                    "Dectector %s not found !", caltab["detName"].data().GetString());
          else {                    // detector found
-            kvc = kvd->GetCalibrator(kvps->GetTitle());
+            KVCalibrator* kvc = kvd->GetCalibrator(caltab["type"].data().GetString());
             if (!kvc) {
                Warning("SetLitEnergyCsIParameters(UInt_t)",
                        "Calibrator %s %s not found ! - it will be created",
-                       kvps->GetName(), kvps->GetTitle());
+                       kvd->GetName(), caltab["type"].data().GetString());
                kvd->SetCalibrators();
-               kvc = kvd->GetCalibrator(kvps->GetTitle());
+               kvc = kvd->GetCalibrator(caltab["type"].data().GetString());
             }
-            for (Int_t i = 0; i < kvc->GetNumberParams(); i++) {
-               kvc->SetParameter(i, kvps->GetParameter(i));
-               kvc->SetStatus(kTRUE);      // calibrator ready
+            Int_t npars = caltab["npar"].data().GetInt();
+            if (npars != kvc->GetNumberParams())
+               Warning("SetLitEnergyCsIParameters(UInt_t)",
+                       "Mismatch for calibrator with %d parameters, database provides %d",
+                       kvc->GetNumberParams(), npars);
+            Int_t imax = TMath::Min(npars, kvc->GetNumberParams());
+            for (Int_t i = 0; i < imax; i++) {
+               kvc->SetParameter(i, caltab[Form("a%d", i)].data().GetDouble());
             }
+            kvc->SetStatus(kTRUE);      // calibrator ready
          }                         //detector found
       }                            //boucle sur les parameters
    }
-   // Setting Light- Energy CsI calibration parameters for Z>1
-   //param_list = kvrun->GetLinks("Light-Energy CsI Z>1");
-
-   if (!param_list || !param_list->GetSize()) {
-      return;
-   }
-
-   KVDetector* kvd;
-   KVDBParameterSet* kvps;
-   KVCalibrator* kvc;
-   TString str;
-
-   TIter next_ps2(param_list);
-   while ((kvps = (KVDBParameterSet*) next_ps2())) {     // boucle sur les parametres
-      str = kvps->GetName();
-      kvd = gIndra->GetDetector(str.Data());
-      if (!kvd)
-         Warning("SetLitEnergyCsIParameters(UInt_t)",
-                 "Dectector %s not found !", str.Data());
-      else {                    // detector found
-         kvc = kvd->GetCalibrator(kvps->GetTitle());
-         if (!kvc) {
-            Warning("SetLitEnergyCsIParameters(UInt_t)",
-                    "Calibrator %s %s not found ! - it will be created",
-                    kvps->GetName(), kvps->GetTitle());
-            kvd->SetCalibrators();
-            kvc = kvd->GetCalibrator(kvps->GetTitle());
-         }
-         for (Int_t i = 0; i < kvc->GetNumberParams(); i++) {
-            kvc->SetParameter(i, kvps->GetParameter(i));
-            kvc->SetStatus(kTRUE);      // calibrator ready
-         }
-      }                         //detector found
-   }                            //boucle sur les parameters
 }
 
 //______________________________________________________________________________

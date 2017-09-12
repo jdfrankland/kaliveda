@@ -140,7 +140,7 @@ protected:
       void insert_data_into_table();
    };
 
-   virtual void ReadLightEnergyCsI(const Char_t*, KVDBTable*);
+   virtual void ReadLightEnergyCsI(const Char_t*);
    virtual void ReadCalibCsI();
    virtual void ReadPedestalList();
 

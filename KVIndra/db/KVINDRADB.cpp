@@ -701,8 +701,8 @@ void KVINDRADB::Build()
    ReadGainList();
    ReadChannelVolt();
    ReadVoltEnergyChIoSi();
-//   ReadCalibCsI();
-//   ReadPedestalList();
+   ReadCalibCsI();
+   ReadPedestalList();
 //   ReadAbsentDetectors();
 //   ReadOoOACQParams();
 //   ReadOoODetectors();
@@ -743,6 +743,9 @@ void KVINDRADB::ReadNewRunList()
             delete run;
          } else {
             AddRun(run);
+            Int_t run_n = run->GetNumber();
+            kLastRun = TMath::Max(kLastRun, run_n);
+            kFirstRun = TMath::Min(kFirstRun, run_n);
          }
       }
    }
@@ -1106,6 +1109,9 @@ void KVINDRADB::ReadPedestalList()
    //Read the names of pedestal files to use for each run range, found
    //in file with name defined by the environment variable:
    //   [dataset name].INDRADB.Pedestals:    ...
+   //
+   // Filenames are stored in the "Calibrations" table in columns
+   // "Pedestals_ChIoSi" and "Pedestals_CsI"
 
    ifstream fin;
    if (!OpenCalibFile("Pedestals", fin)) {
@@ -1117,7 +1123,10 @@ void KVINDRADB::ReadPedestalList()
 
    KVString line;
    Char_t filename_chio[80], filename_csi[80];
-   UInt_t runlist[1][2];
+   KVNumberList runrange;
+   UInt_t first, last;
+   GetDB().add_column("Calibrations", "Pedestals_ChIoSi", "TEXT");
+   GetDB().add_column("Calibrations", "Pedestals_CsI", "TEXT");
 
    while (fin.good()) {         //lecture du fichier
 
@@ -1130,11 +1139,12 @@ void KVINDRADB::ReadPedestalList()
          line.Remove(0, 1);
 
          if (sscanf
-               (line.Data(), "Run Range : %u %u", &runlist[0][0],
-                &runlist[0][1]) != 2) {
+               (line.Data(), "Run Range : %u %u", &first,
+                &last) != 2) {
             Warning("ReadPedestalList()", "Format problem in line \n%s",
                     line.Data());
-         }
+         } else
+            runrange.Add(Form("%u-%u", first, last));
 
          line.ReadLine(fin);
 
@@ -1144,18 +1154,10 @@ void KVINDRADB::ReadPedestalList()
 
          sscanf(line.Data(), "%s", filename_csi);
 
-         TList RRList;
-         KVDBRecord* dummy = 0;
-         dummy =
-            new KVDBRecord(filename_chio, "ChIo/Si/Etalons pedestals");
-         dummy->AddKey("Runs", "Runs for which to use this pedestal file");
-         //fPedestals->AddRecord(dummy);
-         RRList.Add(dummy);
-         dummy = new KVDBRecord(filename_csi, "CsI pedestals");
-         dummy->AddKey("Runs", "Runs for which to use this pedestal file");
-         //fPedestals->AddRecord(dummy);
-         RRList.Add(dummy);
-         //LinkListToRunRanges(&RRList, 1, runlist);
+         GetDB()["Calibrations"]["Pedestals_ChIoSi"].set_data(filename_chio);
+         GetDB()["Calibrations"]["Pedestals_CsI"].set_data(filename_csi);
+         GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "Pedestals_ChIoSi Pedestals_CsI");
+         runrange.Clear();
       }                         // balise trouvee
    }                            // lecture du fichier
    fin.close();
@@ -1170,15 +1172,16 @@ void KVINDRADB::ReadCalibCsI()
    //        [dataset name].INDRADB.CalibCsI.Z=1
    //        [dataset name].INDRADB.CalibCsI.Z>1
    //These calibrations are valid for all runs
-//   ReadLightEnergyCsI("Z=1", fLitEnerCsIZ1);
-//   ReadLightEnergyCsI("Z>1", fLitEnerCsI);
+
+   ReadLightEnergyCsI("Z=1");
+   ReadLightEnergyCsI("Z>1");
 }
 //_____________________________________________________________________________
 
-void KVINDRADB::ReadLightEnergyCsI(const Char_t* zrange, KVDBTable* table)
+void KVINDRADB::ReadLightEnergyCsI(const Char_t* zrange)
 {
    //Read CsI Light-Energy calibrations for Z=1 (zrange="Z=1") or Z>1 (zrange="Z>1")
-   //and add them to the KVDBTable whose pointer is given as 2nd argument.
+   //
    //These calibrations are valid for all runs
 
    ifstream fin;
@@ -1192,64 +1195,54 @@ void KVINDRADB::ReadLightEnergyCsI(const Char_t* zrange, KVDBTable* table)
    Info("ReadLightEnergyCsI()",
         "Reading Light-Energy CsI calibration parameters (%s)...", zrange);
 
-   //need description of INDRA geometry
-   if (!gIndra) {
-      KVMultiDetArray::MakeMultiDetector(fDataSet.Data());
-   }
-   //gIndra exists, but has it been built ?
-   if (!gIndra->IsBuilt())
-      gIndra->Build();
+   filename.ReplaceAll("=", "_eq_");
+   filename.ReplaceAll(">", "_gt_");
+   GetDB().add_column("Calibrations", filename.Data(), "TEXT");
+   TString tablename = filename + "_1";
+   KVSQLite::table calib(tablename.Data());
+   calib.add_column("detName", "TEXT");
+   calib.add_column("type", "TEXT");
+   calib.add_column("npar", "INTEGER");
+   for (int i = 0; i < 4; ++i) calib.add_column(Form("a%d", i), "REAL");
+   GetDB().add_table(calib);
+   KVSQLite::table& calTab = GetDB()[tablename.Data()];
 
    TString sline;
-
-   KVDBParameterSet* parset;
-   TList* par_list = new TList();
-
-   Float_t a2, a1, a3, a4;    // calibration parameters
+   Float_t a[4];    // calibration parameters
    Int_t ring, mod;
+
+   GetDB().prepare_data_insertion(tablename);
 
    while (fin.good()) {         //reading the file
       sline.ReadLine(fin);
       if (fin.good()) {
          if (!sline.BeginsWith("#")) {  //skip comments
             if (sscanf
-                  (sline.Data(), "%d %d %f %f %f %f", &ring, &mod, &a1,
-                   &a2, &a3, &a4) != 6) {
+                  (sline.Data(), "%d %d %f %f %f %f", &ring, &mod, &a[0],
+                   &a[1], &a[2], &a[3]) != 6) {
                Warning("ReadLightEnergyCsI()",
                        "Bad format in line :\n%s\nUnable to read parameters",
                        sline.Data());
                return;
             } else {            //parameters correctly read
-               KVCsI* csi =
-                  (KVCsI*) gIndra->GetDetectorByType(ring, mod, CsI_R);
-               if (!csi) {
-                  Warning("ReadLightEnergyCsI()", "Read calibration for non-existent detector CSI_%02d%02d",
-                          ring, mod);
-               } else {
-                  parset =
-                     new KVDBParameterSet(csi->GetName(), Form("Light-Energy CsI %s", zrange),
-                                          4);
-                  parset->SetParameters(a1, a2, a3, a4);
-                  table->AddRecord(parset);
-                  par_list->Add(parset);
-               }
+               calTab["detName"].set_data(Form("CSI_%02d%02d", ring, mod));
+               calTab["type"].set_data(Form("Light-Energy CsI %s", zrange));
+               calTab["npar"].set_data(4);
+               for (int i = 0; i < 4; ++i) calTab[Form("a%d", i)].set_data(a[i]);
+               GetDB().insert_data_row();
             }                   //parameters correctly read
          }                      //data line
       }                         //if(fin.good
    }                            //reading the file
    fin.close();
+   GetDB().end_data_insertion();
 
    //these calibrators are valid for all runs
-   UInt_t nranges, r_ranges[MAX_NUM_RUN_RANGES][2];
-   nranges = 1;
-   r_ranges[0][0] = kFirstRun;
-   r_ranges[0][1] = kLastRun;
-   //LinkListToRunRanges(par_list, nranges, r_ranges);
-   par_list->Clear();
-   delete par_list;
+   KVNumberList runrange(Form("%d-%d", kFirstRun, kLastRun));
+   GetDB()["Calibrations"][filename.Data()].set_data(tablename);
+   GetDB().update("Calibrations", runrange.GetSQL("Run Number"), filename);
 }
 
-//_____________________________________________________________________________
 //__________________________________________________________________________________________________________________
 
 Double_t KVINDRADB::GetEventCrossSection(KVNumberList runs,
@@ -1619,6 +1612,7 @@ void KVINDRADB::etalon_channel_volt_reader::insert_data_into_table()
 void KVINDRADB::volt_energy_chiosi_reader::initial_setup_new_table()
 {
    get_table().add_column("detName", "TEXT");
+   get_table().add_column("npar", "INTEGER");
    get_table().add_column("a0", "REAL");
    get_table().add_column("a1", "REAL");
    get_table().add_column("chi", "REAL");
@@ -1640,6 +1634,7 @@ bool KVINDRADB::volt_energy_chiosi_reader::read_data_line(const char* s)
 void KVINDRADB::volt_energy_chiosi_reader::insert_data_into_table()
 {
    GetDB()[get_table().name()]["detName"].set_data(det_name);
+   GetDB()[get_table().name()]["npar"].set_data(2);
    GetDB()[get_table().name()]["a0"].set_data(a0);
    GetDB()[get_table().name()]["a1"].set_data(a1);
    GetDB()[get_table().name()]["chi"].set_data(chi);
