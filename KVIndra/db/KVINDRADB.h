@@ -75,6 +75,7 @@ protected:
       {
          return new_table;
       }
+      bool format_warning;
    public:
       calib_file_reader(KVINDRADB* a) : mydb(a), new_table_num(0) {}
       virtual ~calib_file_reader() {}
@@ -128,6 +129,17 @@ protected:
    };
 
    virtual void ReadVoltEnergyChIoSi();
+   class volt_energy_chiosi_reader : public calib_file_reader {
+      Char_t det_name[80];
+      Float_t a0, a1, chi;
+   public:
+      volt_energy_chiosi_reader(KVINDRADB* a) : calib_file_reader(a) {}
+      virtual ~volt_energy_chiosi_reader() {}
+      void initial_setup_new_table();
+      bool read_data_line(const char*);
+      void insert_data_into_table();
+   };
+
    virtual void ReadLightEnergyCsI(const Char_t*, KVDBTable*);
    virtual void ReadCalibCsI();
    virtual void ReadPedestalList();

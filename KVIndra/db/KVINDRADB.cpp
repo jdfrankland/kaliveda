@@ -700,7 +700,7 @@ void KVINDRADB::Build()
    ReadChIoPressures();
    ReadGainList();
    ReadChannelVolt();
-//   ReadVoltEnergyChIoSi();
+   ReadVoltEnergyChIoSi();
 //   ReadCalibCsI();
 //   ReadPedestalList();
 //   ReadAbsentDetectors();
@@ -1094,77 +1094,9 @@ void KVINDRADB::ReadVoltEnergyChIoSi()
    //The parameter filename is taken from the environment variable
    //        [dataset name].INDRADB.ChIoSiVoltMeVCalib:
 
-   ifstream fin;
-   if (!OpenCalibFile("ChIoSiVoltMeVCalib", fin)) {
-      Error("ReadVoltEnergyChIoSi()", "Could not open file %s",
-            GetCalibFileName("ChIoSiVoltMevCalib"));
-      return;
-   }
-   Info("ReadVoltEnergyChIoSi()",
-        "Reading ChIo/Si calibration parameters...");
-
-   TString sline;
-
-   UInt_t frun = 0, lrun = 0;
-   UInt_t run_ranges[MAX_NUM_RUN_RANGES][2];
-   UInt_t rr_number = 0;
-   Bool_t prev_rr = kFALSE;     // was the last line a run range indication ?
-
-   Char_t det_name[80];
-   KVDBParameterSet* parset;
-   TList* par_list = new TList();
-
-   Float_t a0, a1, chi;         // calibration parameters
-
-   while (fin.good()) {         //reading the file
-      sline.ReadLine(fin);
-      if (fin.eof()) {          //fin du fichier
-         //LinkListToRunRanges(par_list, rr_number, run_ranges);
-         par_list->Clear();
-         delete par_list;
-         fin.close();
-         return;
-      }
-      if (sline.BeginsWith("Run Range :")) {    // Run Range found
-         if (!prev_rr) {        // new run ranges set
-//            if (par_list->GetSize() > 0)
-//               LinkListToRunRanges(par_list, rr_number, run_ranges);
-            par_list->Clear();
-            rr_number = 0;
-         }
-         if (sscanf(sline.Data(), "Run Range : %u %u", &frun, &lrun) != 2) {
-            Warning("ReadVoltEnergyAlpha()",
-                    "Bad format in line :\n%s\nUnable to read run range values",
-                    sline.Data());
-         } else {
-            prev_rr = kTRUE;
-            run_ranges[rr_number][0] = frun;
-            run_ranges[rr_number][1] = lrun;
-            rr_number++;
-            if (rr_number == MAX_NUM_RUN_RANGES) {
-               Error("ReadVoltEnergyAlpha", "Too many run ranges (>%d)",
-                     rr_number);
-               rr_number--;
-            }
-         }
-      }                         //Run Range found
-      if (sline.BeginsWith("SI") || sline.BeginsWith("CI")) {   //data line
-         if (sscanf(sline.Data(), "%7s %f %f %f", det_name, &a0, &a1, &chi)
-               != 4) {
-            Warning("ReadVoltEnergyAlpha()",
-                    "Bad format in line :\n%s\nUnable to read parameters",
-                    sline.Data());
-         } else {               //parameters correctly read
-            parset = new KVDBParameterSet(det_name, "Volt-Energy", 3);
-            parset->SetParameters(a0, a1, chi);
-            prev_rr = kFALSE;
-            //fVoltMeVChIoSi->AddRecord(parset);
-            par_list->Add(parset);
-         }                      //parameters correctly read
-      }                         //data line
-   }                            //reading the file
-   delete par_list;
-   fin.close();
+   volt_energy_chiosi_reader vecr(this);
+   vecr.ReadCalib("ChIoSiVoltMeVCalib", "ReadVoltEnergyChIoSi",
+                  "Reading ChIo/Si calibration parameters...");
 }
 
 //__________________________________________________________________________
@@ -1555,10 +1487,11 @@ void KVINDRADB::calib_file_reader::ReadCalib(const TString& calib_type,
          }
       }                         //Run Range found
       else if (sline.Sizeof() > 1 && !sline.BeginsWith("#")) {  //non void nor comment line
+         format_warning = false;
          if (!read_data_line(sline.Data())) {
-            mydb->Warning(caller_method_name,
-                          "Bad format in line :\n%s\nUnable to read",
-                          sline.Data());
+            if (format_warning) mydb->Warning(caller_method_name,
+                                                 "Bad format in line :\n%s\nUnable to read",
+                                                 sline.Data());
          } else {               //parameters correctly read
             if (!got_data) {
                add_new_table(calib_type);
@@ -1583,6 +1516,7 @@ void KVINDRADB::calib_file_reader::write_data_to_db(const TString& calib_type)
    GetDB().end_data_insertion();
    GetDB()["Calibrations"][calib_type.Data()].set_data(get_table().name().c_str());
    GetDB().update("Calibrations", runrange.GetSQL("Run Number"), calib_type.Data());
+   runrange.Clear();
 }
 
 bool KVINDRADB::gain_list_reader::read_data_line(const char* ss)
@@ -1679,5 +1613,35 @@ void KVINDRADB::etalon_channel_volt_reader::insert_data_into_table()
    GetDB()[get_table().name()]["a0"].set_data(a0);
    GetDB()[get_table().name()]["a1"].set_data(a1);
    GetDB()[get_table().name()]["a2"].set_data(a2);
+   GetDB().insert_data_row();
+}
+
+void KVINDRADB::volt_energy_chiosi_reader::initial_setup_new_table()
+{
+   get_table().add_column("detName", "TEXT");
+   get_table().add_column("a0", "REAL");
+   get_table().add_column("a1", "REAL");
+   get_table().add_column("chi", "REAL");
+}
+
+bool KVINDRADB::volt_energy_chiosi_reader::read_data_line(const char* s)
+{
+   TString sline(s);
+   if (sline.BeginsWith("SI") || sline.BeginsWith("CI")) {   //data line
+      if (sscanf(s, "%7s %f %f %f", det_name, &a0, &a1, &chi) != 4) {
+         format_warning = true;
+         return false;
+      }
+      return true;
+   }
+   return false;
+}
+
+void KVINDRADB::volt_energy_chiosi_reader::insert_data_into_table()
+{
+   GetDB()[get_table().name()]["detName"].set_data(det_name);
+   GetDB()[get_table().name()]["a0"].set_data(a0);
+   GetDB()[get_table().name()]["a1"].set_data(a1);
+   GetDB()[get_table().name()]["chi"].set_data(chi);
    GetDB().insert_data_row();
 }

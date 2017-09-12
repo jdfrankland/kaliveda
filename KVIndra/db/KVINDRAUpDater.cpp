@@ -330,36 +330,33 @@ void KVINDRAUpDater::SetChVoltParameters(KVDBRun* kvrun)
 
 void KVINDRAUpDater::SetVoltEnergyChIoSiParameters(KVDBRun* kvrun)
 {
+   // Read and set volt<-->mev conversion parameters for ChIo, Si and Etalon detectors for run
+   // The name of the table to use is in column "ChIoSiVoltMeVCalib" of table "Calibrations".
 
-   KVRList* param_list;// = kvrun->GetLinks("Volt-Energy ChIo-Si");
-   if (!param_list)
-      return;
-   if (!param_list->GetSize()) {
-      return;
-   }
-
-   KVDetector* kvd;
-   KVDBParameterSet* kvps;
-   KVCalibrator* kvc;
-   TIter next_ps(param_list);
+   gIndraDB->GetDB().select_data("Calibrations", Form("\"Run Number\"=%d", kvrun->GetNumber()));
+   TString calib_table;
+   while (gIndraDB->GetDB().get_next_result())
+      calib_table = gIndraDB->GetDB()["Calibrations"]["ChIoSiVoltMeVCalib"].data().GetString();
 
    // Setting Channel-Volts calibration parameters
-   while ((kvps = (KVDBParameterSet*) next_ps())) {     // boucle sur les parametres
-      kvd = gIndra->GetDetector(kvps->GetName());
+   KVSQLite::table& caltab = gIndraDB->GetDB()[calib_table.Data()];
+
+   while (gIndraDB->GetDB().get_next_result()) {
+
+      KVDetector* kvd = gIndra->GetDetector(caltab["detName"].data().GetString());
       if (!kvd) {
          /*
          Warning("SetVoltEnergyParameters(UInt_t)",
                  "Dectector %s not found !", kvps->GetName());
          */
       } else {                  // detector found
-         kvc = kvd->GetCalibrator(kvps->GetName(), kvps->GetTitle());
+         KVCalibrator* kvc = kvd->GetCalibrator(kvd->GetName(), "Volt-Energy");
          if (!kvc)
             Warning("SetVoltEnergyParameters(UInt_t)",
-                    "Calibrator %s %s not found !", kvps->GetName(),
-                    kvps->GetTitle());
+                    "Detector %s: Volt-Energy calibrator not found !", kvd->GetName());
          else {                 //calibrator found
             for (Int_t i = 0; i < kvc->GetNumberParams(); i++) {
-               kvc->SetParameter(i, kvps->GetParameter(i));
+               kvc->SetParameter(i, caltab[Form("a%d", i)].data().GetDouble());
             }
             kvc->SetStatus(kTRUE);      // calibrator ready
          }                      //calibrator found
