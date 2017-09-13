@@ -387,9 +387,8 @@ void KVINDRAUpDater::SetPedestals(KVDBRun* kvrun)
 {
    //Set pedestals for this run
 
-   SetChIoSiPedestals(kvrun);
-   SetCsIPedestals(kvrun);
-
+   set_pedestals(kvrun->GetNumber(), "Pedestals_ChIoSi", "ChIo/Si/Etalons");
+   set_pedestals(kvrun->GetNumber(), "Pedestals_CsI", "CsI");
 }
 
 //______________________________________________________________________________
@@ -488,155 +487,43 @@ void KVINDRAUpDater::SetLitEnergyCsIParameters(KVDBRun* kvrun)
 
 //______________________________________________________________________________
 
-void KVINDRAUpDater::SetChIoSiPedestals(KVDBRun* kvrun)
+void KVINDRAUpDater::set_pedestals(Int_t run_number, const TString& column_name, const TString& pedestal_type)
 {
-   //read Chio-Si-Etalons pedestals
+   // set pedestals for run
 
-//   if (!kvrun->GetKey("Pedestals"))
-//      return;
-//   if (!kvrun->GetKey("Pedestals")->GetLinks())
-//      return;
-//   if (!kvrun->GetKey("Pedestals")->GetLinks()->At(0))
-//      return;
+   gIndraDB->GetDB().select_data("Calibrations", Form("\"Run Number\"=%d", run_number));
+   TString tablename;
+   while (gIndraDB->GetDB().get_next_result())
+      tablename = gIndraDB->GetDB()["Calibrations"][column_name.Data()].data().GetString();
 
-   ifstream file_pied_chiosi;
-//   if (!KVBase::
-//         SearchAndOpenKVFile(kvrun->GetKey("Pedestals")->GetLinks()->At(0)->
-//                             GetName(), file_pied_chiosi, fDataSet.Data())) {
-//      Error("SetPedestals", "Problem opening file %s",
-//            kvrun->GetKey("Pedestals")->GetLinks()->At(0)->GetName());
-//      return;
-//   }
-//   cout << "--> Setting Pedestals" << endl;
-//   cout << "    ChIo/Si/Etalons: " << kvrun->GetKey("Pedestals")->
-//        GetLinks()->At(0)->GetName() << endl;
+   if (tablename == "") return;
 
-   //skip first 5 lines - header
-   TString line;
-   for (int i = 5; i; i--) {
-      line.ReadLine(file_pied_chiosi);
-   }
+   gIndraDB->GetDB().select_data(tablename);
+   KVSQLite::table& peds = gIndraDB->GetDB()[tablename.Data()];
 
-   int cou, mod, type, n_phys, n_gene;
-   float ave_phys, sig_phys, ave_gene, sig_gene;
+   bool first = true;
 
-   while (file_pied_chiosi.good()) {
-
-      file_pied_chiosi >> cou >> mod >> type >> n_phys >> ave_phys >>
-                       sig_phys >> n_gene >> ave_gene >> sig_gene;
-
-      KVDetector* det = gIndra->GetDetectorByType(cou, mod, type);
-      if (det) {
-         switch (type) {
-
-            case ChIo_GG:
-
-               det->SetPedestal("GG", ave_gene);
-               break;
-
-            case ChIo_PG:
-
-               det->SetPedestal("PG", ave_gene);
-               break;
-
-            case Si_GG:
-
-               det->SetPedestal("GG", ave_gene);
-               break;
-
-            case Si_PG:
-
-               det->SetPedestal("PG", ave_gene);
-               break;
-
-            case SiLi_GG:
-
-               det->SetPedestal("GG", ave_gene);
-               break;
-
-            case SiLi_PG:
-
-               det->SetPedestal("PG", ave_gene);
-               break;
-
-            case Si75_GG:
-
-               det->SetPedestal("GG", ave_gene);
-               break;
-
-            case Si75_PG:
-
-               det->SetPedestal("PG", ave_gene);
-               break;
-
-            default:
-
-               break;
-         }
+   while (gIndraDB->GetDB().get_next_result()) {
+      if (first) {
+         cout << "--> Setting Pedestals" << endl;
+         cout << "    " << pedestal_type << ": " << peds["filename"].data().GetString() << endl;
+         first = false;
       }
-   }
-   file_pied_chiosi.close();
-}
-
-//______________________________________________________________________________
-
-void KVINDRAUpDater::SetCsIPedestals(KVDBRun* kvrun)
-{
-//   if (!kvrun->GetKey("Pedestals"))
-//      return;
-//   if (!kvrun->GetKey("Pedestals")->GetLinks())
-//      return;
-//   if (!kvrun->GetKey("Pedestals")->GetLinks()->At(1))
-//      return;
-
-   //read CsI pedestals
-   ifstream file_pied_csi;
-//   if (!KVBase::
-//         SearchAndOpenKVFile(kvrun->GetKey("Pedestals")->GetLinks()->At(1)->
-//                             GetName(), file_pied_csi, fDataSet.Data())) {
-//      Error("SetPedestals", "Problem opening file %s",
-//            kvrun->GetKey("Pedestals")->GetLinks()->At(1)->GetName());
-//      return;
-//   }
-//   cout << "--> Setting Pedestals" << endl;
-//   cout << "    CsI            : " << kvrun->GetKey("Pedestals")->
-//        GetLinks()->At(1)->GetName() << endl;
-
-   int cou, mod, type, n_phys, n_gene;
-   float ave_phys, sig_phys, ave_gene, sig_gene;
-   TString line;
-
-   //skip first 5 lines - header
-   for (int i = 5; i; i--) {
-      line.ReadLine(file_pied_csi);
-   }
-
-   while (file_pied_csi.good()) {
-
-      file_pied_csi >> cou >> mod >> type >> n_phys >> ave_phys >> sig_phys
-                    >> n_gene >> ave_gene >> sig_gene;
-
-      KVDetector* det = gIndra->GetDetectorByType(cou, mod, type);
-      if (det) {
-         switch (type) {
-
-            case CsI_R:
-
-               det->SetPedestal("R", ave_gene);
-               break;
-
-            case CsI_L:
-
-               det->SetPedestal("L", ave_gene);
-               break;
-
-            default:
-
-               break;
-         }
+      KVACQParam* a = gIndra->GetACQParamByType(peds["cou"].data().GetInt(),
+                      peds["mod"].data().GetInt(),
+                      peds["typ"].data().GetInt());
+      if (!a) {
+         Warning("set_pedestals",
+                 "Unknown acquisition parameter cou=%d mod=%d typ=%d in pedestal file %s",
+                 peds["cou"].data().GetInt(),
+                 peds["mod"].data().GetInt(),
+                 peds["typ"].data().GetInt(),
+                 peds["filename"].data().GetString());
+         continue;
       }
+
+      a->SetPedestal(peds["pedestal"].data().GetDouble());
    }
-   file_pied_csi.close();
 }
 
 //_______________________________________________________________________________________

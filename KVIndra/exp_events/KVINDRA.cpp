@@ -64,16 +64,6 @@ ClassImp(KVINDRA)
 // --> END_HTML
 ///////////////////////////////////////////////////////////////////////////////////////
 
-//Use this static array to translate EBaseIndra_type
-//signal type to a string giving the signal type
-Char_t KVINDRA::SignalTypes[][3] = {
-   "",                          //dummy for index=0
-   "GG", "PG", "T",
-   "GG", "PG", "T",
-   "R", "L", "T",
-   "GG", "PG", "T",
-   "GG", "PG", "T"
-};
 
 #define KV_DEBUG 1
 
@@ -569,6 +559,31 @@ KVINDRADetector* KVINDRA::GetDetectorByType(UInt_t cou, UInt_t mod, UInt_t type)
       return det;
    }
    return 0;
+}
+
+KVACQParam* KVINDRA::GetACQParamByType(UInt_t cou, UInt_t mod, UInt_t type) const
+{
+   // Return acquisition parameter for given ring, module & signal type
+   // (see GetDetectorByType).
+   // For ring=18, 3<=mod<=10 and type=4 or 5 (Si_GG/PG), these are the
+   // pin laser (PILA_) acquisition parameters
+
+   if (cou < 18) {
+      KVINDRADetector* d = GetDetectorByType(cou, mod, type);
+      if (!d) {
+         Warning("GetACQParamByType", "No detector for cou=%u mod=%u type=%u", cou, mod, type);
+         return nullptr;
+      }
+      return d->GetACQParamWithType(type);
+   }
+   if (cou == 18 && mod > 2 && mod < 11 && type > 3 && type < 6) {
+      TString name("PILA_");
+      name += Form("%02d", mod - 2);
+      name += "_";
+      name += KVINDRADetector::SignalTypes[type];
+      return GetACQParam(name);
+   }
+   return nullptr;
 }
 
 //_______________________________________________________________________________________

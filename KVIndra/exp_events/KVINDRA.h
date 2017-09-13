@@ -38,35 +38,7 @@ class KVChIo;
 class KVDetectorEvent;
 class KVINDRAReconEvent;
 
-//old BaseIndra type definitions
-enum EBaseIndra_type {
-   ChIo_GG = 1,
-   ChIo_PG,                     //=2
-   ChIo_T,                      //=3
-   Si_GG,                       //=4
-   Si_PG,                       //=5
-   Si_T,                        //=6
-   CsI_R,                       //=7
-   CsI_L,                       //=8
-   CsI_T,                       //=9
-   Si75_GG,                     //=10
-   Si75_PG,                     //=11
-   Si75_T,                      //=12
-   SiLi_GG,                     //=13
-   SiLi_PG,                     //=14
-   SiLi_T                       //=15
-};
-enum EBaseIndra_typePhos {
-   Phos_R = 1,
-   Phos_L,                      //=2
-   Phos_T,                      //=3
-};
-
 class KVINDRA: public KVASMultiDetArray {
-
-public:
-   static Char_t SignalTypes[16][3];    //Use this static array to translate EBaseIndra_type signal type to a string giving the signal type
-
 
 private:
    UChar_t fTrigger;           //multiplicity trigger used for acquisition
@@ -131,8 +103,8 @@ public:
 
    virtual KVChIo* GetChIoOf(const Char_t* detname);
    virtual void cd(Option_t* option = "");
-   virtual KVINDRADetector* GetDetectorByType(UInt_t cou, UInt_t mod,
-         UInt_t type) const;
+   virtual KVINDRADetector* GetDetectorByType(UInt_t cou, UInt_t mod, UInt_t type) const;
+   KVACQParam* GetACQParamByType(UInt_t cou, UInt_t mod, UInt_t type) const;
 
    void SetTrigger(UChar_t trig);
    UChar_t GetTrigger() const

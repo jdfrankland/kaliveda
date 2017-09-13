@@ -6,7 +6,29 @@
 
 #include "KVDetector.h"
 #include "KVINDRATelescope.h"
-
+//old BaseIndra type definitions
+enum EBaseIndra_type {
+   ChIo_GG = 1,
+   ChIo_PG,                     //=2
+   ChIo_T,                      //=3
+   Si_GG,                       //=4
+   Si_PG,                       //=5
+   Si_T,                        //=6
+   CsI_R,                       //=7
+   CsI_L,                       //=8
+   CsI_T,                       //=9
+   Si75_GG,                     //=10
+   Si75_PG,                     //=11
+   Si75_T,                      //=12
+   SiLi_GG,                     //=13
+   SiLi_PG,                     //=14
+   SiLi_T                       //=15
+};
+enum EBaseIndra_typePhos {
+   Phos_R = 1,
+   Phos_L,                      //=2
+   Phos_T,                      //=3
+};
 class KVINDRADetector : public KVDetector {
 protected:
    // for silicon and ionisation chamber detectors
@@ -19,6 +41,9 @@ protected:
    Int_t NumeroCodeur;     //Numero du codeur (QDC pour les ChIo/Si)
 
 public:
+public:
+   static Char_t SignalTypes[16][3];    //Use this static array to translate EBaseIndra_type signal type to a string giving the signal type
+
    KVINDRADetector()
       : fGGtoPG_0(0), fGGtoPG_1(1. / 15.), fChIo(nullptr),
         NumeroCodeur(0)
@@ -58,6 +83,7 @@ public:
 
    virtual void AddACQParamType(const Char_t* type);
    virtual KVACQParam* GetACQParam(const Char_t* /*type*/);
+   KVACQParam* GetACQParamWithType(Int_t);
 
    Double_t GetPGfromGG(Double_t GG = -1);
    Double_t GetGGfromPG(Double_t PG = -1);

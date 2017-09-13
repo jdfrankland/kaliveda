@@ -132,7 +132,7 @@ void KVExpDB::fill_database_from_runlist()
    while ((param = (KVNamedParameter*)it())) {
       t.add_column(param->GetName(), param->GetSQLType());
    }
-   t.print();
+   //t.print();
    fSQLdb.add_table(t);
 
    KVSQLite::table calib("Calibrations");

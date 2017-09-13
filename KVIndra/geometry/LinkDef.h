@@ -2,6 +2,8 @@
 #pragma link off all globals;
 #pragma link off all classes;
 #pragma link off all functions;
+#pragma link C++ enum EBaseIndra_type;
+#pragma link C++ enum EBaseIndra_typePhos;
 #pragma link C++ class KVINDRADetector+;
 #pragma link C++ class KVINDRATelescope+;
 #pragma link C++ class KVSilicon-;

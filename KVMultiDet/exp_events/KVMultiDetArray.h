@@ -167,11 +167,11 @@ public:
    KVSeqCollection* GetACQParams()
    {
       return fACQParams;
-   };
-   KVACQParam* GetACQParam(const Char_t* name)
+   }
+   KVACQParam* GetACQParam(const Char_t* name) const
    {
-      return (KVACQParam*) fACQParams->FindObject(name);
-   };
+      return fACQParams->get_object<KVACQParam>(name);
+   }
    virtual void SetArrayACQParams();
 
    virtual void DetectEvent(KVEvent* event, KVReconstructedEvent* rec_event, const Char_t* detection_frame = "");

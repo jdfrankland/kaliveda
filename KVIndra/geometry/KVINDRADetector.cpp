@@ -16,6 +16,17 @@ ClassImp(KVINDRADetector)
 // --> END_HTML
 ////////////////////////////////////////////////////////////////////////////////
 
+//Use this static array to translate EBaseIndra_type
+//signal type to a string giving the signal type
+Char_t KVINDRADetector::SignalTypes[][3] = {
+   "",                          //dummy for index=0
+   "GG", "PG", "T",
+   "GG", "PG", "T",
+   "R", "L", "T",
+   "GG", "PG", "T",
+   "GG", "PG", "T"
+};
+
 const Char_t* KVINDRADetector::GetArrayName()
 {
    // Name of detector given in the form
@@ -93,6 +104,30 @@ KVACQParam* KVINDRADetector::GetACQParam(const Char_t* type)
       if (name.EndsWith(extension)) return p;
    }
    return 0;
+}
+
+KVACQParam* KVINDRADetector::GetACQParamWithType(Int_t type)
+{
+   // Return acquisition parameter corresponding to given type, one of
+   //   ChIo_GG,
+   //   ChIo_PG,
+   //   ChIo_T,
+   //   Si_GG,
+   //   Si_PG,
+   //   Si_T,
+   //   CsI_R,
+   //   CsI_L,
+   //   CsI_T,
+   //   Si75_GG,
+   //   Si75_PG,
+   //   Si75_T,
+   //   SiLi_GG,
+   //   SiLi_PG,
+   //   SiLi_T
+   //   Phos_R
+   //   Phos_L,
+   //   Phos_T
+   return GetACQParam(SignalTypes[type]);
 }
 
 //__________________________________________________________________________________________________________________________

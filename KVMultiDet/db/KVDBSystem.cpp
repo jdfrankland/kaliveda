@@ -197,7 +197,7 @@ void KVDBSystem::Load(istream& f)
       line.ReadLine(f, kFALSE);
       line.Remove(0, 1);
       SetName(line.Data());
-      cout << "New System : " << line.Data() << endl;
+      //cout << "New System : " << line.Data() << endl;
    } else {
       Error("Load", "Should read system name : %s\n", line.Data());
       return;
@@ -207,9 +207,9 @@ void KVDBSystem::Load(istream& f)
       if ((next_char >= '0') && (next_char <= '9')) {
          line.ReadLine(f, kFALSE);
          if (sscanf(line.Data(), "%u %u %u %u %f %f", &fAbeam, &fZbeam, &fAtarget, &fZtarget, &target_thickness, &fEbeam) == 6) {
-            cout << "Zproj = " << fZbeam << " Ztarg = " << fZtarget << " targ_thick = " << target_thickness << " Ebeam = " << fEbeam << endl;
+            //cout << "Zproj = " << fZbeam << " Ztarg = " << fZtarget << " targ_thick = " << target_thickness << " Ebeam = " << fEbeam << endl;
          } else if (sscanf(line.Data(), "%u %u %u %u %f", &fAbeam, &fZbeam, &fAtarget, &fZtarget, &fEbeam) == 5) {
-            cout << "Zproj = " << fZbeam << " Ztarg = " << fZtarget << " Ebeam = " << fEbeam << endl;
+            //cout << "Zproj = " << fZbeam << " Ztarg = " << fZtarget << " Ebeam = " << fEbeam << endl;
          }
       } else {
          line.ReadLine(f, kFALSE);
@@ -227,17 +227,17 @@ void KVDBSystem::Load(istream& f)
                fTarget->AddLayer(mat, thick);
             }
             fTarget->SetAngleToBeam(angle);
-            fTarget->Print();
+            //fTarget->Print();
          } else if (line.BeginsWith("Runs")) {
             line.Remove(0, line.Index(":") + 1);
             fRunlist.SetList(line.Data());
-            cout << "Runs : " << line.Data() << endl;
+            //cout << "Runs : " << line.Data() << endl;
          } else if (line.BeginsWith("Run Range")) {
             line.Remove(0, line.Index(":") + 1);
             Int_t frun, lrun;
             sscanf(line.Data(), "%i %i", &frun, &lrun);
             fRunlist.Add(Form("%i-%i", frun, lrun));
-            cout << "Run range : " << line.Data() << endl;
+            //cout << "Run range : " << line.Data() << endl;
          }
       }
       next_char = f.peek();
@@ -246,7 +246,7 @@ void KVDBSystem::Load(istream& f)
    if (!fTarget.get() && target_thickness > 0 && fZtarget > 0) {
       KVNucleus n(fZtarget, fAtarget);
       fTarget.reset(new KVTarget(n.GetSymbol(), target_thickness));
-      fTarget->Print();
+      //fTarget->Print();
    }
 }
 

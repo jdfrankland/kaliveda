@@ -14,6 +14,9 @@ class KVDBRun;
 
 class KVINDRAUpDater: public KVUpDater {
 
+protected:
+   void set_pedestals(Int_t run_number, const TString& column_name, const TString& pedestal_type);
+
 public:
 
    KVINDRAUpDater();
@@ -37,8 +40,6 @@ public:
    virtual void SetCsIGainCorrectionParameters(KVDBRun*);
    virtual void SetVoltEnergyChIoSiParameters(KVDBRun*);
    virtual void SetPHDs(KVDBRun*);
-   virtual void SetChIoSiPedestals(KVDBRun*);
-   virtual void SetCsIPedestals(KVDBRun*);
 
    ClassDef(KVINDRAUpDater, 0)  //Class handling setting of INDRA parameters for each run
 };

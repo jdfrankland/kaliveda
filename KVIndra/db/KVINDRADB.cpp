@@ -287,7 +287,7 @@ KVList* KVINDRADB::GetCalibrationPeaks(Int_t run, KVDetector* detector,
             }
 
             if (peak) {
-               peak->SetSigType(KVINDRA::SignalTypes[sign]);
+               peak->SetSigType(KVINDRADetector::SignalTypes[sign]);
                peak->SetRing(cour);
                peak->SetModule(modu);
                peak->SetParameters(mean, error, sigma, (Double_t) entries,
@@ -1127,6 +1127,7 @@ void KVINDRADB::ReadPedestalList()
    UInt_t first, last;
    GetDB().add_column("Calibrations", "Pedestals_ChIoSi", "TEXT");
    GetDB().add_column("Calibrations", "Pedestals_CsI", "TEXT");
+   int nped_chiosi(1), nped_csi(1);
 
    while (fin.good()) {         //lecture du fichier
 
@@ -1154,16 +1155,72 @@ void KVINDRADB::ReadPedestalList()
 
          sscanf(line.Data(), "%s", filename_csi);
 
-         GetDB()["Calibrations"]["Pedestals_ChIoSi"].set_data(filename_chio);
-         GetDB()["Calibrations"]["Pedestals_CsI"].set_data(filename_csi);
-         GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "Pedestals_ChIoSi Pedestals_CsI");
+         TString pchiosi_table = Form("Pedestals_ChIoSi_%d", nped_chiosi);
+         if (ReadPedestals(filename_chio, pchiosi_table)) {
+            GetDB()["Calibrations"]["Pedestals_ChIoSi"].set_data(pchiosi_table);
+            GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "Pedestals_ChIoSi");
+            ++nped_chiosi;
+         }
+         TString pcsi_table = Form("Pedestals_CsI_%d", nped_csi);
+         if (ReadPedestals(filename_csi, pcsi_table)) {
+            GetDB()["Calibrations"]["Pedestals_CsI"].set_data(pcsi_table);
+            GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "Pedestals_CsI");
+            ++nped_csi;
+         }
          runrange.Clear();
       }                         // balise trouvee
    }                            // lecture du fichier
    fin.close();
-   cout << "Pedestals Read" << endl;
 }
 
+Bool_t KVINDRADB::ReadPedestals(const TString& filename, const TString& tablename)
+{
+   // read pedestals in "filename" and fill new table "tablename" with them
+
+   ifstream file_pied;
+   if (!KVBase::SearchAndOpenKVFile(filename, file_pied, fDataSet)) {
+      Error("ReadPedestals", "Problem opening file %s",
+            filename.Data());
+      return kFALSE;
+   }
+
+   KVSQLite::table ped(tablename.Data());
+   ped.add_column("cou", "INTEGER");
+   ped.add_column("mod", "INTEGER");
+   ped.add_column("typ", "INTEGER");
+   ped.add_column("pedestal", "REAL");
+   ped.add_column("filename", "TEXT");
+   GetDB().add_table(ped);
+   KVSQLite::table& pedTable = GetDB()[tablename.Data()];
+   GetDB().prepare_data_insertion(tablename);
+
+   //skip first 5 lines - header
+   TString line;
+   for (int i = 5; i; i--) {
+      line.ReadLine(file_pied);
+   }
+
+   int cou, mod, type, n_phys, n_gene;
+   float ave_phys, sig_phys, ave_gene, sig_gene;
+
+   while (file_pied.good()) {
+
+      file_pied >> cou >> mod >> type >> n_phys >> ave_phys >>
+                sig_phys >> n_gene >> ave_gene >> sig_gene;
+
+      pedTable["cou"].set_data(cou);
+      pedTable["mod"].set_data(mod);
+      pedTable["typ"].set_data(type);
+      pedTable["pedestal"].set_data(ave_gene);
+      pedTable["filename"].set_data(filename);
+      GetDB().insert_data_row();
+   }
+   GetDB().end_data_insertion();
+
+   file_pied.close();
+
+   return kTRUE;
+}
 
 void KVINDRADB::ReadCalibCsI()
 {

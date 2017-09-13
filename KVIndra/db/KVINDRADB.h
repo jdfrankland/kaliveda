@@ -159,6 +159,7 @@ protected:
 
    void init();
 
+   virtual Bool_t ReadPedestals(const TString& filename, const TString& tablename);
 public:
    KVINDRADB();
    KVINDRADB(const Char_t* name);
