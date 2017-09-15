@@ -137,7 +137,7 @@ TObject* KVDataBase::read_object_from_root_file(Int_t id, const TString& object_
    // Read in the object with given id in the object_table
 
    TDirectory* cwd_save = gDirectory;
-   fSQLdb.select_data(object_table, Form("id=%d", id));
+   fSQLdb.select_data(object_table, "*", Form("id=%d", id));
    TObject* o = nullptr;
    while (fSQLdb.get_next_result()) {
       TString root_file = fSQLdb[object_table.Data()]["fileName"].data().GetString();

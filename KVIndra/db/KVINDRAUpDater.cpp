@@ -287,7 +287,7 @@ void KVINDRAUpDater::SetChVoltParameters(KVDBRun* kvrun)
    // For ChIo & Si detectors, the name of the table to use is in column "ElectronicCalibration" of
    // table "Calibrations". For etalon detectors, it is in column "ElectronicCalibration.Etalons".
 
-   gIndraDB->GetDB().select_data("Calibrations", Form("\"Run Number\"=%d", kvrun->GetNumber()));
+   gIndraDB->GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", kvrun->GetNumber()));
    TString calib_table[2];
    while (gIndraDB->GetDB().get_next_result()) {
       calib_table[0] = gIndraDB->GetDB()["Calibrations"]["ElectronicCalibration"].data().GetString();
@@ -333,7 +333,7 @@ void KVINDRAUpDater::SetVoltEnergyChIoSiParameters(KVDBRun* kvrun)
    // Read and set volt<-->mev conversion parameters for ChIo, Si and Etalon detectors for run
    // The name of the table to use is in column "ChIoSiVoltMeVCalib" of table "Calibrations".
 
-   gIndraDB->GetDB().select_data("Calibrations", Form("\"Run Number\"=%d", kvrun->GetNumber()));
+   gIndraDB->GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", kvrun->GetNumber()));
    TString calib_table;
    while (gIndraDB->GetDB().get_next_result())
       calib_table = gIndraDB->GetDB()["Calibrations"]["ChIoSiVoltMeVCalib"].data().GetString();
@@ -444,7 +444,7 @@ void KVINDRAUpDater::SetLitEnergyCsIParameters(KVDBRun* kvrun)
 
    Info("SetLitEnergyCsIParameters", "Setting CsI calibrations...");
 
-   gIndraDB->GetDB().select_data("Calibrations", Form("\"Run Number\"=%d", kvrun->GetNumber()));
+   gIndraDB->GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", kvrun->GetNumber()));
    TString calib_table[2];
    while (gIndraDB->GetDB().get_next_result()) {
       calib_table[0] = gIndraDB->GetDB()["Calibrations"]["CalibCsI.Z_eq_1"].data().GetString();
@@ -491,7 +491,7 @@ void KVINDRAUpDater::set_pedestals(Int_t run_number, const TString& column_name,
 {
    // set pedestals for run
 
-   gIndraDB->GetDB().select_data("Calibrations", Form("\"Run Number\"=%d", run_number));
+   gIndraDB->GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", run_number));
    TString tablename;
    while (gIndraDB->GetDB().get_next_result())
       tablename = gIndraDB->GetDB()["Calibrations"][column_name.Data()].data().GetString();

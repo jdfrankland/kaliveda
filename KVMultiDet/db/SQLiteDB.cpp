@@ -7,6 +7,7 @@
 #include "TSQLRow.h"
 #include "TSQLTableInfo.h"
 #include "TSQLColumnInfo.h"
+#include <KVString.h>
 #include <iostream>
 #include "KVError.h"
 
@@ -142,8 +143,9 @@ namespace KVSQLite {
       //        db.add_table(tt);
       //        db["some table"]["column"].set_data(...)
 
-      std::string command("CREATE TABLE IF NOT EXISTS ");
-      command += "\"";
+      std::string command("CREATE ");
+      if (t.is_temporary()) command += "TEMPORARY ";
+      command += "TABLE IF NOT EXISTS \"";
       command += t.name();
       command += "\"";
       command += " (";
@@ -306,17 +308,17 @@ namespace KVSQLite {
       fInserting = false;
    }
 
-   bool database::select_data(const char* table, const char* selection, const char* anything_else)
+   bool database::select_data(const char* table, const char* columns, const char* selection, bool distinct, const char* anything_else)
    {
       // Select data in database from given table according to
-      //    SELECT * FROM [table]
-      // or
-      //    SELECT * FROM [table] WHERE [selection]
-      // The 'anything else' will just be tacked on verbatim, like so:
-      //    SELECT * FROM [table] [anything else]
-      // or SELECT * FROM [table] WHERE [selection] [anything else]
-      // In order to retrieve results, call get_next_result()
-
+      //    SELECT [columns] FROM [table] WHERE [selection] [anything_else]
+      // In order to retrieve results, call get_next_result() until it returns false.
+      //
+      // [columns]: ="*" by default, i.e. data from all columns is retrieved.
+      //            If specific column data is to be selected, give a comma-separated list of
+      //            column names. These will be quoted correctly in case they contain spaces.
+      // [distinct]: can be used in conjunction with a selection of specific columns in order
+      //             to retrieve only rows of data with different values for the column(s).
       if (fInserting) {
          Error("database::select_data",
                "data insertion in progress; call end_data_insertion() before retrieving data");
@@ -329,7 +331,31 @@ namespace KVSQLite {
       }
       // set up SQL statement for data retrieval
       fBulkTable = &fTables[table];
-      TString cond = Form("SELECT * FROM \"%s\"", table);
+
+      KVString toto(columns), column_selection("");
+      if (toto == "*") {
+         column_selection = "*";
+         distinct = false; // don't allow 'SELECT DISTINCT * FROM ....' (?)
+         fSelectedColumns = "*";
+      } else {
+         if (distinct) column_selection = "DISTINCT ";
+         fSelectedColumns = "";
+         // put quoted column names in column_selection, add plain column names to fSelectedColumns
+         toto.Begin(",");
+         int i(0);
+         while (!toto.End()) {
+            KVString colnam = toto.Next();
+            if (i) {
+               column_selection += ", ";
+               fSelectedColumns += ", ";
+            }
+            column_selection += Form("\"%s\"", colnam.Data());
+            fSelectedColumns += colnam.Data();
+            ++i;
+         }
+      }
+
+      TString cond = Form("SELECT %s FROM \"%s\"", column_selection.Data(), table);
       if (strcmp(selection, "")) cond += Form(" WHERE %s", selection);
       if (strcmp(anything_else, "")) cond += Form(" %s", anything_else);
       fSQLstmt.reset(fDBserv->Statement(cond));
@@ -374,8 +400,19 @@ namespace KVSQLite {
       }
       if (!fEmptyResultSet && fSQLstmt->NextResultRow()) {
          // set column data
-         for (int i = 0; i < fBulkTable->number_of_columns(); ++i) {
-            (*fBulkTable)[i].set_data_from_statement(fSQLstmt.get());
+         if (fSelectedColumns == "*") {
+            for (int i = 0; i < fBulkTable->number_of_columns(); ++i) {
+               (*fBulkTable)[i].set_data_from_statement(fSQLstmt.get());
+            }
+         } else {
+            // only read data for selected columns
+            int idx = 0;
+            for (int i = 0; i < fBulkTable->number_of_columns(); ++i) {
+               if (fSelectedColumns.Contains((*fBulkTable)[i].name().c_str())) {
+                  (*fBulkTable)[i].set_data_from_statement(fSQLstmt.get(), idx);
+                  ++idx;
+               }
+            }
          }
          return kTRUE;
       }
@@ -384,10 +421,24 @@ namespace KVSQLite {
       return kFALSE;
    }
 
+   KVNumberList database::get_integer_list(const char* table, const char* column, const char* selection, const char* anything_else)
+   {
+      // Only for INTEGER columns!
+      // Fill KVNumberList with all DISTINCT values of "column" (only 1 column name at a time) for given selection
+
+      KVNumberList result;
+      if (select_data(table, column, selection, true, anything_else)) {
+         while (get_next_result()) {
+            result.Add((*this)[table][column].data().GetInt());
+         }
+      }
+      return result;
+   }
+
    void database::clear_table(const std::string& name)
    {
       // Delete all data from table
-      delete_row(name.c_str());
+      delete_data(name.c_str());
    }
 
    int database::count(const char* table, const char* column, const char* selection, bool distinct)
@@ -461,9 +512,9 @@ namespace KVSQLite {
       return (fSQLstmt->Process());
    }
 
-   void database::delete_row(const char* table, const char* selection)
+   void database::delete_data(const char* table, const char* selection)
    {
-      // delete row from the table corresponding to selection
+      // delete rows from the table corresponding to selection
       //
       // This is equivalent to
       //
@@ -482,6 +533,18 @@ namespace KVSQLite {
       TString query = Form("ALTER TABLE \"%s\" ADD COLUMN \"%s\" %s", table, name.c_str(), type.c_str());
       fDBserv->Exec(query);
       (*this)[table].add_column(name, type);
+   }
+
+   void database::copy_table_data(const char* source, const char* destination, const char* columns, const char* selection)
+   {
+      // Copy all selected data in 'source' table to 'destination'
+      // If the columns of the two tables are not identical, specify the columns to copy in 'column'
+      // (make sure column names with spaces are quoted)
+      // N.B. SQLite will not allow copy if the number of selected columns from 'source' is not
+      // exactly equal to the number of columns in 'destination'
+      TString query = Form("INSERT INTO \"%s\" SELECT %s FROM %s", destination, columns, source);
+      if (strcmp(selection, "")) query += Form(" WHERE %s", selection);
+      fDBserv->Exec(query);
    }
 
    void column::init_type_map()
@@ -528,28 +591,33 @@ namespace KVSQLite {
             break;
       }
    }
-   void column::set_data_from_statement(TSQLStatement* s)
+   void column::set_data_from_statement(TSQLStatement* s, int idx)
    {
       // set value of column according to value of parameter in statement
       // any column which has a NULL value will be given value 0, 0.0 or ""
       // (for INTEGER, REAL or TEXT type, respectively)
-      fIsNull = s->IsNull(index());
+      // if idx is given, use it as the statement parameter index instead of
+      // the column's index in the table (case where not all columns are treated
+      // in the statement)
+
+      if (idx < 0) idx = index();
+      fIsNull = s->IsNull(idx);
       switch (type()) {
          case KVSQLite::column_type::REAL:
-            fData.Set(fIsNull ? 0.0 : s->GetDouble(index()));
+            fData.Set(fIsNull ? 0.0 : s->GetDouble(idx));
             break;
          case KVSQLite::column_type::INTEGER:
-            fData.Set(fIsNull ? 0 : s->GetInt(index()));
+            fData.Set(fIsNull ? 0 : s->GetInt(idx));
             break;
          case KVSQLite::column_type::TEXT:
-            fData.Set(fIsNull ? "" : s->GetString(index()));
+            fData.Set(fIsNull ? "" : s->GetString(idx));
             break;
          case KVSQLite::column_type::BLOB:
             if (fIsNull) {
                fBlobSize = 0;
             } else {
                if (!fBlob) fBlob = (void*) new unsigned char[256];
-               s->GetBinary(index(), fBlob, fBlobSize);
+               s->GetBinary(idx, fBlob, fBlobSize);
             }
             break;
          default:

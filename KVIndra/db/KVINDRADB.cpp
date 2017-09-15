@@ -703,7 +703,7 @@ void KVINDRADB::Build()
    ReadVoltEnergyChIoSi();
    ReadCalibCsI();
    ReadPedestalList();
-//   ReadAbsentDetectors();
+   ReadAbsentDetectors();
 //   ReadOoOACQParams();
 //   ReadOoODetectors();
 
@@ -756,7 +756,7 @@ KVDBChIoPressures KVINDRADB::GetChIoPressures(int run)
 {
    // Retrieve ChIo pressures for this run
    KVDBChIoPressures p;
-   GetDB().select_data("Calibrations", Form("\"Run Number\"=%d", run));
+   GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", run));
    int id = 0;
    while (GetDB().get_next_result())
       id = GetDB()["Calibrations"]["ChIo Pressures"].data().GetInt();
@@ -767,7 +767,7 @@ KVDBChIoPressures KVINDRADB::GetChIoPressures(int run)
    }
 
    KVSQLite::table& pressures = GetDB()["ChIo Pressures"];
-   GetDB().select_data("ChIo Pressures", Form("id=%d", id));
+   GetDB().select_data("ChIo Pressures", "*", Form("id=%d", id));
    while (GetDB().get_next_result()) {
       p.SetPressures(
          pressures["2_3"].data().GetDouble(),
@@ -785,7 +785,7 @@ KVNameValueList KVINDRADB::GetGains(int run)
    // Returns detector gains for run in the form DET_NAME=[gain]
 
    KVNameValueList gains;
-   GetDB().select_data("Calibrations", Form("\"Run Number\"=%d", run));
+   GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", run));
    TString tablename;
    while (GetDB().get_next_result())
       tablename = GetDB()["Calibrations"]["Gains"].data().GetString();
@@ -1368,32 +1368,99 @@ void KVINDRADB::ReadAbsentDetectors()
       return;
    }
    Info("ReadAbsentDetectors()", "Lecture des detecteurs absents...");
-   //fAbsentDet = AddTable("Absent Detectors", "Name of physically absent detectors");
 
-   KVDBRecord* dbrec = 0;
+   // add column "Absent" to "DetectorStatus" table
+   // write in this column the names of tables containing lists of absent detectors:
+   // "AbsentDetectors_1", "AbsentDetectors_2", ... etc.
+   GetDB().add_column("DetectorStatus", "Absent", "TEXT");
+
+   // add temporary table for reading detector lists
+   KVSQLite::table temp("AbsentDetectors");
+   temp.add_column("detName", "TEXT");
+   temp.set_temporary();
+   GetDB().add_table(temp);
+
    TEnv env;
    TEnvRec* rec = 0;
    env.ReadFile(fp.Data(), kEnvAll);
    TIter it(env.GetTable());
 
+   Int_t id_table(0);
+
    while ((rec = (TEnvRec*)it.Next())) {
-      KVString srec(rec->GetName());
-      KVNumberList nl(rec->GetValue());
-      cout << rec->GetValue() << endl;
-      if (srec.Contains(",")) {
-         srec.Begin(",");
-         while (!srec.End()) {
-            dbrec = new KVDBRecord(srec.Next(), "Absent Detector");
-            dbrec->AddKey("Runs", "List of Runs");
-            //fAbsentDet->AddRecord(dbrec);
-            //LinkRecordToRunRange(dbrec, nl);
-         }
-      } else {
-         dbrec = new KVDBRecord(rec->GetName(), "Absent Detector");
-         dbrec->AddKey("Runs", "List of Runs");
-         //fAbsentDet->AddRecord(dbrec);
-         //LinkRecordToRunRange(dbrec, nl);
+
+      KVString srec(rec->GetName());//list of detectors
+      KVNumberList current_runlist(rec->GetValue());//runs concerned
+      // fill temporary table with detectors
+      GetDB().prepare_data_insertion("AbsentDetectors");
+      srec.Begin(",");
+      while (!srec.End()) {
+         GetDB()["AbsentDetectors"]["detName"].set_data(srec.Next());
+         GetDB().insert_data_row();
       }
+      GetDB().end_data_insertion();
+
+      TString runlist_selection = current_runlist.GetSQL("Run Number");
+      // number of rows with no previous information
+      KVNumberList null_runlist = GetDB().get_integer_list("DetectorStatus", "Run Number", Form("%s AND Absent IS NULL", runlist_selection.Data()));
+      Int_t null_rows = null_runlist.GetNValues();
+      Int_t previous_tables(0);
+      if (null_rows < current_runlist.GetNValues()) {
+         // some rows have already been filled. how many tables to update?
+         previous_tables = GetDB().count("DetectorStatus", "Absent", runlist_selection, true);
+      }
+      /* if previous_tables==0, we create a new table and link it to all runs
+       * if null_rows==0, we do not create a new table, but only update the existing ones
+       * if previous_tables>0 and null_rows>0, we create a new table, link it to the null runs,
+       * and update the existing tables for the other runs
+       */
+      if (previous_tables) {
+         // get names of all distinct tables already in "Absent" column for these runs
+         GetDB().select_data("DetectorStatus", "Absent", runlist_selection, true);
+         KVString update_tables;
+         while (GetDB().get_next_result()) {
+            KVString bibit = GetDB()["DetectorStatus"]["Absent"].data().GetString();
+            if (bibit == "") continue;
+            if (update_tables != "") update_tables += ",";
+            update_tables += bibit;
+         }
+         update_tables.Begin(",");
+         while (!update_tables.End()) {
+            // for each table: what is the full runlist concerned by the table?
+            // if it is used by runs not included in the current_runlist, then we generate a new table
+            // containing the entries from the table plus the new detectors
+            KVString next_table = update_tables.Next();
+            KVNumberList full_runlist = GetDB().get_integer_list("DetectorStatus", "Run Number", Form("Absent=\"%s\"", next_table.Data()));
+            KVNumberList outside_runlist = full_runlist - current_runlist; // runs outside current runlist
+            full_runlist.Inter(current_runlist); // runs in current runlist
+            if (outside_runlist.GetNValues()) {
+               // new table containing the entries from the table plus the new detectors
+               ++id_table;
+               KVSQLite::table t(Form("AbsentDetectors_%d", id_table));
+               t.add_column("detName", "TEXT");
+               GetDB().add_table(t);
+               GetDB().copy_table_data(next_table.Data(), t.name().c_str());
+               GetDB().copy_table_data("AbsentDetectors", t.name().c_str());
+               GetDB()["DetectorStatus"]["Absent"].set_data(t.name().c_str());
+               GetDB().update("DetectorStatus", full_runlist.GetSQL("Run Number"), "Absent");
+            } else {
+               // update existing table with new detectors
+               GetDB().copy_table_data("AbsentDetectors", next_table.Data());
+            }
+         }
+      }
+      if (null_rows) {
+         // there are empty rows: we create a new table and link it to all 'null' runs
+         ++id_table;
+         KVSQLite::table t(Form("AbsentDetectors_%d", id_table));
+         t.add_column("detName", "TEXT");
+         GetDB().add_table(t);
+         GetDB().copy_table_data("AbsentDetectors", t.name().c_str());
+         GetDB()["DetectorStatus"]["Absent"].set_data(t.name().c_str());
+         GetDB().update("DetectorStatus", null_runlist.GetSQL("Run Number"), "Absent");
+      }
+      // empty temporary table list of detectors
+      GetDB().clear_table("AbsentDetectors");
    }
 
 }

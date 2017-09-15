@@ -259,6 +259,20 @@ void KVNumberList::PrintLimits() const
              fLastValue << std::endl;
 }
 
+bool KVNumberList::operator==(const KVNumberList& other) const
+{
+   // Equality test for number lists
+
+   return (TString(GetList()) == TString(other.GetList()));
+}
+
+bool KVNumberList::operator!=(const KVNumberList& other) const
+{
+   // Inequality test for number lists
+
+   return !((*this) == other);
+}
+
 //____________________________________________________________________________________________//
 
 void KVNumberList::SetList(const TString& list)

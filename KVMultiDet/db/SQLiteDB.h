@@ -13,6 +13,7 @@
 #include <iostream>
 #include <map>
 #include <KVNameValueList.h>
+#include <KVNumberList.h>
 
 namespace KVSQLite {
    namespace column_type {
@@ -99,6 +100,7 @@ namespace KVSQLite {
       void set_data(const T& x)
       {
          fData.Set(x);
+         fIsNull = false;
       }
       void set_null()
       {
@@ -114,16 +116,18 @@ namespace KVSQLite {
       {
          fBlob = (void*)&x;
          fBlobSize = sizeof(x);
+         fIsNull = false;
       }
       template<typename T>
       void set_binary_data(T* x)
       {
          fBlob = (void*)x;
          fBlobSize = sizeof(*x);
+         fIsNull = false;
       }
 
       void set_data_in_statement(TSQLStatement*, int idx = -1) const;
-      void set_data_from_statement(TSQLStatement* s);
+      void set_data_from_statement(TSQLStatement* s, int idx = -1);
       void set_constraint(const TString& c)
       {
          // set constraint for column, one of:
@@ -164,17 +168,18 @@ namespace KVSQLite {
       std::vector<KVSQLite::column> fColumns;//list of columns
       std::map<std::string, int> fColMap; //map name of column to index
       static std::map<std::string, KVSQLite::column_type::types> type_map;
+      bool fTemp;//temporary table?
 
       void init_type_map();
 
    public:
       table(const std::string& Name = "")
-         : fName(Name), fInsert(KVSQLite::insert_mode::DEFAULT), fColumns(), fColMap()
+         : fName(Name), fInsert(KVSQLite::insert_mode::DEFAULT), fColumns(), fColMap(), fTemp(false)
       {
          if (!type_map.size()) init_type_map();
       }
       table(const std::string& Name, const std::vector<KVSQLite::column>& cols)
-         : fName(Name), fInsert(KVSQLite::insert_mode::DEFAULT), fColumns(cols), fColMap()
+         : fName(Name), fInsert(KVSQLite::insert_mode::DEFAULT), fColumns(cols), fColMap(), fTemp(false)
       {
          if (!type_map.size()) init_type_map();
       }
@@ -207,6 +212,16 @@ namespace KVSQLite {
          fInsert = i;
       }
       const char* get_insert_command() const;
+      void set_temporary(bool temp = true)
+      {
+         // Create a temporary table
+         fTemp = temp;
+      }
+      bool is_temporary() const
+      {
+         return fTemp;
+      }
+
       column& add_column(const KVSQLite::column& c);
       column& add_column(const std::string& name, KVSQLite_column_type type)
       {
@@ -254,6 +269,7 @@ namespace KVSQLite {
       bool fSelecting;
       bool fEmptyResultSet;
       bool fIsValid;
+      TString fSelectedColumns;
 
       void PrintResults(TSQLResult* tabent) const;
       unique_ptr<TSQLResult> SelectRowsFromTable(
@@ -327,16 +343,19 @@ namespace KVSQLite {
       void insert_data_row();
       void end_data_insertion();
 
-      bool select_data(const char* table, const char* selection = "", const char* anything_else = "");
+      bool select_data(const char* table, const char* columns = "*", const char* selection = "", bool distinct = false, const char* anything_else = "");
       bool get_next_result();
+      KVNumberList get_integer_list(const char* table, const char* column, const char* selection = "", const char* anything_else = "");
 
       void clear_table(const std::string& name);
 
       int count(const char* table, const char* column = "*", const char* selection = "", bool distinct = false);
       bool update(const char* table, const char* selection, const TString& columns);
-      void delete_row(const char* table, const char* selection = "");
+      void delete_data(const char* table, const char* selection = "");
 
       void add_column(const char* table, const std::string& name, const std::string& type);
+
+      void copy_table_data(const char* source, const char* destination, const char* columns = "*", const char* selection = "");
 
       ClassDef(database, 0) //Interface to ROOT SQLite database backend
    };

@@ -82,7 +82,7 @@ void KVExpDB::fill_systemlist_from_database()
    KVSQLite::table& runs = fSQLdb["Runs"];
    std::vector<int>::iterator target_id_it = target_id.begin();
    while ((sys = (KVDBSystem*)next())) {
-      fSQLdb.select_data("Runs", Form("sysid=%d", sys->GetSysid()));
+      fSQLdb.select_data("Runs", "*", Form("sysid=%d", sys->GetSysid()));
       while (fSQLdb.get_next_result()) {
          int run = runs["Run Number"].data().GetInt();
          runlist.Add(run);
@@ -100,7 +100,7 @@ void KVExpDB::fill_database_from_runlist()
 {
    // Called when database is built.
    // Extract all informations from runs in fRuns to create and fill the 'Runs' table
-   // We also create a 'Calibrations' table with a row for each run
+   // We also create 'Calibrations' and 'DetectorStatus' tables with a row for each run
 
    // first loop over all runs in order to list all individual parameters
    KVUniqueNameList full_param_list;
@@ -138,6 +138,9 @@ void KVExpDB::fill_database_from_runlist()
    KVSQLite::table calib("Calibrations");
    calib.add_foreign_key("Run Number", "Runs", "Run Number");
    fSQLdb.add_table(calib);
+   KVSQLite::table status("DetectorStatus");
+   status.add_foreign_key("Run Number", "Runs", "Run Number");
+   fSQLdb.add_table(status);
 
    // now fill the tables
    fSQLdb.prepare_data_insertion("Runs");
@@ -167,6 +170,14 @@ void KVExpDB::fill_database_from_runlist()
    KVSQLite::table& calibs = fSQLdb["Calibrations"];
    while ((r = (KVDBRun*)next())) {
       calibs["Run Number"].set_data((int)r->GetNumber());
+      fSQLdb.insert_data_row();
+   }
+   fSQLdb.end_data_insertion();
+   next.Reset();
+   fSQLdb.prepare_data_insertion("DetectorStatus");
+   KVSQLite::table& statuss = fSQLdb["DetectorStatus"];
+   while ((r = (KVDBRun*)next())) {
+      statuss["Run Number"].set_data((int)r->GetNumber());
       fSQLdb.insert_data_row();
    }
    fSQLdb.end_data_insertion();
