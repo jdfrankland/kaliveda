@@ -96,6 +96,14 @@ KVNumberList::KVNumberList(const Char_t* list): fString(list)
    fIsParsed = kFALSE;
 }
 
+KVNumberList::KVNumberList(Int_t x)
+{
+   //Initialise number list using single number
+
+   init_numberlist();
+   Add(x);
+}
+
 //____________________________________________________________________________________________//
 KVNumberList::KVNumberList(Int_t deb, Int_t fin, Int_t pas): fString()
 {

@@ -47,7 +47,7 @@ void KVExpDB::fill_runlist_from_database()
       int ncols = runs.number_of_columns();
       for (int i = 0; i < ncols; ++i) {
          KVSQLite::column& col = runs[i];
-         if (!default_params.HasParameter(col.name().c_str())) {
+         if (!default_params.HasParameter(col.name())) {
             r->GetParameters().SetValue(col.data());
          }
       }
@@ -82,7 +82,7 @@ void KVExpDB::fill_systemlist_from_database()
    KVSQLite::table& runs = fSQLdb["Runs"];
    std::vector<int>::iterator target_id_it = target_id.begin();
    while ((sys = (KVDBSystem*)next())) {
-      fSQLdb.select_data("Runs", "*", Form("sysid=%d", sys->GetSysid()));
+      fSQLdb.select_data("Runs", "Run Number", Form("sysid=%d", sys->GetSysid()));
       while (fSQLdb.get_next_result()) {
          int run = runs["Run Number"].data().GetInt();
          runlist.Add(run);
@@ -165,23 +165,25 @@ void KVExpDB::fill_database_from_runlist()
    }
    fSQLdb.end_data_insertion();
 
-   next.Reset();
-   fSQLdb.prepare_data_insertion("Calibrations");
-   KVSQLite::table& calibs = fSQLdb["Calibrations"];
-   while ((r = (KVDBRun*)next())) {
-      calibs["Run Number"].set_data((int)r->GetNumber());
-      fSQLdb.insert_data_row();
-   }
-   fSQLdb.end_data_insertion();
-   next.Reset();
-   fSQLdb.prepare_data_insertion("DetectorStatus");
-   KVSQLite::table& statuss = fSQLdb["DetectorStatus"];
-   while ((r = (KVDBRun*)next())) {
-      statuss["Run Number"].set_data((int)r->GetNumber());
-      fSQLdb.insert_data_row();
-   }
-   fSQLdb.end_data_insertion();
-
+//   next.Reset();
+//   fSQLdb.prepare_data_insertion("Calibrations");
+//   KVSQLite::table& calibs = fSQLdb["Calibrations"];
+//   while ((r = (KVDBRun*)next())) {
+//      calibs["Run Number"].set_data((int)r->GetNumber());
+//      fSQLdb.insert_data_row();
+//   }
+//   fSQLdb.end_data_insertion();
+//   next.Reset();
+//   fSQLdb.prepare_data_insertion("DetectorStatus");
+//   KVSQLite::table& statuss = fSQLdb["DetectorStatus"];
+//   while ((r = (KVDBRun*)next())) {
+//      statuss["Run Number"].set_data((int)r->GetNumber());
+//      fSQLdb.insert_data_row();
+//   }
+//   fSQLdb.end_data_insertion();
+   // copy run numbers to Calibrations and DetectorStatus tables
+   fSQLdb.copy_table_data("Runs", "Calibrations", "Run Number");
+   fSQLdb.copy_table_data("Runs", "DetectorStatus", "Run Number");
 }
 
 KVExpDB::KVExpDB()
@@ -470,4 +472,10 @@ void KVExpDB::PrintRuns(KVNumberList& nl) const
              run->GetNumber(), (run->GetSystem() ? run->GetSystem()->GetName() : "            "), run->GetTriggerString(),
              run->GetEvents(), run->GetComments());
    }
+}
+
+void KVExpDB::select_runs_in_dbtable(const TString& table, const KVNumberList& runs, const KVString& columns)
+{
+   // Select rows in sqlite DB table for given runs (we assume table has column "Run Number")
+   GetDB().select_data(table, columns, runs.GetSQL("Run Number"));
 }

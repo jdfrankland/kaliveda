@@ -115,10 +115,23 @@ void KVINDRAUpDater::SetTrigger(KVDBRun* kvrun)
 //_______________________________________________________________//
 void KVINDRAUpDater::CheckStatusOfDetectors(KVDBRun* kvrun)
 {
-
-   KVRList* absdet;// = kvrun->GetLinks("Absent Detectors");
-   KVRList* oooacq;// = kvrun->GetLinks("OoO ACQPars");
-   KVRList* ooodet;// = kvrun->GetLinks("OoO Detectors");
+   gIndraDB->select_runs_in_dbtable("DetectorStatus", kvrun->GetNumber());
+   TString absent_table, oo_dets_table, oo_acq_table;
+   while (gIndraDB->GetDB().get_next_result()) {
+      absent_table = gIndraDB->GetDB()["DetectorStatus"]["Absent"].data().GetString();
+      oo_dets_table = gIndraDB->GetDB()["DetectorStatus"]["OoODet"].data().GetString();
+      oo_acq_table = gIndraDB->GetDB()["DetectorStatus"]["OoOACQPar"].data().GetString();
+   }
+   TString absdet, ooodet, oooacq;
+   if (absent_table != "") {
+      absdet = gIndraDB->GetDB().get_string_list(absent_table, "Name");
+   }
+   if (oo_dets_table != "") {
+      ooodet = gIndraDB->GetDB().get_string_list(oo_dets_table, "Name");
+   }
+   if (oo_acq_table != "") {
+      oooacq = gIndraDB->GetDB().get_string_list(oo_acq_table, "Name");
+   }
 
    TIter next(gIndra->GetListOfDetectors());
    KVDetector* det;
@@ -130,52 +143,39 @@ void KVINDRAUpDater::CheckStatusOfDetectors(KVDBRun* kvrun)
 
    while ((det = (KVDetector*)next())) {
       //Test de la presence ou non du detecteur
-      if (!absdet) {
-         det->SetPresent();
+      if (absdet.Contains(det->GetName())) {
+         det->SetPresent(kFALSE);
+         ndet_absent += 1;
       } else {
-         if (absdet->FindObject(det->GetName(), "Absent Detector")) {
-            det->SetPresent(kFALSE);
-            ndet_absent += 1;
-         } else {
-            det->SetPresent();
-         }
+         det->SetPresent();
       }
       if (det->IsPresent()) {
          //Test du bon fonctionnement ou non du detecteur
-         if (!ooodet) {
-            det->SetDetecting();
+         if (ooodet.Contains(det->GetName())) {
+            det->SetDetecting(kFALSE);
+            ndet_ooo += 1;
          } else {
-            if (ooodet->FindObject(det->GetName(), "OoO Detector")) {
-               det->SetDetecting(kFALSE);
-               ndet_ooo += 1;
-            } else {
-               det->SetDetecting();
-            }
+            det->SetDetecting();
          }
          //Test du bon fonctionnement ou non des parametres d acquisition
          if (det->IsDetecting()) {
             TIter next_acq(det->GetACQParamList());
-            if (!oooacq) {
-               while ((acq = (KVACQParam*)next_acq())) {
+            Int_t noff = 0;
+            while ((acq = (KVACQParam*)next_acq())) {
+               if (oooacq.Contains(acq->GetName())) {
+                  acq->SetWorking(kFALSE);
+                  noff += 1;
+                  nacq_ooo += 1;
+               } else {
                   acq->SetWorking();
                }
-            } else {
-               Int_t noff = 0;
-               while ((acq = (KVACQParam*)next_acq())) {
-                  if (oooacq->FindObject(acq->GetName(), "OoO ACQPar")) {
-                     acq->SetWorking(kFALSE);
-                     noff += 1;
-                     nacq_ooo += 1;
-                  } else {
-                     acq->SetWorking();
-                  }
-               }
-               if (noff == 3) {
-                  det->SetDetecting(kFALSE);
-                  ndet_ooo += 1;
-                  nacq_ooo -= 3;
-               }
             }
+            if (noff == 3) {
+               det->SetDetecting(kFALSE);
+               ndet_ooo += 1;
+               nacq_ooo -= 3;
+            }
+
          }
       }
    }
@@ -183,9 +183,6 @@ void KVINDRAUpDater::CheckStatusOfDetectors(KVDBRun* kvrun)
    Info("KVINDRAUpDater", "%d detecteurs absents", ndet_absent);
    Info("KVINDRAUpDater", "%d detecteurs ne fonctionnent pas", ndet_ooo);
    Info("KVINDRAUpDater", "%d parametres d acquisition ne fonctionnent pas", nacq_ooo);
-
-
-
 }
 //_______________________________________________________________//
 

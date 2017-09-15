@@ -48,6 +48,7 @@ public:
    KVNumberList();
    KVNumberList(const KVNumberList&);
    KVNumberList(const Char_t*);
+   KVNumberList(Int_t);
    KVNumberList(Int_t deb, Int_t fin, Int_t pas);
    virtual ~ KVNumberList();
 

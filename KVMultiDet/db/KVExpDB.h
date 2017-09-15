@@ -84,6 +84,8 @@ public:
    virtual void ReadObjects(TFile*) {}
    virtual void PrintRuns(KVNumberList&) const;
 
+   void select_runs_in_dbtable(const TString& table, const KVNumberList& runs, const KVString& columns = "*");
+
    ClassDef(KVExpDB, 1) //base class to describe database of an experiment
 };
 

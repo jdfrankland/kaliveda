@@ -29,16 +29,16 @@ ClassImp(KVSQLite::table)
 namespace KVSQLite {
 
    // static maps instantiation
-   std::map<std::string, KVSQLite::column_type::types> table::type_map;
-   std::map<KVSQLite::column_type::types, std::string> column::inv_type_map;
+   std::map<TString, KVSQLite::column_type::types> table::type_map;
+   std::map<KVSQLite::column_type::types, TString> column::inv_type_map;
 
-   unique_ptr<TSQLResult> database::SelectRowsFromTable(const char* table, const char* columns, const char* condition) const
+   unique_ptr<TSQLResult> database::SelectRowsFromTable(const TString& table, const TString& columns, const TString& condition) const
    {
       // return result of query "SELECT [columns] FROM [table] WHERE [condition]"
 
       TString query;
-      query.Form("SELECT %s FROM '%s'", columns, table);
-      if (condition) query += Form(" WHERE %s", condition);
+      query.Form("SELECT %s FROM '%s'", columns.Data(), table.Data());
+      if (condition) query += Form(" WHERE %s", condition.Data());
       return unique_ptr<TSQLResult>(fDBserv->Query(query));
    }
 
@@ -58,7 +58,7 @@ namespace KVSQLite {
          TSQLColumnInfo* colin;
          while ((colin = (TSQLColumnInfo*)it_col())) t.add_column(colin->GetName(), colin->GetTypeName());
 
-         fTables.insert(std::pair<std::string, KVSQLite::table>(o->GetName(), t));
+         fTables.insert(std::pair<TString, KVSQLite::table>(o->GetName(), t));
       }
 
    }
@@ -70,7 +70,7 @@ namespace KVSQLite {
 #ifdef WITH_CPP11
       for (auto it = fTables.begin();
 #else
-      for (std::map<std::string, KVSQLite::table>::const_iterator it = fTables.begin();
+      for (std::map<TString, KVSQLite::table>::const_iterator it = fTables.begin();
 #endif
             it != fTables.end(); ++it) {
          std::cout << "\t" << it->first << std::endl;
@@ -129,6 +129,7 @@ namespace KVSQLite {
          unique_ptr<TSQLResult> tabent = SelectRowsFromTable(o->GetName());
          PrintResults(tabent.get());
       }
+      std::cout << std::endl;
    }
 
    void database::add_table(table& t)
@@ -143,7 +144,7 @@ namespace KVSQLite {
       //        db.add_table(tt);
       //        db["some table"]["column"].set_data(...)
 
-      std::string command("CREATE ");
+      TString command("CREATE ");
       if (t.is_temporary()) command += "TEMPORARY ";
       command += "TABLE IF NOT EXISTS \"";
       command += t.name();
@@ -155,11 +156,11 @@ namespace KVSQLite {
       }
       command += ")";
       //std::cout << command << std::endl;
-      if (fDBserv->Exec(command.c_str()))
-         fTables.insert(std::pair<std::string, KVSQLite::table>(t.name(), t));
+      if (fDBserv->Exec(command))
+         fTables.insert(std::pair<TString, KVSQLite::table>(t.name(), t));
    }
 
-   bool database::prepare_data_insertion(const char* table)
+   bool database::prepare_data_insertion(const TString& table)
    {
       // Call this method before insert_dat_row() in order to perform bulk data
       // insertion operation. i.e. something like:
@@ -178,7 +179,7 @@ namespace KVSQLite {
          if (fBulkTable) {
             Error("database::prepare_data_insertion",
                   "bulk insertion in progress for table %s; call database::commit() to terminate transaction",
-                  fBulkTable->name().c_str());
+                  fBulkTable->name());
             return false;
          } else {
             Error("database::prepare_data_insertion",
@@ -195,13 +196,13 @@ namespace KVSQLite {
       fDBserv->StartTransaction();
       // set up SQL statement for data insertion into table
       fBulkTable = &fTables[table];
-      std::string com(fBulkTable->get_insert_command());
+      TString com(fBulkTable->get_insert_command());
       int ncol = fBulkTable->number_of_columns();
       int idx = 0;
       for (int i = 0; i < ncol; ++i) {
          if (idx) com += ",";
          if (!(*fBulkTable)[i].primary_key()) {
-            com += Form("\"%s\"", (*fBulkTable)[i].name().c_str());;
+            com += Form("\"%s\"", (*fBulkTable)[i].name());;
             ++idx;
          }
       }
@@ -216,7 +217,7 @@ namespace KVSQLite {
       }
       com += ")";
       //std::cout << com << std::endl;
-      fSQLstmt.reset(fDBserv->Statement(com.c_str()));
+      fSQLstmt.reset(fDBserv->Statement(com));
       return true;
    }
 
@@ -224,19 +225,19 @@ namespace KVSQLite {
    {
       switch (fInsert) {
          case KVSQLite::insert_mode::FAIL:
-            return Form("INSERT OR FAIL INTO \"%s\"(", name().c_str());
+            return Form("INSERT OR FAIL INTO \"%s\"(", name());
             break;
          case KVSQLite::insert_mode::IGNORE:
-            return Form("INSERT OR IGNORE INTO \"%s\"(", name().c_str());
+            return Form("INSERT OR IGNORE INTO \"%s\"(", name());
             break;
          case KVSQLite::insert_mode::REPLACE:
-            return Form("INSERT OR REPLACE INTO \"%s\"(", name().c_str());
+            return Form("INSERT OR REPLACE INTO \"%s\"(", name());
             break;
          default:
          case KVSQLite::insert_mode::DEFAULT:
             break;
       }
-      return Form("INSERT INTO \"%s\"(", name().c_str());
+      return Form("INSERT INTO \"%s\"(", name());
    }
 
    const char* column::get_declaration() const
@@ -244,10 +245,10 @@ namespace KVSQLite {
       // return declaration for column, including type & constraint
 
       static TString decl;
-      decl.Form("\"%s\" %s", name().c_str(), type_name().c_str());
+      decl.Form("\"%s\" %s", name(), type_name());
       if (fForeignKey) {
          decl += " REFERENCES ";
-         decl += Form("\"%s\"(\"%s\")", fFKtable.c_str(), fFKcolumn.c_str());
+         decl += Form("\"%s\"(\"%s\")", fFKtable.Data(), fFKcolumn.Data());
       } else {
          decl += " ";
          decl += fConstraint;
@@ -308,7 +309,7 @@ namespace KVSQLite {
       fInserting = false;
    }
 
-   bool database::select_data(const char* table, const char* columns, const char* selection, bool distinct, const char* anything_else)
+   bool database::select_data(const TString& table, const TString& columns, const TString& selection, bool distinct, const TString& anything_else)
    {
       // Select data in database from given table according to
       //    SELECT [columns] FROM [table] WHERE [selection] [anything_else]
@@ -332,8 +333,8 @@ namespace KVSQLite {
       // set up SQL statement for data retrieval
       fBulkTable = &fTables[table];
 
-      KVString toto(columns), column_selection("");
-      if (toto == "*") {
+      KVString column_selection(""), _columns(columns);
+      if (columns == "*") {
          column_selection = "*";
          distinct = false; // don't allow 'SELECT DISTINCT * FROM ....' (?)
          fSelectedColumns = "*";
@@ -341,10 +342,10 @@ namespace KVSQLite {
          if (distinct) column_selection = "DISTINCT ";
          fSelectedColumns = "";
          // put quoted column names in column_selection, add plain column names to fSelectedColumns
-         toto.Begin(",");
+         _columns.Begin(",");
          int i(0);
-         while (!toto.End()) {
-            KVString colnam = toto.Next();
+         while (!_columns.End()) {
+            KVString colnam = _columns.Next();
             if (i) {
                column_selection += ", ";
                fSelectedColumns += ", ";
@@ -355,9 +356,9 @@ namespace KVSQLite {
          }
       }
 
-      TString cond = Form("SELECT %s FROM \"%s\"", column_selection.Data(), table);
-      if (strcmp(selection, "")) cond += Form(" WHERE %s", selection);
-      if (strcmp(anything_else, "")) cond += Form(" %s", anything_else);
+      TString cond = Form("SELECT %s FROM \"%s\"", column_selection.Data(), table.Data());
+      if (selection != "") cond += Form(" WHERE %s", selection.Data());
+      if (anything_else != "") cond += Form(" %s", anything_else.Data());
       fSQLstmt.reset(fDBserv->Statement(cond));
       if (fSQLstmt.get() == nullptr) {
          Error("database::select_data", "problem processing : %s", cond.Data());
@@ -408,7 +409,7 @@ namespace KVSQLite {
             // only read data for selected columns
             int idx = 0;
             for (int i = 0; i < fBulkTable->number_of_columns(); ++i) {
-               if (fSelectedColumns.Contains((*fBulkTable)[i].name().c_str())) {
+               if (fSelectedColumns.Contains((*fBulkTable)[i].name())) {
                   (*fBulkTable)[i].set_data_from_statement(fSQLstmt.get(), idx);
                   ++idx;
                }
@@ -421,7 +422,7 @@ namespace KVSQLite {
       return kFALSE;
    }
 
-   KVNumberList database::get_integer_list(const char* table, const char* column, const char* selection, const char* anything_else)
+   KVNumberList database::get_integer_list(const TString& table, const TString& column, const TString& selection, const TString& anything_else)
    {
       // Only for INTEGER columns!
       // Fill KVNumberList with all DISTINCT values of "column" (only 1 column name at a time) for given selection
@@ -435,13 +436,30 @@ namespace KVSQLite {
       return result;
    }
 
-   void database::clear_table(const std::string& name)
+   TString database::get_string_list(const TString& table, const TString& column, const TString& selection, const TString& anything_else)
    {
-      // Delete all data from table
-      delete_data(name.c_str());
+      // Only for TEXT columns!
+      // Fill TString with comma-separated list of values of "column" (only 1 column name at a time) for given selection
+      // Any NULL entries will be ignored
+
+      TString result;
+      if (select_data(table, column, selection, false, anything_else)) {
+         while (get_next_result()) {
+            if ((*this)[table][column].is_null()) continue;
+            if (result != "") result += ",";
+            result += (*this)[table][column].data().GetString();
+         }
+      }
+      return result;
    }
 
-   int database::count(const char* table, const char* column, const char* selection, bool distinct)
+   void database::clear_table(const TString& name)
+   {
+      // Delete all data from table
+      delete_data(name);
+   }
+
+   int database::count(const TString& table, const TString& column, const TString& selection, bool distinct)
    {
       // Returns number of rows in table for which selection holds true
       //  if column="*" all rows are included
@@ -451,11 +469,11 @@ namespace KVSQLite {
 
       TString qry = "SELECT count(";
       if (distinct) qry += "DISTINCT ";
-      qry += Form("\"%s\"", column);
+      qry += Form("\"%s\"", column.Data());
       qry += ") FROM '";
       qry += table;
       qry += "'";
-      if (strcmp(selection, "")) {
+      if (selection != "") {
          qry += " WHERE ";
          qry += selection;
       }
@@ -466,7 +484,7 @@ namespace KVSQLite {
       return number.Atoi();
    }
 
-   bool database::update(const char* table, const char* selection, const TString& columns)
+   bool database::update(const TString& table, const TString& selection, const TString& columns)
    {
       // update the given columns of an entry in the table corresponding to selection
       // the current values of the data members of the columns will be used
@@ -487,24 +505,24 @@ namespace KVSQLite {
       }
 
       fBulkTable = &fTables[table];
-      TString query = Form("UPDATE \"%s\" SET ", table);
+      TString query = Form("UPDATE \"%s\" SET ", table.Data());
       int ncol = fBulkTable->number_of_columns();
       int idx = 0;
       for (int i = 0; i < ncol; ++i) {
-         if (columns.Contains((*fBulkTable)[i].name().c_str())) {
+         if (columns.Contains((*fBulkTable)[i].name())) {
             if (idx) query += ",";
-            query += Form("\"%s\"", (*fBulkTable)[i].name().c_str());
+            query += Form("\"%s\"", (*fBulkTable)[i].name());
             query += "=?";
             ++idx;
          }
       }
-      query += Form(" WHERE %s", selection);
+      query += Form(" WHERE %s", selection.Data());
       //std::cout << query << std::endl;
       fSQLstmt.reset(fDBserv->Statement(query));
       fSQLstmt->NextIteration();
       idx = 0;
       for (int i = 0; i < ncol; ++i) {
-         if (columns.Contains((*fBulkTable)[i].name().c_str())) {
+         if (columns.Contains((*fBulkTable)[i].name())) {
             (*fBulkTable)[i].set_data_in_statement(fSQLstmt.get(), idx);
             ++idx;
          }
@@ -512,7 +530,7 @@ namespace KVSQLite {
       return (fSQLstmt->Process());
    }
 
-   void database::delete_data(const char* table, const char* selection)
+   void database::delete_data(const TString& table, const TString& selection)
    {
       // delete rows from the table corresponding to selection
       //
@@ -522,28 +540,40 @@ namespace KVSQLite {
       //
       // With no selection, deletes all rows of table (clear_table())
 
-      TString query = Form("DELETE FROM \"%s\"", table);
-      if (strcmp(selection, "")) query += Form(" WHERE %s", selection);
+      TString query = Form("DELETE FROM \"%s\"", table.Data());
+      if (selection != "") query += Form(" WHERE %s", selection.Data());
       fDBserv->Exec(query);
    }
 
-   void database::add_column(const char* table, const std::string& name, const std::string& type)
+   void database::add_column(const TString& table, const TString& name, const TString& type)
    {
       // add column to existing table
-      TString query = Form("ALTER TABLE \"%s\" ADD COLUMN \"%s\" %s", table, name.c_str(), type.c_str());
+      TString query = Form("ALTER TABLE \"%s\" ADD COLUMN \"%s\" %s", table.Data(), name.Data(), type.Data());
       fDBserv->Exec(query);
       (*this)[table].add_column(name, type);
    }
 
-   void database::copy_table_data(const char* source, const char* destination, const char* columns, const char* selection)
+   void database::copy_table_data(const TString& source, const TString& destination, const TString& columns, const TString& selection)
    {
       // Copy all selected data in 'source' table to 'destination'
       // If the columns of the two tables are not identical, specify the columns to copy in 'column'
-      // (make sure column names with spaces are quoted)
+      // (comma-separated list)
       // N.B. SQLite will not allow copy if the number of selected columns from 'source' is not
       // exactly equal to the number of columns in 'destination'
-      TString query = Form("INSERT INTO \"%s\" SELECT %s FROM %s", destination, columns, source);
-      if (strcmp(selection, "")) query += Form(" WHERE %s", selection);
+
+      TString COLUMNS = columns;
+      if (COLUMNS != "*") {
+         // quote all column names
+         COLUMNS = "";
+         KVString _columns(columns);
+         _columns.Begin(",");
+         while (!_columns.End()) {
+            if (COLUMNS != "") COLUMNS += ", ";
+            COLUMNS += Form("\"%s\"", _columns.Next(kTRUE).Data());
+         }
+      }
+      TString query = Form("INSERT INTO \"%s\" SELECT %s FROM %s", destination.Data(), COLUMNS.Data(), source.Data());
+      if (selection != "") query += Form(" WHERE %s", selection.Data());
       fDBserv->Exec(query);
    }
 
@@ -555,7 +585,7 @@ namespace KVSQLite {
       inv_type_map[KVSQLite::column_type::BLOB] = "BLOB";
    }
 
-   std::string column::_type()
+   const char* column::_type()
    {
       return inv_type_map[fNameType.second];
    }
@@ -571,7 +601,6 @@ namespace KVSQLite {
       if (fIsNull) {
          // null parameter
          s->SetNull(idx);
-         fIsNull = false; //reset null flag
          return;
       }
       switch (type()) {
@@ -595,7 +624,8 @@ namespace KVSQLite {
    {
       // set value of column according to value of parameter in statement
       // any column which has a NULL value will be given value 0, 0.0 or ""
-      // (for INTEGER, REAL or TEXT type, respectively)
+      // (for INTEGER, REAL or TEXT type, respectively): use column::is_null()
+      // to check if this corresponds to a null column value.
       // if idx is given, use it as the statement parameter index instead of
       // the column's index in the table (case where not all columns are treated
       // in the statement)
@@ -625,7 +655,7 @@ namespace KVSQLite {
       }
    }
 
-   void column::set_foreign_key(const std::string& _table, const std::string& _column)
+   void column::set_foreign_key(const TString& _table, const TString& _column)
    {
       // declare this column to be a foreign key i.e. linked to the given
       // _column name in another _table
@@ -672,13 +702,13 @@ namespace KVSQLite {
       return fColumns.back();
    }
 
-   column& table::add_column(const std::string& name, const std::string& type)
+   column& table::add_column(const TString& name, const TString& type)
    {
       // add column to table. return reference to added column.
       return add_column(name, type_map[type]);
    }
 
-   const column& table::add_primary_key(const std::string& name)
+   const column& table::add_primary_key(const TString& name)
    {
       // add a PRIMARY KEY column to the table
       // returns reference to primary key (cannot be modified)
@@ -692,7 +722,7 @@ namespace KVSQLite {
       return c;
    }
 
-   const column& table::add_foreign_key(const std::string& name, const std::string& other_table, const std::string& other_column)
+   const column& table::add_foreign_key(const TString& name, const TString& other_table, const TString& other_column)
    {
       // add a foreign key to the table, which is an INTEGER reference to
       // another column in another table. returns reference to key (cannot be modified)
@@ -702,7 +732,7 @@ namespace KVSQLite {
       return c;
    }
 
-   const column& table::add_foreign_key(const std::string& name, const table& other_table, const column& other_column)
+   const column& table::add_foreign_key(const TString& name, const table& other_table, const column& other_column)
    {
       // add a foreign key to the table, which is an INTEGER reference to
       // another column in another table. returns reference to key (cannot be modified)
@@ -718,7 +748,7 @@ namespace KVSQLite {
       // any columns which do not appear in the KVNameValueList will be set to 'null'
 
       for (int i = 0; i < number_of_columns(); ++i) {
-         if (l.HasParameter((*this)[i].name().c_str()))(*this)[i].set_data(*l.FindParameter((*this)[i].name().c_str()));
+         if (l.HasParameter((*this)[i].name()))(*this)[i].set_data(*l.FindParameter((*this)[i].name()));
          else (*this)[i].set_null();
       }
    }

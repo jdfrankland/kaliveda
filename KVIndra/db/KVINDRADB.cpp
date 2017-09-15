@@ -704,8 +704,8 @@ void KVINDRADB::Build()
    ReadCalibCsI();
    ReadPedestalList();
    ReadAbsentDetectors();
-//   ReadOoOACQParams();
-//   ReadOoODetectors();
+   ReadOoOACQParams();
+   ReadOoODetectors();
 
    // read all available mean pulser data and store in tree
 //   if (!fPulserData) fPulserData = new KVINDRAPulserDataTree;
@@ -756,7 +756,7 @@ KVDBChIoPressures KVINDRADB::GetChIoPressures(int run)
 {
    // Retrieve ChIo pressures for this run
    KVDBChIoPressures p;
-   GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", run));
+   GetDB().select_data("Calibrations", "ChIo Pressures", Form("\"Run Number\"=%d", run));
    int id = 0;
    while (GetDB().get_next_result())
       id = GetDB()["Calibrations"]["ChIo Pressures"].data().GetInt();
@@ -785,14 +785,14 @@ KVNameValueList KVINDRADB::GetGains(int run)
    // Returns detector gains for run in the form DET_NAME=[gain]
 
    KVNameValueList gains;
-   GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", run));
+   GetDB().select_data("Calibrations", "Gains", Form("\"Run Number\"=%d", run));
    TString tablename;
    while (GetDB().get_next_result())
       tablename = GetDB()["Calibrations"]["Gains"].data().GetString();
 
    if (tablename != "") {
       GetDB().select_data(tablename);
-      KVSQLite::table& t = GetDB()[tablename.Data()];
+      KVSQLite::table& t = GetDB()[tablename];
       while (GetDB().get_next_result()) {
          gains.SetValue(t["detName"].data().GetString(), t["gain"].data().GetDouble());
       }
@@ -1191,7 +1191,7 @@ Bool_t KVINDRADB::ReadPedestals(const TString& filename, const TString& tablenam
    ped.add_column("pedestal", "REAL");
    ped.add_column("filename", "TEXT");
    GetDB().add_table(ped);
-   KVSQLite::table& pedTable = GetDB()[tablename.Data()];
+   KVSQLite::table& pedTable = GetDB()[tablename];
    GetDB().prepare_data_insertion(tablename);
 
    //skip first 5 lines - header
@@ -1254,15 +1254,15 @@ void KVINDRADB::ReadLightEnergyCsI(const Char_t* zrange)
 
    filename.ReplaceAll("=", "_eq_");
    filename.ReplaceAll(">", "_gt_");
-   GetDB().add_column("Calibrations", filename.Data(), "TEXT");
+   GetDB().add_column("Calibrations", filename, "TEXT");
    TString tablename = filename + "_1";
-   KVSQLite::table calib(tablename.Data());
+   KVSQLite::table calib(tablename);
    calib.add_column("detName", "TEXT");
    calib.add_column("type", "TEXT");
    calib.add_column("npar", "INTEGER");
    for (int i = 0; i < 4; ++i) calib.add_column(Form("a%d", i), "REAL");
    GetDB().add_table(calib);
-   KVSQLite::table& calTab = GetDB()[tablename.Data()];
+   KVSQLite::table& calTab = GetDB()[tablename];
 
    TString sline;
    Float_t a[4];    // calibration parameters
@@ -1296,7 +1296,7 @@ void KVINDRADB::ReadLightEnergyCsI(const Char_t* zrange)
 
    //these calibrators are valid for all runs
    KVNumberList runrange(Form("%d-%d", kFirstRun, kLastRun));
-   GetDB()["Calibrations"][filename.Data()].set_data(tablename);
+   GetDB()["Calibrations"][filename].set_data(tablename);
    GetDB().update("Calibrations", runrange.GetSQL("Run Number"), filename);
 }
 
@@ -1356,27 +1356,41 @@ Double_t KVINDRADB::GetTotalCrossSection(KVNumberList runs,
                                      Coul_par_top);
 }
 
-
-//____________________________________________________________________________
-void KVINDRADB::ReadAbsentDetectors()
+void KVINDRADB::ReadTEnvStatusFile(const TString& calling_method,
+                                   const TString& informational,
+                                   const TString& calibfilename,
+                                   const TString& status_table,
+                                   const TString& status_table_column,
+                                   const TString& info_table_basename)
 {
-   //Lit le fichier ou sont listés les détecteurs retirés au cours
-   //de la manip
+   // Generic method to read a TEnv format file of the following kind:
+   //
+   // [name1],[name2],... : [runlist1]
+   // [name1],[name2],... : [runlist2]
+   // ...
+   //
+   // The name of the file will be found using GetCalibFileName(calibfilename)
+   // Links to the informations for each run will be stored in (new) column "status_table_column" of table "status_table"
+   // The informations will be stored in tables named "info_table_basename"_1, "info_table_basename"_2, etc.
+   // containing a single column: "Name"
+   // The same runlists can occur several times, there can be overlaps between the runlists for
+   // different entries, etc.
+
    TString fp;
-   if (!KVBase::SearchKVFile(GetCalibFileName("AbsentDet"), fp, fDataSet.Data())) {
-      Error("ReadAbsentDetectors", "Fichier %s, inconnu au bataillon", GetCalibFileName("AbsentDet"));
+   if (!KVBase::SearchKVFile(GetCalibFileName(calibfilename), fp, fDataSet.Data())) {
+      Error(calling_method, "Fichier %s, inconnu au bataillon", GetCalibFileName(calibfilename));
       return;
    }
-   Info("ReadAbsentDetectors()", "Lecture des detecteurs absents...");
+   Info(calling_method, "%s", informational.Data());
 
-   // add column "Absent" to "DetectorStatus" table
-   // write in this column the names of tables containing lists of absent detectors:
-   // "AbsentDetectors_1", "AbsentDetectors_2", ... etc.
-   GetDB().add_column("DetectorStatus", "Absent", "TEXT");
+   // add column "status_table_column" to "status_table" table
+   // write in this column the names of tables containing information for different runs:
+   // "info_table_basename_1", "info_table_basename_2", ... etc.
+   GetDB().add_column(status_table, status_table_column, "TEXT");
 
-   // add temporary table for reading detector lists
-   KVSQLite::table temp("AbsentDetectors");
-   temp.add_column("detName", "TEXT");
+   // add temporary table for reading lists of names
+   KVSQLite::table temp(info_table_basename);
+   temp.add_column("Name", "TEXT");
    temp.set_temporary();
    GetDB().add_table(temp);
 
@@ -1389,25 +1403,26 @@ void KVINDRADB::ReadAbsentDetectors()
 
    while ((rec = (TEnvRec*)it.Next())) {
 
-      KVString srec(rec->GetName());//list of detectors
+      KVString srec(rec->GetName());//list of names
       KVNumberList current_runlist(rec->GetValue());//runs concerned
-      // fill temporary table with detectors
-      GetDB().prepare_data_insertion("AbsentDetectors");
+      // fill temporary table with names
+      GetDB().prepare_data_insertion(info_table_basename);
       srec.Begin(",");
       while (!srec.End()) {
-         GetDB()["AbsentDetectors"]["detName"].set_data(srec.Next());
+         GetDB()[info_table_basename]["Name"].set_data(srec.Next());
          GetDB().insert_data_row();
       }
       GetDB().end_data_insertion();
 
       TString runlist_selection = current_runlist.GetSQL("Run Number");
       // number of rows with no previous information
-      KVNumberList null_runlist = GetDB().get_integer_list("DetectorStatus", "Run Number", Form("%s AND Absent IS NULL", runlist_selection.Data()));
+      KVNumberList null_runlist = GetDB().get_integer_list(status_table, "Run Number", Form("%s AND %s IS NULL", runlist_selection.Data(),
+                                  status_table_column.Data()));
       Int_t null_rows = null_runlist.GetNValues();
       Int_t previous_tables(0);
       if (null_rows < current_runlist.GetNValues()) {
          // some rows have already been filled. how many tables to update?
-         previous_tables = GetDB().count("DetectorStatus", "Absent", runlist_selection, true);
+         previous_tables = GetDB().count(status_table, status_table_column, runlist_selection, true);
       }
       /* if previous_tables==0, we create a new table and link it to all runs
        * if null_rows==0, we do not create a new table, but only update the existing ones
@@ -1415,11 +1430,11 @@ void KVINDRADB::ReadAbsentDetectors()
        * and update the existing tables for the other runs
        */
       if (previous_tables) {
-         // get names of all distinct tables already in "Absent" column for these runs
-         GetDB().select_data("DetectorStatus", "Absent", runlist_selection, true);
+         // get names of all distinct tables already in status_table_column column for these runs
+         GetDB().select_data(status_table, status_table_column, runlist_selection, true);
          KVString update_tables;
          while (GetDB().get_next_result()) {
-            KVString bibit = GetDB()["DetectorStatus"]["Absent"].data().GetString();
+            KVString bibit = GetDB()[status_table][status_table_column].data().GetString();
             if (bibit == "") continue;
             if (update_tables != "") update_tables += ",";
             update_tables += bibit;
@@ -1428,125 +1443,74 @@ void KVINDRADB::ReadAbsentDetectors()
          while (!update_tables.End()) {
             // for each table: what is the full runlist concerned by the table?
             // if it is used by runs not included in the current_runlist, then we generate a new table
-            // containing the entries from the table plus the new detectors
+            // containing the entries from the table plus the new names
             KVString next_table = update_tables.Next();
-            KVNumberList full_runlist = GetDB().get_integer_list("DetectorStatus", "Run Number", Form("Absent=\"%s\"", next_table.Data()));
+            KVNumberList full_runlist = GetDB().get_integer_list(status_table, "Run Number", Form("%s=\"%s\"", status_table_column.Data(), next_table.Data()));
             KVNumberList outside_runlist = full_runlist - current_runlist; // runs outside current runlist
             full_runlist.Inter(current_runlist); // runs in current runlist
             if (outside_runlist.GetNValues()) {
-               // new table containing the entries from the table plus the new detectors
+               // new table containing the entries from the table plus the new names
                ++id_table;
-               KVSQLite::table t(Form("AbsentDetectors_%d", id_table));
-               t.add_column("detName", "TEXT");
+               KVSQLite::table t(Form("%s_%d", info_table_basename.Data(), id_table));
+               t.add_column("Name", "TEXT");
                GetDB().add_table(t);
-               GetDB().copy_table_data(next_table.Data(), t.name().c_str());
-               GetDB().copy_table_data("AbsentDetectors", t.name().c_str());
-               GetDB()["DetectorStatus"]["Absent"].set_data(t.name().c_str());
-               GetDB().update("DetectorStatus", full_runlist.GetSQL("Run Number"), "Absent");
+               GetDB().copy_table_data(next_table, t.name());
+               GetDB().copy_table_data(info_table_basename, t.name());
+               GetDB()[status_table][status_table_column].set_data(t.name());
+               GetDB().update(status_table, full_runlist.GetSQL("Run Number"), status_table_column);
             } else {
-               // update existing table with new detectors
-               GetDB().copy_table_data("AbsentDetectors", next_table.Data());
+               // update existing table with new names
+               GetDB().copy_table_data(info_table_basename, next_table);
             }
          }
       }
       if (null_rows) {
          // there are empty rows: we create a new table and link it to all 'null' runs
          ++id_table;
-         KVSQLite::table t(Form("AbsentDetectors_%d", id_table));
-         t.add_column("detName", "TEXT");
+         KVSQLite::table t(Form("%s_%d", info_table_basename.Data(), id_table));
+         t.add_column("Name", "TEXT");
          GetDB().add_table(t);
-         GetDB().copy_table_data("AbsentDetectors", t.name().c_str());
-         GetDB()["DetectorStatus"]["Absent"].set_data(t.name().c_str());
-         GetDB().update("DetectorStatus", null_runlist.GetSQL("Run Number"), "Absent");
+         GetDB().copy_table_data(info_table_basename, t.name());
+         GetDB()[status_table][status_table_column].set_data(t.name());
+         GetDB().update(status_table, null_runlist.GetSQL("Run Number"), status_table_column);
       }
       // empty temporary table list of detectors
-      GetDB().clear_table("AbsentDetectors");
+      GetDB().clear_table(info_table_basename);
    }
 
+}
+
+//____________________________________________________________________________
+void KVINDRADB::ReadAbsentDetectors()
+{
+   ReadTEnvStatusFile("ReadAbsentDetectors",
+                      "Lecture des detecteurs absents...",
+                      "AbsentDet",
+                      "DetectorStatus",
+                      "Absent",
+                      "AbsentDetectors");
 }
 
 //____________________________________________________________________________
 void KVINDRADB::ReadOoODetectors()
 {
-
-   //Lit le fichier ou sont listés les détecteurs ne marchant plus au cours
-   //de la manip
-   TString fp;
-   if (!KVBase::SearchKVFile(GetCalibFileName("OoODet"), fp, fDataSet.Data())) {
-      Error("ReadOoODetectors", "Fichier %s, inconnu au bataillon", GetCalibFileName("OoODet"));
-      return;
-   }
-   Info("ReadOoODetectors()", "Lecture des detecteurs hors service ...");
-   //fOoODet = AddTable("OoO Detectors", "Name of out of order detectors");
-
-   KVDBRecord* dbrec = 0;
-   TEnv env;
-   TEnvRec* rec = 0;
-   env.ReadFile(fp.Data(), kEnvAll);
-   TIter it(env.GetTable());
-
-   while ((rec = (TEnvRec*)it.Next())) {
-      KVString srec(rec->GetName());
-      KVNumberList nl(rec->GetValue());
-      cout << rec->GetValue() << endl;
-      if (srec.Contains(",")) {
-         srec.Begin(",");
-         while (!srec.End()) {
-            dbrec = new KVDBRecord(srec.Next(), "OoO Detector");
-            dbrec->AddKey("Runs", "List of Runs");
-            //fOoODet->AddRecord(dbrec);
-            //LinkRecordToRunRange(dbrec, nl);
-         }
-      } else {
-         dbrec = new KVDBRecord(rec->GetName(), "OoO Detector");
-         dbrec->AddKey("Runs", "List of Runs");
-         //fOoODet->AddRecord(dbrec);
-         //LinkRecordToRunRange(dbrec, nl);
-      }
-   }
-
+   ReadTEnvStatusFile("ReadOoODetectors",
+                      "Lecture des detecteurs hors service ...",
+                      "OoODet",
+                      "DetectorStatus",
+                      "OoODet",
+                      "OoODetectors");
 }
 
 //____________________________________________________________________________
 void KVINDRADB::ReadOoOACQParams()
 {
-
-   //Lit le fichier ou sont listés les parametres d acquisition ne marchant plus au cours
-   //de la manip
-   TString fp;
-   if (!KVBase::SearchKVFile(GetCalibFileName("OoOACQPar"), fp, fDataSet.Data())) {
-      Error("ReadNotWorkingACQParams", "Fichier %s, inconnu au bataillon", GetCalibFileName("OoOACQPar"));
-      return;
-   }
-   Info("ReadNotWorkingACQParams()", "Lecture des parametres d acq hors service ...");
-   //fOoOACQPar = AddTable("OoO ACQPars", "Name of not working acq parameters");
-
-   KVDBRecord* dbrec = 0;
-   TEnv env;
-   TEnvRec* rec = 0;
-   env.ReadFile(fp.Data(), kEnvAll);
-   TIter it(env.GetTable());
-
-   while ((rec = (TEnvRec*)it.Next())) {
-      KVString srec(rec->GetName());
-      KVNumberList nl(rec->GetValue());
-      cout << rec->GetValue() << endl;
-      if (srec.Contains(",")) {
-         srec.Begin(",");
-         while (!srec.End()) {
-            dbrec = new KVDBRecord(srec.Next(), "OoO ACQPar");
-            dbrec->AddKey("Runs", "List of Runs");
-            //fOoOACQPar->AddRecord(dbrec);
-            //LinkRecordToRunRange(dbrec, nl);
-         }
-      } else {
-         dbrec = new KVDBRecord(rec->GetName(), "OoO ACQPar");
-         dbrec->AddKey("Runs", "List of Runs");
-         //fOoOACQPar->AddRecord(dbrec);
-         //LinkRecordToRunRange(dbrec, nl);
-      }
-   }
-
+   ReadTEnvStatusFile("ReadOoOACQParams",
+                      "Lecture des parametres d acq hors service ...",
+                      "OoOACQPar",
+                      "DetectorStatus",
+                      "OoOACQPar",
+                      "OoOParameters");
 }
 
 
@@ -1562,9 +1526,9 @@ void KVINDRADB::calib_file_reader::ReadCalib(const TString& calib_type,
                   mydb->GetCalibFileName(calib_type));
       return;
    }
-   mydb->Info(caller_method_name, informational_message);
+   mydb->Info(caller_method_name, "%s", informational_message.Data());
 
-   GetDB().add_column("Calibrations", calib_type.Data(), "TEXT");
+   GetDB().add_column("Calibrations", calib_type, "TEXT");
 
    get_table().set_name(Form("%s_%d", calib_type.Data(), new_table_num));
    initial_setup_new_table();
@@ -1631,8 +1595,8 @@ void KVINDRADB::gain_list_reader::initial_setup_new_table()
 void KVINDRADB::calib_file_reader::write_data_to_db(const TString& calib_type)
 {
    GetDB().end_data_insertion();
-   GetDB()["Calibrations"][calib_type.Data()].set_data(get_table().name().c_str());
-   GetDB().update("Calibrations", runrange.GetSQL("Run Number"), calib_type.Data());
+   GetDB()["Calibrations"][calib_type].set_data(get_table().name());
+   GetDB().update("Calibrations", runrange.GetSQL("Run Number"), calib_type);
    runrange.Clear();
 }
 
@@ -1646,7 +1610,7 @@ void KVINDRADB::calib_file_reader::add_new_table(const TString& calib_type)
    ++new_table_num;
    get_table().set_name(Form("%s_%d", calib_type.Data(), new_table_num));
    GetDB().add_table(get_table());
-   GetDB().prepare_data_insertion(get_table().name().c_str());
+   GetDB().prepare_data_insertion(get_table().name());
 }
 
 void KVINDRADB::gain_list_reader::insert_data_into_table()

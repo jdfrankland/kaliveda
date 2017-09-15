@@ -160,6 +160,8 @@ protected:
    void init();
 
    virtual Bool_t ReadPedestals(const TString& filename, const TString& tablename);
+   void ReadTEnvStatusFile(const TString& calling_method, const TString& informational, const TString& calibfilename,
+                           const TString& status_table, const TString& status_table_column, const TString& info_table_basename);
 public:
    KVINDRADB();
    KVINDRADB(const Char_t* name);
