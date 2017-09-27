@@ -19,12 +19,11 @@ $Id: KVDBParameterSet.h,v 1.13 2007/04/18 14:28:49 ebonnet Exp $
 #define KVDB_PARAMETER_SET_H
 
 #include <cassert>
-#include "KVDBRecord.h"
+#include "KVBase.h"
 #include "TString.h"
-#include "KVDBKey.h"
 #include "KVNameValueList.h"
 
-class KVDBParameterSet: public KVDBRecord {
+class KVDBParameterSet: public KVBase {
 protected:
    Int_t fParamNumber;          //number of parameters
    KVNameValueList fParameters;//parameters
@@ -42,7 +41,6 @@ public:
    virtual Double_t GetParameter(UShort_t i = 0) const;
    virtual Double_t GetParameter(TString name) const;
    virtual const Char_t* GetParamName(UShort_t i = 0) const;
-   virtual KVRList* GetRuns() const;
    virtual void SetParameter(UShort_t i, Double_t val);
    virtual void SetParameter(Double_t val);
    virtual void SetParameter(TString name, Double_t val);
@@ -65,10 +63,6 @@ inline const Char_t* KVDBParameterSet::GetParamName(UShort_t i) const
    return fParameters.GetNameAt(i);
 }
 
-inline KVRList* KVDBParameterSet::GetRuns() const
-{
-   return GetKey("Runs")->GetLinks();
-}
 inline void KVDBParameterSet::SetParameter(UShort_t i, Double_t val)
 {
    fParameters.GetParameter(i)->Set(val);

@@ -21,7 +21,6 @@ $Id: KVIDTelescope.h,v 1.33 2009/04/01 15:58:10 ebonnet Exp $
 
 #include "KVBase.h"
 #include "KVDetector.h"
-#include "KVRList.h"
 #include "TGraph.h"
 
 class KVReconstructedNucleus;

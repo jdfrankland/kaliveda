@@ -1,20 +1,3 @@
-/***************************************************************************
-$Id: KVDBParameterSet.cpp,v 1.11 2007/04/18 14:30:20 ebonnet Exp $
-                          KVDBParameterSet.cpp  -  description
-                             -------------------
-    begin                : jeu fév 13 2003
-    copyright            : (C) 2003 by Alexis Mignon
-    email                : mignon@ganil.fr
- ***************************************************************************/
-
-/***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
 #include "KVDBParameterSet.h"
 #include <cstdarg>
 #include <iostream>
@@ -40,19 +23,14 @@ KVDBParameterSet::KVDBParameterSet()
 //___________________________________________________________________________
 KVDBParameterSet::KVDBParameterSet(const Char_t* name,
                                    const Char_t* title,
-                                   UShort_t pnum): KVDBRecord(name, title)
+                                   UShort_t pnum): KVBase(name, title)
 {
    //Initialise a KVDBRecord for a set of "pnum" parameters.
    //The names of the parameters are "par_1", "par_2", etc.
-   //The KVDBKey "Runs" is initialised to cross-reference the runs for which
-   //this set of parameters is valid.
    fParamNumber = pnum;
    for (UInt_t i = 0; i < pnum; i++) {
       fParameters.SetValue(Form("par_%u", i + 1), 0.0);
    }
-   AddKey("Runs", "List of Runs");
-   //Unique not used because it makes the setting up of the list horribly slow
-   // if(key) key->SetUniqueStatus(kTRUE);
 }
 
 //___________________________________________________________________________
@@ -139,8 +117,7 @@ void KVDBParameterSet::SetParamNames(const Char_t* name, ...)
 //_____________________________________________________________________________
 void KVDBParameterSet::Print(Option_t*) const
 {
-   KVDBRecord::Print();
-   cout << ">>>> KVParameterSet :" << endl
+   cout << ">>>> KVDBParameterSet :" << endl
         << GetName() << "  " << GetTitle() << endl
         << " Parameters :\t" << GetParamNumber() << endl;
    fParameters.Print();

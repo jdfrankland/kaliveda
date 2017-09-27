@@ -8,7 +8,6 @@
 #pragma link C++ class KVINDRARunSheetReader;
 #pragma link C++ class KVINDRADBRun;
 #pragma link C++ class KVDBChIoPressures;
-#pragma link C++ class KVDBTape;
 #pragma link C++ class KVDBPeak;
 #pragma link C++ class KVDBAlphaPeak;
 #pragma link C++ class KVDBElasticPeak;

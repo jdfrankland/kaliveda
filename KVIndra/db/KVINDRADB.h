@@ -22,7 +22,6 @@
 #include "KVDataSet.h"
 #include "KVINDRADBRun.h"
 #include "KVDBSystem.h"
-#include "KVDBTape.h"
 #include "KVDetector.h"
 #include "Riostream.h"
 #include "TEnv.h"

@@ -9,5 +9,5 @@ BUILD_KALIVEDA_MODULE(db
 	PARENT ${KVSUBPROJECT}
 	KVMOD_DEPENDS base events particles stopping
    EXTRA_LIBS ${extra_lib}
-   LIB_EXCLUDE ${exclude_class}
+   LIB_EXCLUDE ${exclude_class} KVDBKey KVDBParameterList KVDBRecord KVDBTable
 )

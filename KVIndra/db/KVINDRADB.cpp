@@ -56,26 +56,19 @@ using namespace std;
 
 ClassImp(KVINDRADB)
 
-void KVINDRADB::init()
-{
-}
-
 KVINDRADB::KVINDRADB(const Char_t* name): KVExpDB(name,
          "INDRA experiment parameter database")
 {
-   init();
 }
 
 
 KVINDRADB::KVINDRADB(): KVExpDB("KVINDRADB",
                                    "INDRA experiment parameter database")
 {
-   init();
 }
 
 void KVINDRADB::cd()
 {
-
    KVDataBase::cd();
    gIndraDB = this;
 }
@@ -140,6 +133,9 @@ KVList* KVINDRADB::GetCalibrationPeaks(Int_t run, KVDetector* detector,
    TString sline;
    Int_t frun = 0, lrun = 0;
    KVList* peak_list = new KVList();
+
+   // detector gains for run (if different to 1)
+   KVNameValueList gains = GetGains(run);
 
    //set to true after reading a run range corresponding to 'run'
    Bool_t ok_for_this_run = kFALSE;
@@ -278,23 +274,10 @@ KVList* KVINDRADB::GetCalibrationPeaks(Int_t run, KVDetector* detector,
                peak_list->Add(peak);
 
                //Set gain associated with peak.
-               //This is the gain of the detector during the first run used to trace the peak.
-               KVDBRun* kvrun = (KVDBRun*) GetRun(first);
-               KVRList* param_list = nullptr;//kvrun->GetLinks("Gains");
-               if (!param_list) {
-                  //no gains defined - everybody has gain=1
-                  peak->SetGain(1.00);
-               } else {
-                  KVDBParameterSet* kvdbps =
-                     (KVDBParameterSet*) param_list->
-                     FindObjectByName(pic_det->GetName());
-                  if (!kvdbps) {
-                     //no gain defined for this detector for this run - gain=1
-                     peak->SetGain(1.00);
-                  } else {
-                     peak->SetGain(kvdbps->GetParameter(0));
-                  }
-               }
+               if (gains.HasDoubleParameter(pic_det->GetName()))
+                  peak->SetGain(gains.GetDoubleValue(pic_det->GetName()));
+               else
+                  peak->SetGain(1);
             }                   //if (peak)
 
          }                      //parameters correctly read
@@ -340,10 +323,10 @@ void KVINDRADB::ReadGainList()
 
    // Read the file listing any detectors whose gain value changes during experiment
    // For each defined range of runs, the corresponding gain settings will be stored
-   // in tables called "GainSettings_1", "GainSettings_2", etc.
+   // in tables called "Gains_1", "Gains_2", etc.
    // In the "Calibrations" table the name of the table will appear in column "Gains"
    // for all concerned runs.
-   // The "GainSettings_x" tables have the structure:
+   // The "Gains_x" tables have the structure:
    //   | detName [TEXT] | gain [REAL] |
 
    gain_list_reader glr(this);
@@ -771,7 +754,7 @@ KVNameValueList KVINDRADB::GetGains(int run)
    // Returns detector gains for run in the form DET_NAME=[gain]
 
    KVNameValueList gains;
-   GetDB().select_data("Calibrations", "Gains", Form("\"Run Number\"=%d", run));
+   select_runs_in_dbtable("Calibrations", run, "Gains");
    TString tablename;
    while (GetDB().get_next_result())
       tablename = GetDB()["Calibrations"]["Gains"].data().GetString();

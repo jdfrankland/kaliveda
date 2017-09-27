@@ -10,14 +10,10 @@
 #pragma link C++ class KV2Body+;
 #pragma link C++ class KVDataBase;
 #pragma link C++ class KVExpDB;
-#pragma link C++ class KVDBKey;
-#pragma link C++ class KVDBRecord;
 #pragma link C++ class KVDBRun;
 #pragma link C++ class KVDBSystem;
-#pragma link C++ class KVDBTable;
 #pragma link C++ class KVDBParameterSet;
 #pragma link C++ class KVRunListLine;
-#pragma link C++ class KVDBParameterList;
 #ifdef WITH_RSQLITE
 #pragma link C++ namespace KVSQLite;
 #pragma link C++ namespace KVSQLite::column_type;

@@ -7,7 +7,6 @@ $Author: franklan $
 #ifndef KV_DB_INDRARUN_H
 #define KV_DB_INDRARUN_H
 
-#include "KVDBTape.h"
 #include "KVString.h"
 #include "KVDBRun.h"
 #include "KVDatime.h"
@@ -22,10 +21,6 @@ public:
    KVINDRADBRun(Int_t number, const Char_t* title = "INDRA Run");
    virtual ~ KVINDRADBRun();
 
-   KVDBTape* GetTape() const
-   {
-      return nullptr;
-   }
    Int_t GetTapeNumber() const
    {
       return GetScaler("Tape");

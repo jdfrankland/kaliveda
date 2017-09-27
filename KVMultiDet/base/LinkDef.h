@@ -42,7 +42,6 @@
 #pragma link C++ class KVNumberList+;
 #pragma link C++ class KVFileReader;
 #pragma link C++ class KVValues;
-#pragma link C++ class KVRList+;
 #pragma link C++ class KVSortableDatedFile+;
 #pragma link C++ class KVTarArchive+;
 #pragma link C++ class KVHistoManipulator;
