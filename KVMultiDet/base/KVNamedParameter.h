@@ -89,6 +89,7 @@ public:
 
    Bool_t   IsEqual(const TObject* obj) const;
    Bool_t operator== (const KVNamedParameter&) const;
+   Bool_t HasSameValueAs(const KVNamedParameter&) const;
    virtual void Print(Option_t* opt = "") const;
    virtual void ls(Option_t* opt = "") const;
 

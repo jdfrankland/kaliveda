@@ -397,40 +397,39 @@ void KVINDRAUpDater::SetCsIGainCorrectionParameters(KVDBRun* kvrun)
    // We set all detectors' correction to 1, then set the corrections defined for this
    // run, if any.
 
+   if (!gIndraDB->GetDB().has_table("CsIGainCorrections")) return; // no corrections in database
+
    TIter next_csi(gIndra->GetListOfCsI());
    KVCsI* csi;
    while ((csi = (KVCsI*)next_csi())) {
       csi->SetTotalLightGainCorrection(1.0);
    }
 
-   KVRList* param_list;// = kvrun->GetLinks("CsIGainCorr");
-   if (!param_list) {
-      return;
-   }
-   if (!param_list->GetSize()) {
-      return;
-   }
+   KVSQLite::table& csi_corr =  gIndraDB->GetDB()["CsIGainCorrections"];
+   int ncols = csi_corr.number_of_columns();
+   gIndraDB->select_runs_in_dbtable("CsIGainCorrections", kvrun->GetNumber());
+   while (gIndraDB->GetDB().get_next_result()) {
 
-   TIter next_ps(param_list);
-   KVDBParameterSet* dbps;
-   while ((dbps = (KVDBParameterSet*)next_ps())) {
+      for (int i = 1; i < ncols; ++i) { //loop over columns (detector names): skip column0 ("Run Number")
 
-      csi = (KVCsI*)gIndra->GetDetector(dbps->GetName());
-      if (!csi) {
-         // the name of the parameter set should be the name of the detector;
-         // however, it may be the name of an acquisition parameter associated with
-         // the detector!
-         KVACQParam* a = gIndra->GetACQParam(dbps->GetName());
-         if (a) csi = (KVCsI*)a->GetDetector();
-         // still no good ?
+         TString detname = csi_corr[i].name();
+         csi = (KVCsI*)gIndra->GetDetector(detname);
          if (!csi) {
-            Warning("SetCsIGainCorrectionParameters",
-                    "Cannot find detector associated with %s", dbps->GetName());
-            continue;
+            // the name of the parameter set should be the name of the detector;
+            // however, it may be the name of an acquisition parameter associated with
+            // the detector!
+            KVACQParam* a = gIndra->GetACQParam(detname);
+            if (a) csi = (KVCsI*)a->GetDetector();
+            // still no good ?
+            if (!csi) {
+               Warning("SetCsIGainCorrectionParameters",
+                       "Cannot find detector associated with %s", detname.Data());
+               continue;
+            }
          }
+         csi->SetTotalLightGainCorrection(csi_corr[i].data().GetDouble());
+         Info("SetCsIGainCorrectionParameters", "%s gain correction = %f", csi->GetName(), csi->GetTotalLightGainCorrection());
       }
-      csi->SetTotalLightGainCorrection(dbps->GetParameter());
-      Info("SetCsIGainCorrectionParameters", "%s gain correction = %f", csi->GetName(), csi->GetTotalLightGainCorrection());
    }
 }
 

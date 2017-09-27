@@ -388,7 +388,7 @@ Bool_t KVNameValueList::HasParameter(const Char_t* name) const
    //in the list
    //kTRUE, parameter already present
    //kFALSE, if not
-   return (FindParameter(name) != NULL);
+   return (FindParameter(name) != nullptr);
 }
 
 Bool_t KVNameValueList::HasIntParameter(const Char_t* name) const

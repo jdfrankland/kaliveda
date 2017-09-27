@@ -195,7 +195,7 @@ namespace KVSQLite {
       fInserting = true;
       fDBserv->StartTransaction();
       // set up SQL statement for data insertion into table
-      fBulkTable = &fTables[table];
+      fBulkTable = &fTables[table.Data()];
       TString com(fBulkTable->get_insert_command());
       int ncol = fBulkTable->number_of_columns();
       int idx = 0;
@@ -331,7 +331,7 @@ namespace KVSQLite {
          return false;
       }
       // set up SQL statement for data retrieval
-      fBulkTable = &fTables[table];
+      fBulkTable = &fTables[table.Data()];
 
       KVString column_selection(""), _columns(columns);
       if (columns == "*") {
@@ -504,7 +504,7 @@ namespace KVSQLite {
          return false;
       }
 
-      fBulkTable = &fTables[table];
+      fBulkTable = &fTables[table.Data()];
       TString query = Form("UPDATE \"%s\" SET ", table.Data());
       int ncol = fBulkTable->number_of_columns();
       int idx = 0;
@@ -551,6 +551,29 @@ namespace KVSQLite {
       TString query = Form("ALTER TABLE \"%s\" ADD COLUMN \"%s\" %s", table.Data(), name.Data(), type.Data());
       fDBserv->Exec(query);
       (*this)[table].add_column(name, type);
+   }
+
+   void database::add_missing_columns(const TString& _table_, const KVNameValueList& l)
+   {
+      // add to table any columns which are defined in the list but don't exist
+      // cannot be called during data insertion or retrieval!!!
+
+      if (fInserting) {
+         Error("database::add_missing_columns",
+               "data insertion in progress; call end_data_insertion() before doing anything else");
+         return;
+      }
+      if (fSelecting) {
+         Error("database::add_missing_columns",
+               "data retrieval in progress; call get_next_result() until it returns false before doing anything else");
+         return;
+      }
+      int ipar = l.GetNpar();
+      table& tab = (*this)[_table_];
+      for (int i = 0; i < ipar; ++i) {
+         KVNamedParameter* par = l.GetParameter(i);
+         if (!tab.has_column(par->GetName())) add_column(_table_, par->GetName(), par->GetSQLType());
+      }
    }
 
    void database::copy_table_data(const TString& source, const TString& destination, const TString& columns, const TString& selection)
@@ -697,6 +720,7 @@ namespace KVSQLite {
    column& table::add_column(const column& c)
    {
       // add column to table. return reference to added column.
+      // cannot be used for existing table in database: see database::add_column
       fColumns.push_back(c);
       fColMap[c.name()] = c.index();
       return fColumns.back();
@@ -705,6 +729,7 @@ namespace KVSQLite {
    column& table::add_column(const TString& name, const TString& type)
    {
       // add column to table. return reference to added column.
+      // cannot be used for existing table in database: see database::add_column
       return add_column(name, type_map[type]);
    }
 
@@ -742,14 +767,40 @@ namespace KVSQLite {
       return c;
    }
 
-   void table::prepare_data(const KVNameValueList& l)
+   int table::check_columns(const KVNameValueList& l)
+   {
+      // make sure that all parameters in the list have corresponding columns in the table
+      // returns the number of columns to be added
+
+      int ncols = 0;
+      int ipar = l.GetNpar();
+      for (int i = 0; i < ipar; ++i) {
+         KVNamedParameter* par = l.GetParameter(i);
+         if (!has_column(par->GetName())) ncols++;
+      }
+      return ncols;
+   }
+
+   void table::prepare_data(const KVNameValueList& l, const KVNamedParameter* null_value)
    {
       // fill all columns in table with data contained in KVNameValueList parameters having the same name.
       // any columns which do not appear in the KVNameValueList will be set to 'null'
+      // if required, any parameters with the same type&value as "null_value" will be set to 'null' too
 
       for (int i = 0; i < number_of_columns(); ++i) {
-         if (l.HasParameter((*this)[i].name()))(*this)[i].set_data(*l.FindParameter((*this)[i].name()));
-         else (*this)[i].set_null();
+         KVNamedParameter* p = l.FindParameter((*this)[i].name());
+         if (p && !(null_value && p->HasSameValueAs(*null_value)))
+            (*this)[i].set_data(*p);
+         else
+            (*this)[i].set_null();
+      }
+   }
+
+   void table::set_all_columns_null()
+   {
+      // set the value of all columns in the table to NULL
+      for (int i = 0; i < number_of_columns(); ++i) {
+         (*this)[i].set_null();
       }
    }
 

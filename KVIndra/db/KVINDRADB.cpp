@@ -653,8 +653,7 @@ KVINDRAPulserDataTree* KVINDRADB::GetPulserData() const
 
 void KVINDRADB::Build()
 {
-
-   //Use KVINDRARunListReader utility subclass to read complete runlist
+   // Build and fill the database for an INDRA experiment
 
    //get full path to runlist file, using environment variables for the current dataset
    TString runlist_fullpath;
@@ -699,7 +698,7 @@ void KVINDRADB::Build()
    fPulserData->SetRunList(GetRuns());
    fPulserData->Build();
 
-//   ReadCsITotalLightGainCorrections();
+   ReadCsITotalLightGainCorrections();
 }
 
 
@@ -969,6 +968,9 @@ void KVINDRADB::ReadCsITotalLightGainCorrections()
    // i.e.
    //   name_of_detector   correction
    //Any other lines are ignored.
+   //
+   // These corrections are placed in a table "CsIGainCorrections" which has a column
+   // for each CsI detector and a row for each run
 
    Info("ReadCsITotalLightGainCorrections",
         "Reading corrections...");
@@ -992,6 +994,15 @@ void KVINDRADB::ReadCsITotalLightGainCorrections()
       Error("ReadCsITotalLightGainCorrections", "INDRADB.CsILumCorr.FileName is not defined. Check .kvrootrc files.");
    }
 
+   // set up table in database
+   KVSQLite::table csi_corr("CsIGainCorrections");
+   csi_corr.add_column("Run Number", "INTEGER");
+   GetDB().add_table(csi_corr);
+
+   KVSQLite::table& csi_corr_table = GetDB()["CsIGainCorrections"];
+   KVNameValueList gain_corr;
+   KVNamedParameter null_value("NULL", -99.0);
+
    // boucle sur tous les runs
    TIter next_run(GetRuns());
    KVINDRADBRun* run = 0;
@@ -1004,6 +1015,12 @@ void KVINDRADB::ReadCsITotalLightGainCorrections()
       filepath.Prepend(search.Data());
       ifstream filereader;
       if (KVBase::SearchAndOpenKVFile(filepath, filereader, fDataSet.Data())) {
+
+         // begin reading a new run
+         gain_corr.SetValue("Run Number", run_num);
+         // set all other columns to -99, in case they are not present
+         int npars = gain_corr.GetNpar();
+         for (int i = 1; i < npars; ++i) gain_corr.GetParameter(i)->Set(-99.0);
 
          KVString line;
          line.ReadLine(filereader);
@@ -1025,21 +1042,25 @@ void KVINDRADB::ReadCsITotalLightGainCorrections()
             }
             Double_t correction = line.Next(kTRUE).Atof();
 
-            KVDBParameterSet* cps = new KVDBParameterSet(det_name.Data(),
-                  "CsI Total Light Gain Correction", 1);
-
-            cps->SetParameters(correction);
-            //fCsILumCorr->AddRecord(cps);
-            //cps->AddLink("Runs", run);
+            gain_corr.SetValue(det_name, correction);
             line.ReadLine(filereader);
          }
          filereader.close();
+         // finished reading run - insert row
+         // check all necessary columns are present
+         if (csi_corr_table.check_columns(gain_corr)) {
+            if (GetDB().is_inserting()) GetDB().end_data_insertion();
+            GetDB().add_missing_columns(csi_corr_table.name(), gain_corr);
+            GetDB().prepare_data_insertion(csi_corr_table.name());
+         }
+         csi_corr_table.prepare_data(gain_corr, &null_value);
+         GetDB().insert_data_row();
       } else {
-         Warning("ReadCsITotalLightGainCorrections", "Run %d: no correction", run_num);
+         //Warning("ReadCsITotalLightGainCorrections", "Run %d: no correction", run_num);
       }
 
    }
-
+   GetDB().end_data_insertion();
 }
 
 //________________________________________________________________________________

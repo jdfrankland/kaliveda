@@ -10,7 +10,11 @@
 #include "KVConfig.h"
 #include <utility>
 #include <iostream>
+#ifdef WITH_CPP11
+#include <unordered_map>
+#else
 #include <map>
+#endif
 #include <KVNameValueList.h>
 #include <KVNumberList.h>
 
@@ -165,7 +169,11 @@ namespace KVSQLite {
       TString fName;//name of table
       KVSQLite_insert_mode fInsert;//insert mode
       std::vector<KVSQLite::column> fColumns;//list of columns
-      std::map<TString, int> fColMap; //map name of column to index
+#ifdef WITH_CPP11
+      std::unordered_map<std::string, int> fColMap; //map name of column to index
+#else
+      std::map<std::string, int> fColMap; //map name of column to index
+#endif
       static std::map<TString, KVSQLite::column_type::types> type_map;
       bool fTemp;//temporary table?
 
@@ -235,14 +243,20 @@ namespace KVSQLite {
       {
          return fColumns[i];
       }
+      bool has_column(const TString& name)
+      {
+         // return true if column with given name exists
+         return fColMap.count(name.Data());
+      }
+
       KVSQLite::column& operator[](const TString& n)
       {
-         if (!fColMap.count(n)) {
+         if (!has_column(n)) {
             std::cout << "Error in <KVSQLite::table::operator[const TString&]> : "
                       << n << " is not a column of table " << name() << std::endl;
             return fColumns[0];
          }
-         return fColumns[fColMap[n]];
+         return fColumns[fColMap[n.Data()]];
       }
 
       void print() const
@@ -254,14 +268,20 @@ namespace KVSQLite {
       {
          return fColumns.size();
       }
-      void prepare_data(const KVNameValueList&);
+      int check_columns(const KVNameValueList&);
+      void prepare_data(const KVNameValueList&, const KVNamedParameter* = nullptr);
+      void set_all_columns_null();
 
       ClassDef(table, 0) //Table in an SQLite database
    };
 
    class database {
       unique_ptr<TSQLiteServer> fDBserv;       //connection to database
-      std::map<TString, KVSQLite::table> fTables; //map of tables in database
+#ifdef WITH_CPP11
+      std::unordered_map<std::string, KVSQLite::table> fTables; //map of tables in database
+#else
+      std::map<std::string, KVSQLite::table> fTables; //map of tables in database
+#endif
       unique_ptr<TSQLStatement> fSQLstmt;     //used for bulk operations
       KVSQLite::table* fBulkTable;            //pointer to table currently used with fSQLstmt
       bool fInserting;
@@ -302,6 +322,13 @@ namespace KVSQLite {
          return fTables.size();
       }
       virtual ~database() {}
+      bool is_inserting() const
+      {
+         // return true if data insertion is in progress (i.e. after call to
+         // database::prepare_data_insertion() and before call to
+         // database::end_data_insertion())
+         return fInserting;
+      }
 
       void open(const TString& dbfile);
       void close()
@@ -325,17 +352,17 @@ namespace KVSQLite {
       bool has_table(const TString& table)
       {
          // returns true if "table" exists in database
-         return fTables.count(table);
+         return fTables.count(table.Data());
       }
 
       KVSQLite::table& operator[](const TString& name)
       {
-         if (!fTables.count(name)) {
+         if (!fTables.count(name.Data())) {
             std::cout << "Error in <KVSQLite::database::operator[const TString&]> : "
                       << name << " is not a table of database" << std::endl;
             return fTables.begin()->second;
          }
-         return fTables[name];
+         return fTables[name.Data()];
       }
 
       bool prepare_data_insertion(const TString&);
@@ -357,6 +384,7 @@ namespace KVSQLite {
       void delete_data(const TString& table, const TString& selection = "");
 
       void add_column(const TString& table, const TString& name, const TString& type);
+      void add_missing_columns(const TString& table, const KVNameValueList& l);
 
       void copy_table_data(const TString& source, const TString& destination, const TString& columns = "*", const TString& selection = "");
 

@@ -235,7 +235,15 @@ Bool_t KVNamedParameter::operator== (const KVNamedParameter& other) const
    // Test for equality between two parameters
    // Returns kTRUE if both the name, the type, and the value of the parameters are identical
 
-   if ((other.fName != fName) || other.GetType() != GetType()) return kFALSE;
+   if ((other.fName != fName)) return kFALSE;
+   return HasSameValueAs(other);
+}
+
+Bool_t KVNamedParameter::HasSameValueAs(const KVNamedParameter& other) const
+{
+   // Returns kTRUF if the two parameters have the same type and the
+   // same value (don't care about parameter names)
+   if (other.GetType() != GetType()) return kFALSE;
    switch (GetType()) {
       case kIsString:
          if (fTitle == other.fTitle) return kTRUE;
