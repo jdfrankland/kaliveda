@@ -31,11 +31,6 @@
 #include "KVNumberList.h"
 #include "KVDBChIoPressures.h"
 
-//dimension of run_range arrays
-#define MAX_NUM_RUN_RANGES 100
-
-class KVNumberList;
-
 class KVINDRADB: public KVExpDB, public KVINDRARunListReader {
 
 private:
@@ -44,22 +39,7 @@ private:
 
 protected:
 
-   //General information
-
-//   KVDBTable* fChIoPressures;   //-> table of chio pressures
-//   KVDBTable* fGains;           //(optional) table of detector gains, in case they change from run to run
-//   KVDBTable* fTapes;           //-> table of data tapes
-//   KVDBTable* fCsILumCorr;      //-> table of CsI gain corrections for total light output
-//   KVDBTable* fPedestals;       //-> table of pedestal files
-//   KVDBTable* fChanVolt;        //-> ChIo/Si channel-volt calibration parameters
-//   KVDBTable* fVoltMeVChIoSi;   //-> ChIo/Si volt-energy calibration
-//   KVDBTable* fLitEnerCsI;      //->CsI light-energy calibration for Z>1
-//   KVDBTable* fLitEnerCsIZ1;     //->CsI light-energy calibration for Z=1
-//   KVDBTable* fAbsentDet;        //(optional) Liste les detecteurs absents
-//   KVDBTable* fOoODet;           //(optional) Liste les detecteurs hors service
-//   KVDBTable* fOoOACQPar;     //(optional) Liste des parametres d acquisition ne marchant pas
-
-   KVINDRAPulserDataTree* fPulserData;  //! mean values of pulsers for all detectors & runs
+   mutable unique_ptr<KVINDRAPulserDataTree> fPulserData;  //! mean values of pulsers for all detectors & runs
 
    class calib_file_reader {
       KVINDRADB* mydb;
@@ -209,13 +189,9 @@ public:
    Double_t GetTotalCrossSection(TH1* events_histo, Double_t Q_apres_cible, Double_t Coul_par_top = 1.e-10);
 
 
-   KVINDRAPulserDataTree* GetPulserData()
-   {
-      return fPulserData;
-   };
+   KVINDRAPulserDataTree* GetPulserData() const;
+
    virtual const Char_t* GetDBEnv(const Char_t* type) const;
-   virtual void WriteObjects(TFile*);
-   virtual void ReadObjects(TFile*);
 
    ClassDef(KVINDRADB, 5)       //DataBase of parameters for an INDRA campaign
 };

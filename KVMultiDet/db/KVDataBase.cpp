@@ -227,30 +227,3 @@ KVDataBase* KVDataBase::MakeDataBase(const Char_t* name, const Char_t* datasetdi
    mda->SetDataSetDir(datasetdir);
    return mda;
 }
-
-//______________________________________________________________________________
-
-void KVDataBase::WriteObjects(TFile*)
-{
-   // Abstract method. Can be overridden in child classes.
-   // When the database is written to disk (by the currently active dataset, see
-   // KVDataSet::WriteDBFile) any associated objects (histograms, trees, etc.)
-   // can be written using this method.
-   // The pointer to the file being written is passed as argument.
-
-   AbstractMethod("WriteObjects");
-}
-
-//______________________________________________________________________________
-
-void KVDataBase::ReadObjects(TFile*)
-{
-   // Abstract method. Can be overridden in child classes.
-   // When the database is read from disk (by the currently active dataset, see
-   // KVDataSet::OpenDBFile) any associated objects (histograms, trees, etc.)
-   // stored in the file can be read using this method.
-   // The pointer to the file being read is passed as argument.
-
-   AbstractMethod("ReadObjects");
-}
-

@@ -81,24 +81,21 @@ ClassImp(KVINDRAPulserDataTree)
 // --> END_HTML
 ////////////////////////////////////////////////////////////////////////////////
 
-KVINDRAPulserDataTree::KVINDRAPulserDataTree()
+KVINDRAPulserDataTree::KVINDRAPulserDataTree(const KVString& dir, Bool_t reading)
+   : fArb(nullptr), fRunlist(nullptr), fROOTFileDirectory(dir), fNoData(kTRUE)
 {
-   // Default constructor
-   fArb = 0;
-   fRun = 0;
-   fVal = 0;
-   fIndex = 0;
-   fRunlist = 0;
+   // if reading=kTRUE (default) we try to open the previously created ROOT file
+   // containing pulser data in a TTree. If found, fNoData will be set to kFALSE
+   // i.e. KVINDRAPulserDataTree::HasData() will return kTRUE
+
+   if (reading) {
+      ReadTree();
+   }
 }
 
 KVINDRAPulserDataTree::~KVINDRAPulserDataTree()
 {
    // Destructor
-   if (fVal) delete [] fVal;
-   if (fIndex) {
-      fIndex->Delete();
-      delete fIndex;
-   }
 }
 
 void KVINDRAPulserDataTree::Build()
@@ -163,16 +160,16 @@ void KVINDRAPulserDataTree::Build()
    // We create a TTree with 1 branch for each detector acquisition parameter.
    // For PILA and SI_PIN parameters, we create a 'gene' and a 'laser' branch for each.
 
-   fGeneDir = new KVTarArchive(GetDirectoryName("GeneDetDir"), gDataSet->GetDataSetDir());
-   fPinDir = new KVTarArchive(GetDirectoryName("GenePinDir"), gDataSet->GetDataSetDir());
+   fGeneDir.reset(new KVTarArchive(GetDirectoryName("GeneDetDir"), gDataSet->GetDataSetDir()));
+   fPinDir.reset(new KVTarArchive(GetDirectoryName("GenePinDir"), gDataSet->GetDataSetDir()));
    if (!fGeneDir->IsOK() && !fPinDir->IsOK()) {
       Info("Build", "No data available to build pulser data tree");
       return;
    }
    CreateTree();
    ReadData();
-   delete fGeneDir;
-   delete fPinDir;
+   WriteTree();
+   fNoData = kFALSE;
 }
 
 TString KVINDRAPulserDataTree::GetDirectoryName(const Char_t* dirvar)
@@ -202,8 +199,8 @@ void KVINDRAPulserDataTree::CreateTree()
    //
    // NB if multidetector has not been built, it will be built by this method
 
+   fArbFile.reset(TFile::Open(Form("%s/PulserData.root", fROOTFileDirectory.Data()), "RECREATE"));
    fArb = new TTree("PulserData", "Created by KVINDRAPulserDataTree");
-   fArb->SetDirectory(0);
 
    fArb->Branch("Run", &fRun, "Run/I");
 
@@ -211,46 +208,22 @@ void KVINDRAPulserDataTree::CreateTree()
 
    KVSeqCollection* acq_pars = gIndra->GetACQParams();
 
-   fTab_siz = acq_pars->GetEntries() + 20;
-   fVal = new Float_t[fTab_siz];
-   fIndex = new THashTable(20, 5);
-   fIndex->SetOwner(kTRUE);
-
    TIter nxtACQ(acq_pars);
    KVACQParam* ap = 0;
-   Int_t ap_num = 0;
-   KVBase* iob;
    while ((ap = (KVACQParam*)nxtACQ())) {
 
       TString ap_name(ap->GetName());
       TString ap_type(ap->GetType());
       if (ap_name.BeginsWith("PILA") || ap_name.BeginsWith("SI_PIN")) {
          ap_name += "_laser";
-         iob = new KVBase(ap_name.Data());
-         iob->SetNumber(ap_num);
-         fIndex->Add(iob);
-         fArb->Branch(ap_name.Data(), &fVal[ap_num++] , Form("%s/F", ap_name.Data()));
+         fArb->Branch(ap_name.Data(), &fParameters[ap_name.Data()], Form("%s/F", ap_name.Data()));
          ap_name.Form("%s%s", ap->GetName(), "_gene");
-         iob = new KVBase(ap_name.Data());
-         iob->SetNumber(ap_num);
-         fIndex->Add(iob);
-         fArb->Branch(ap_name.Data(), &fVal[ap_num++] , Form("%s/F", ap_name.Data()));
+         fArb->Branch(ap_name.Data(), &fParameters[ap_name.Data()], Form("%s/F", ap_name.Data()));
       } else if (ap_type != "T") {
-         iob = new KVBase(ap_name.Data());
-         iob->SetNumber(ap_num);
-         fIndex->Add(iob);
-         fArb->Branch(ap_name.Data(), &fVal[ap_num++] , Form("%s/F", ap_name.Data()));
-      }
-      if (ap_num > fTab_siz - 2) {
-         Error("CreateTree",
-               "Number of branches to create is greater than estimated (%d). Not all parameters can be treated.",
-               fTab_siz);
-         return;
+         fArb->Branch(ap_name.Data(), &fParameters[ap_name.Data()], Form("%s/F", ap_name.Data()));
       }
 
    }
-   //keep number of used 'slots' in array
-   fTab_siz = ap_num;
 }
 
 void KVINDRAPulserDataTree::ReadFile(ifstream& fin)
@@ -263,8 +236,7 @@ void KVINDRAPulserDataTree::ReadFile(ifstream& fin)
       if (!line.BeginsWith("#")) {
          line.Begin(" ");
          KVString br_name = line.Next(kTRUE);
-         Int_t index = GetIndex(br_name.Data());
-         fVal[index] = line.Next(kTRUE).Atof();
+         fParameters[br_name.Data()] = line.Next(kTRUE).Atof();
       }
       line.ReadLine(fin);
    }
@@ -331,7 +303,7 @@ void KVINDRAPulserDataTree::ReadData()
    // Read data for every run in dataset
 
    if (!fRunlist) {
-      Error("ReadData", "Must set list of runs first using SetRunList(TList*)");
+      Error("ReadData", "Must set list of runs first using SetRunList(const KVSeqCollection*)");
       return;
    }
    Info("ReadData", "Reading pulser and laser data for all runs");
@@ -340,8 +312,19 @@ void KVINDRAPulserDataTree::ReadData()
    KVNumberList missing1, missing2;
    while ((run = (KVINDRADBRun*)Nxt_r())) {
       Int_t run_num = run->GetNumber();
-      //reset all array members to -1
-      for (int i = 0; i < fTab_siz; i++) fVal[i] = -1.0;
+      // set all parameter values to -1
+#ifdef WITH_CPP11
+      for_each(begin(fParameters),
+               end(fParameters),
+      [](ParameterMap::value_type & p) {
+         p.second = -1.0;
+      }
+              );
+#else
+      for (ParameterMap::iterator it(fParameters.begin()); it != fParameters.end(); ++it) {
+         it->second = -1.0;
+      }
+#endif
       std::cout << "\rInfo in <KVINDRAPulserDataTree::ReadData>: Reading data for run " << run_num << std::flush;
       UChar_t msg = ReadData(run_num);
       if (msg & 1) missing1.Add(run_num);
@@ -354,28 +337,36 @@ void KVINDRAPulserDataTree::ReadData()
       Warning("ReadData", "Missing file 'run[run_num].[gene][laser]pin' for runs: %s", missing2.GetList());
 }
 
-void KVINDRAPulserDataTree::ReadTree(TFile* file)
+void KVINDRAPulserDataTree::ReadTree()
 {
-   // Read pulser data tree from file
+   // Try to open file containing pulser data
+   // If found, fNoData will be set to kFALSE, i.e. HasData()
+   // will return kTRUE
 
-   fArb = (TTree*)file->Get("PulserData");
+   KVString filename = Form("%s/PulserData.root", fROOTFileDirectory.Data());
+   if (gSystem->AccessPathName(filename)) {
+      Info("ReadTree", "No pulser data for this dataset");
+      return;
+   }
+   TDirectory* sav = gDirectory;//don't change current ROOT directory
+   fArbFile.reset(TFile::Open(filename, "READ"));
+   fArb = (TTree*)fArbFile->Get("PulserData");
    if (fArb) {
       //disable all branches except Run number
       fArb->SetBranchStatus("*", 0);
       fArb->SetBranchStatus("Run", 1);
+      fNoData = kFALSE;
    }
+   sav->cd();
 }
 
-void KVINDRAPulserDataTree::WriteTree(TFile* file)
+void KVINDRAPulserDataTree::WriteTree()
 {
    // Write pulser data tree in file
    // We build and index based on the Run number and store it in the tree.
 
-   if (fArb) {
-      fArb->SetDirectory(file);
-      fArb->BuildIndex("Run");
-      fArb->Write();
-   }
+   fArb->BuildIndex("Run");
+   fArb->Write();
 }
 
 Float_t KVINDRAPulserDataTree::GetMean(const Char_t* param, Int_t run)

@@ -47,9 +47,6 @@ public:
       ;
    }
 
-   virtual void WriteObjects(TFile*);
-   virtual void ReadObjects(TFile*);
-
    const Char_t* GetDataSetDir() const
    {
       return fDataSetDir;

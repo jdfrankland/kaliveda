@@ -58,30 +58,6 @@ ClassImp(KVINDRADB)
 
 void KVINDRADB::init()
 {
-
-//   fChIoPressures = AddTable("ChIo Pressures", "Pressures of ChIo");
-//   fTapes = AddTable("Tapes", "List of data storage tapes");
-//   fCsILumCorr = AddTable("CsIGainCorr", "CsI gain corrections for total light output");
-//   fPedestals = AddTable("Pedestals", "List of pedestal files");
-//   fChanVolt =
-//      AddTable("Channel-Volt",
-//               "Calibration parameters for Channel-Volts conversion");
-//   fVoltMeVChIoSi =
-//      AddTable("Volt-Energy ChIo-Si",
-//               "Calibration parameters for ChIo-Si Volts-Energy conversion");
-//   fLitEnerCsIZ1 =
-//      AddTable("Light-Energy CsI Z=1",
-//               "Calibration parameters for CsI detectors");
-//   fLitEnerCsI =
-//      AddTable("Light-Energy CsI Z>1",
-//               "Calibration parameters for CsI detectors");
-
-//   fGains = 0;
-//   fAbsentDet = 0;
-//   fOoODet = 0;
-//   fOoOACQPar = 0;
-
-   fPulserData = 0;
 }
 
 KVINDRADB::KVINDRADB(const Char_t* name): KVExpDB(name,
@@ -111,7 +87,6 @@ KVINDRADB::~KVINDRADB()
 
    if (gIndraDB == this)
       gIndraDB = nullptr;
-   SafeDelete(fPulserData);
 }
 
 //____________________________________________________________________________
@@ -662,6 +637,18 @@ Double_t KVINDRADB::GetTotalCrossSection(TH1* events_histo, Double_t Q_apres_cib
    return (1.e27 / (ninc * targ->GetAtomsPerCM2())) * xsec;
 }
 
+KVINDRAPulserDataTree* KVINDRADB::GetPulserData() const
+{
+   // Return pointer to pulser data for this database.
+   // Returns nullptr if no data is available
+
+   if (fPulserData.get() == nullptr) {
+      // try to open pulser data tree on first call
+      fPulserData.reset(new KVINDRAPulserDataTree(fDataBaseDir));
+   }
+   return fPulserData->HasData() ? fPulserData.get() : nullptr;
+}
+
 //__________________________________________________________________________________________________________________
 
 void KVINDRADB::Build()
@@ -708,9 +695,9 @@ void KVINDRADB::Build()
    ReadOoODetectors();
 
    // read all available mean pulser data and store in tree
-//   if (!fPulserData) fPulserData = new KVINDRAPulserDataTree;
-//   fPulserData->SetRunList(GetRuns());
-//   fPulserData->Build();
+   fPulserData.reset(new KVINDRAPulserDataTree(GetDataBaseDir(), kFALSE));
+   fPulserData->SetRunList(GetRuns());
+   fPulserData->Build();
 
 //   ReadCsITotalLightGainCorrections();
 }
@@ -948,23 +935,6 @@ const Char_t* KVINDRADB::GetDBEnv(const Char_t* type) const
    if (!ds)
       return "";
    return ds->GetDataSetEnv(Form("INDRADB.%s", type));
-}
-
-//____________________________________________________________________________
-
-void KVINDRADB::WriteObjects(TFile* file)
-{
-   // Write associated objects (i.e. KVINDRAPulserDataTree's TTree) in file
-   if (fPulserData) fPulserData->WriteTree(file);
-}
-
-//____________________________________________________________________________
-
-void KVINDRADB::ReadObjects(TFile* file)
-{
-   // Read associated objects (i.e. KVINDRAPulserDataTree's TTree) from file
-   if (!fPulserData) fPulserData = new KVINDRAPulserDataTree;
-   fPulserData->ReadTree(file);
 }
 
 //____________________________________________________________________________
