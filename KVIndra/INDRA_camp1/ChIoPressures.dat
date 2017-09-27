@@ -28,11 +28,11 @@ Run Range : 382 401
 Run Range : 155 162
 Run Range : 164 175
 Run Range : 177 199
-ChIos 2_3    49.0
-ChIos 4_5    49.0
-ChIos 6_7    49.0
-ChIos 8_12   30.0
-ChIos 13_17  0.0
+2_3    49.0
+4_5    49.0
+6_7    49.0
+8_12   30.0
+13_17  0.0
 
 #Xe+Sn pressions de these Metivier p.51
 #Gd+U pressions these Squalli p. 32
@@ -50,8 +50,8 @@ Run Range : 571 575
 Run Range : 578 578
 Run Range : 580 613
 Run Range : 770 804
-ChIos 2_3    30.0
-ChIos 4_5    30.0
-ChIos 6_7    30.0
-ChIos 8_12   20.0
-ChIos 13_17  20.0
+2_3    30.0
+4_5    30.0
+6_7    30.0
+8_12   20.0
+13_17  20.0

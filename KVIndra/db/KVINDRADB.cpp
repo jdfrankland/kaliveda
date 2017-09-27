@@ -342,14 +342,23 @@ void KVINDRADB::ReadChIoPressures()
    //
    //# some comments
    //#which start with '#'
-   //Run Range : 6001 6018
-   //ChIos 2_3    50.0
-   //ChIos 4_5    50.0
-   //ChIos 6_7    50.0
-   //ChIos 8_12   30.0
-   //ChIos 13_17  30.0
+   //[runs concerned]
+   //2_3    50.0
+   //4_5    50.0
+   //6_7    50.0
+   //8_12   30.0
+   //13_17  30.0
    //
-   //Pressures (of C3F8) are given in mbar).
+   // There are 2 formats for [runs concerned]:
+   // either:
+   // Run Range : [first] [last]
+   // or
+   // RunRange [numberlist]
+   // If several run ranges occur on successive lines,
+   // they are added together and applied to all following
+   // pressures.
+   //
+   //Pressures of C3F8 are given in mbar.
 
    ifstream fin;
    if (!OpenCalibFile("Pressures", fin)) {
@@ -384,11 +393,12 @@ void KVINDRADB::ReadChIoPressures()
    while (fin.good()) {         // parcours du fichier
 
       sline.ReadLine(fin);
-      if (sline.BeginsWith("Run Range :")) {    // run range found
+      if (sline.BeginsWith("Run")) {    // run range found
          if (!prev_rr) {        // New set of run ranges to read
 
             //have we just finished reading some pressures ?
             if (read_pressure) {
+               prlist.Print();
                GetDB().prepare_data_insertion("ChIo Pressures");
                GetDB()["ChIo Pressures"].prepare_data(prlist);
                GetDB().insert_data_row();
@@ -398,20 +408,27 @@ void KVINDRADB::ReadChIoPressures()
                ++id;
                read_pressure = kFALSE;
                prlist.Clear();
-               runrange.Clear();
             }
+            runrange.Clear();
 
          }
-         if (sscanf(sline.Data(), "Run Range : %u %u", &frun, &lrun) != 2) {
-            Warning("ReadChIoPressures()",
-                    "Bad format in line :\n%s\nUnable to read run range values",
-                    sline.Data());
+         if (sline.BeginsWith("Run Range")) {
+            if (sscanf(sline.Data(), "Run Range : %u %u", &frun, &lrun) != 2) {
+               Warning("ReadChIoPressures()",
+                       "Bad format in line :\n%s\nUnable to read run range values",
+                       sline.Data());
+            } else {
+               runrange.Add(Form("%d-%d", frun, lrun));
+               prev_rr = kTRUE;
+            }
          } else {
-            runrange.Add(Form("%d-%d", frun, lrun));
+            // format: "RunRange   1-10 15-20"
+            sline.Remove(0, 8).Remove(TString::kBoth, ' ');
+            runrange.Add(sline);
             prev_rr = kTRUE;
          }
       }                         // Run Range found
-      if (fin.eof()) {          //fin du fichier
+      else if (fin.eof()) {          //fin du fichier
          //have we just finished reading some pressures ?
          if (read_pressure) {
             GetDB().prepare_data_insertion("ChIo Pressures");
@@ -424,16 +441,13 @@ void KVINDRADB::ReadChIoPressures()
             read_pressure = kFALSE;
             prlist.Clear();
          }
-      }
-      if (sline.BeginsWith("ChIos")) {  //line with chio pressure data
+      } else if (!sline.BeginsWith("#")) { //line with chio pressure data
 
          prev_rr = kFALSE;
 
-         //take off 'ChIos' and any leading whitespace
-         sline.Remove(0, 5);
-         sline.Strip(TString::kLeading);
+         sline.Remove(TString::kBoth, ' ');
          //split up ChIo ring numbers and pressure
-         sline.Begin(" ");
+         sline.Begin(" \t");
          TString chio = sline.Next(kTRUE);
          KVString press = sline.Next(kTRUE);
          read_pressure = kTRUE;
@@ -668,10 +682,10 @@ void KVINDRADB::Build()
    ReadSystemList();
    ReadChIoPressures();
    ReadGainList();
+   ReadPedestalList();
    ReadChannelVolt();
    ReadVoltEnergyChIoSi();
    ReadCalibCsI();
-   ReadPedestalList();
    ReadAbsentDetectors();
    ReadOoOACQParams();
    ReadOoODetectors();
