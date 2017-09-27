@@ -38,184 +38,14 @@ KVINDRADB_e613::~KVINDRADB_e613()
    // Destructor
 }
 
-//___________________________________________________________________________
-void KVINDRADB_e613::Build()
-{
-   //Use KVINDRARunListReader utility subclass to read complete runlist
-
-   //get full path to runlist file, using environment variables for the current dataset
-   TString runlist_fullpath;
-   KVBase::SearchKVFile(GetDBEnv("Runlist"), runlist_fullpath, fDataSet.Data());
-
-   //set comment character for current dataset runlist
-   SetRLCommentChar(GetDBEnv("Runlist.Comment")[0]);
-
-   //set field separator character for current dataset runlist
-   if (!strcmp(GetDBEnv("Runlist.Separator"), "<TAB>"))
-      SetRLSeparatorChar('\t');
-   else
-      SetRLSeparatorChar(GetDBEnv("Runlist.Separator")[0]);
-
-   //by default we set two keys for both recognising the 'header' lines and deciding
-   //if we have a good run line: the "Run" and "Events" fields must be present
-   GetLineReader()->SetFieldKeys(2, GetDBEnv("Runlist.Run"),
-                                 GetDBEnv("Runlist.Events"));
-   GetLineReader()->SetRunKeys(2, GetDBEnv("Runlist.Run"),
-                               GetDBEnv("Runlist.Events"));
-
-   kFirstRun = 999999;
-   kLastRun = 0;
-   ReadRunList(runlist_fullpath.Data());
-   //new style runlist
-   if (IsNewRunList()) {
-      ReadNewRunList();
-   };
-
-   ReadSystemList();
-   ReadChIoPressures();
-   ReadGainList();
-   ReadPedestalList();
-   ReadChannelVolt();
-   ReadVoltEnergyChIoSi();
-   ReadCalibCsI();
-   ReadAbsentDetectors();
-   ReadOoOACQParams();
-   ReadOoODetectors();
-
-
-   // read all available mean pulser data and store in tree
-   if (!fPulserData) fPulserData = new KVINDRAPulserDataTree;
-   fPulserData->SetRunList(GetRuns());
-   fPulserData->Build();
-
-   ReadCsITotalLightGainCorrections();
-}
-
-//____________________________________________________________________________
-void KVINDRADB_e613::ReadChIoPressures()
-{
-   //Read ChIo pressures for different run ranges and enter into database.
-   //Format of file is:
-   //
-   //# some comments
-   //#which start with '#'
-   //RunRange  6001 6018
-   //2_3 50.0
-   //4_5 50.0
-   //6_7 50.0
-   //8_12   30.0
-   //13_17  30.0
-   //
-   //Pressures (of C3F8) are given in mbar).
-
-   ifstream fin;
-   if (!OpenCalibFile("Pressures", fin)) {
-      Error("ReadChIoPressures()", "Could not open file %s",
-            GetCalibFileName("Pressures"));
-      return;
-   }
-   Info("ReadChIoPressures()", "Reading ChIo pressures parameters...");
-
-   TString sline;
-
-   Bool_t prev_rr = kFALSE;     //was the previous line a run range indication ?
-   Bool_t read_pressure = kFALSE; // have we read any pressures recently ?
-   KVNumberList nl;
-   KVDBChIoPressures* parset = 0;
-   TList* par_list = new TList();
-   TObjArray* toks = 0;
-   //any ChIo not in list is assumed absent (pressure = 0)
-
-   Float_t pressure[5] = { 0, 0, 0, 0, 0 };
-
-   while (fin.good()) {         // parcours du fichier
-
-      sline.ReadLine(fin);
-      if (sline.BeginsWith("#")) {
-
-      } else if (sline.BeginsWith("RunRange")) {  // run range found
-         if (!prev_rr) {        // New set of run ranges to read
-
-            //have we just finished reading some pressures ?
-            if (read_pressure) {
-               parset = new KVDBChIoPressures(pressure);
-               GetTable("ChIo Pressures")->AddRecord(parset);
-               par_list->Add(parset);
-               LinkListToRunRange(par_list, nl);
-               par_list->Clear();
-               for (int zz = 0; zz < 5; zz++) pressure[zz] = 0.;
-               read_pressure = kFALSE;
-            }
-         }
-         toks = sline.Tokenize("\t");
-
-         if (toks->GetEntries() != 2) {
-            Error("ReadChIoPressures", "Pb de format, il faut RunRange\tRun1-Run2 ... ");
-            return;
-         }
-
-         prev_rr = kTRUE;
-         nl.SetList(((TObjString*)toks->At(1))->GetString().Data());
-         delete toks;
-      }                         // Run Range found
-      else if (fin.eof()) {          //fin du fichier
-         //have we just finished reading some pressures ?
-         if (read_pressure) {
-            parset = new KVDBChIoPressures(pressure);
-            GetTable("ChIo Pressures")->AddRecord(parset);
-            par_list->Add(parset);
-            LinkListToRunRange(par_list, nl);
-            par_list->Clear();
-            for (int zz = 0; zz < 5; zz++) pressure[zz] = 0.;
-            read_pressure = kFALSE;
-         }
-      } else {
-         prev_rr = kFALSE;
-
-         toks = sline.Tokenize("\t");
-         if (toks->GetEntries() != 2) {
-            Error("ReadChIoPressures", "Pb de format, il faut numero de la chio (ex 2_3)\tpression");
-            return;
-         }
-
-         TString chio = ((TObjString*)toks->At(0))->String();
-         TString press = ((TObjString*)toks->At(1))->String();
-
-         printf("%s %lf\n", chio.Data(), press.Atof());
-         delete toks;
-
-         read_pressure = kTRUE;
-
-         if (chio == "2_3")         pressure[0] = press.Atof();
-         else if (chio == "4_5")    pressure[1] = press.Atof();
-         else if (chio == "6_7")    pressure[2] = press.Atof();
-         else if (chio == "8_12")   pressure[3] = press.Atof();
-         else if (chio == "13_17") pressure[4] = press.Atof();
-         else {
-            printf("#%s# ne correspond a rien\n", chio.Data());
-            read_pressure = kFALSE;
-         }
-      }                         //line with ChIo pressure data
-   }                            //parcours du fichier
-   delete par_list;
-   fin.close();
-}
-
 //____________________________________________________________________________
 void KVINDRADB_e613::ReadGainList()
 {
    // Read the file listing any detectors whose gain value changes during experiment
-   // need description of INDRA geometry
    // information are in  [dataset name].INDRADB.Gains:    ...
    //
-
-   //need description of INDRA geometry
-   if (!gIndra) {
-      KVMultiDetArray::MakeMultiDetector(fDataSet.Data());
-   }
-   //gIndra exists, but has it been built ?
-   if (!gIndra->IsBuilt())
-      gIndra->Build();
+   // We fill a table "Gains" in the database with the following columns:
+   // Run Number | SI_01 | CI_02 | SI75 | etc.
 
    KVFileReader flist;
    TString fp;
@@ -229,8 +59,13 @@ void KVINDRADB_e613::ReadGainList()
       return;
    }
    Info("ReadGainList()", "Reading gains ...");
-   //Add table for gains
-   fGains = AddTable("Gains", "Gains of detectors during runs");
+
+   KVSQLite::table gt("Gains");
+   gt.add_column("Run Number", "INTEGER");
+   GetDB().add_table(gt);
+   // fill run number column
+   GetDB().copy_table_data("Runs", "Gains", "Run Number");
+   TString new_column_name;
 
    while (flist.IsOK()) {
 
@@ -247,8 +82,6 @@ void KVINDRADB_e613::ReadGainList()
             //format : Gain_[det_type]_R[RingNumber].dat
             //exemple  : Gain_SI_R07.dat
             det_type = ((TObjString*)toks->At(1))->GetString();
-            //on recupere les detecteurs par type
-            sl.reset(gIndra->GetDetectors()->GetSubListWithType(det_type.Data()));
             if (nt == 2) {
                ring = 0;
             } else if (nt == 3) {
@@ -257,42 +90,48 @@ void KVINDRADB_e613::ReadGainList()
                Warning("ReadGainList", "format non gere");
             }
             if (ring != 0)
-               sl.reset(sl->GetSubListWithMethod(Form("%d", ring), "GetRingNumber"));
+               new_column_name = GetDB().add_column("Gains", Form("%s_%02d", det_type.Data(), ring), "REAL").name();
+            else
+               new_column_name = GetDB().add_column("Gains", det_type.Data(), "REAL").name();
          }
 
-         if (sl.get()) {
-            KVDBParameterSet* par(nullptr);
-            TIter it(sl.get());
-            TObject* obj(nullptr);
-            KVNumberList nl;
-            KVFileReader ffile;
-            if (KVBase::SearchKVFile(flist.GetCurrentLine().Data(), fp, fDataSet.Data())) {
-               ffile.OpenFileToRead(fp.Data());
-               //Info("ReadGainList","Lecture de %s",fp.Data());
-               while (ffile.IsOK()) {
-                  ffile.ReadLine(":");
-                  if (! ffile.GetCurrentLine().IsNull()) {
+         KVNumberList nl;
+         KVFileReader ffile;
+         if (KVBase::SearchKVFile(flist.GetCurrentLine().Data(), fp, fDataSet.Data())) {
+            ffile.OpenFileToRead(fp.Data());
 
-                     toks.reset(ffile.GetReadPar(0).Tokenize("."));
-                     //liste des runs ...
-                     nl.SetList(((TObjString*)toks->At(1))->GetString());
-                     // ... associee a la valeur de gain
+            while (ffile.IsOK()) {
+               ffile.ReadLine(":");
+               if (! ffile.GetCurrentLine().IsNull()) {
+
+                  toks.reset(ffile.GetReadPar(0).Tokenize("."));
+                  if (toks->GetEntries() > 2) {
+                     // line of type: RunRange.[detector].[runlist]
+                     // specifies gain of specific detector for runs
+                     // we add a column for this detector (if not already existing)
+                     // and update it accordingly
+                     TString detname = ((TObjString*)toks->At(1))->GetString();
+                     nl.SetList(((TObjString*)toks->At(2))->GetString());
                      Double_t gain = ffile.GetDoubleReadPar(1);
+                     if (!GetDB()["Gains"].has_column(detname)) GetDB().add_column("Gains", detname, "REAL");
+                     GetDB()["Gains"][detname].set_data(gain);
+                     GetDB().update("Gains", nl.GetSQL("Run Number"), detname);
 
-                     printf("%s Ring %d -> Runs=%s Gain=%1.3lf\n", det_type.Data(), ring, nl.AsString(), gain);
+                     printf("%s     -> Runs=%s Gain=%1.3lf\n", detname.Data(), nl.AsString(), gain);
+                  } else {
+                     nl.SetList(((TObjString*)toks->At(1))->GetString());
+                     Double_t gain = ffile.GetDoubleReadPar(1);
+                     GetDB()["Gains"][new_column_name].set_data(gain);
+                     GetDB().update("Gains", nl.GetSQL("Run Number"), new_column_name);
 
-                     it.Reset();
-                     while ((obj = it.Next())) {
-                        par = new KVDBParameterSet(obj->GetName(), "Gains", 1);
-                        par->SetParameter(gain);
-                        fGains->AddRecord(par);
-                        LinkRecordToRunRange(par, nl);
-                     }
+                     if (ring) printf("%s Ring %d -> Runs=%s Gain=%1.3lf\n", det_type.Data(), ring, nl.AsString(), gain);
+                     else printf("%s     -> Runs=%s Gain=%1.3lf\n", det_type.Data(), nl.AsString(), gain);
                   }
                }
             }
-            ffile.CloseFile();
          }
+         ffile.CloseFile();
+
       }
    }
 
@@ -314,7 +153,7 @@ void KVINDRADB_e613::ReadPedestalList()
       Error("ReadPedestalList", "Fichier %s, inconnu au bataillon", gDataSet->GetDataSetEnv("INDRADB.Pedestals", ""));
       return;
    }
-   fPedestals->SetTitle("Values of pedestals");
+   //fPedestals->SetTitle("Values of pedestals");
    if (!flist.OpenFileToRead(fp.Data())) {
       return;
    }
@@ -342,8 +181,8 @@ void KVINDRADB_e613::ReadPedestalList()
                } else {
                   par = new KVDBParameterSet(rec->GetName(), "Piedestal", 1);
                   par->SetParameter(env->GetValue(rec->GetName(), 0.0));
-                  fPedestals->AddRecord(par);
-                  LinkRecordToRunRange(par, default_run_list);
+                  //fPedestals->AddRecord(par);
+                  //LinkRecordToRunRange(par, default_run_list);
                }
             }
             delete env;
@@ -436,7 +275,7 @@ void KVINDRADB_e613::ReadChannelVolt()
                      a0 = ((TObjString*)toks->At(1))->GetString().Atof();
                      a1 = ((TObjString*)toks->At(2))->GetString().Atof();
                      a2 = ((TObjString*)toks->At(3))->GetString().Atof();
-                     par_pied = ((KVDBParameterSet*)dbpied->GetLink("Pedestals", Form("%s_%s", rec->GetName(), sgain.Data())));
+                     //par_pied = ((KVDBParameterSet*)dbpied->GetLink("Pedestals", Form("%s_%s", rec->GetName(), sgain.Data())));
                      if (par_pied)
                         pied = par_pied->GetParameter();
                      //Fit Canal-Volt realise avec soustraction piedestal
@@ -458,7 +297,7 @@ void KVINDRADB_e613::ReadChannelVolt()
                            Warning("ReadChannelVolt", "Pas de run reference numero %d", runref);
                         }
                         //le gain est mis comme troisieme parametre
-                        KVDBParameterSet* pargain = ((KVDBParameterSet*) dbrun->GetLink("Gains", rec->GetName()));
+                        KVDBParameterSet* pargain;// = ((KVDBParameterSet*) dbrun->GetLink("Gains", rec->GetName()));
                         if (pargain) {
                            gain = pargain->GetParameter(0);
                         } else {
@@ -470,8 +309,8 @@ void KVINDRADB_e613::ReadChannelVolt()
                         par = new KVDBParameterSet(Form("%s_%s", rec->GetName(), sgain.Data()), cal_type, 5);
                         par->SetParameters(a0, a1, a2, gain, dum2);
 
-                        fChanVolt->AddRecord(par);
-                        LinkRecordToRunRange(par, default_run_list);
+                        //fChanVolt->AddRecord(par);
+                        //LinkRecordToRunRange(par, default_run_list);
                      }
                   } else {
                      a0 = a1 = a2 = gain = 0;
@@ -538,8 +377,8 @@ void KVINDRADB_e613::ReadVoltEnergyChIoSi()
 
                par = new KVDBParameterSet(rec->GetName(), "Volt-Energy", 3);
                par->SetParameters(a0, a1, chi);
-               fVoltMeVChIoSi->AddRecord(par);
-               LinkRecordToRunRange(par, default_run_list);
+               //fVoltMeVChIoSi->AddRecord(par);
+               //LinkRecordToRunRange(par, default_run_list);
 
             }
             delete env;
@@ -549,3 +388,54 @@ void KVINDRADB_e613::ReadVoltEnergyChIoSi()
    Info("ReadVoltEnergyChIoSi", "End of reading");
 
 }
+
+void KVINDRADB_e613::Build()
+{
+   // Build and fill the database for an INDRA experiment
+
+   //get full path to runlist file, using environment variables for the current dataset
+   TString runlist_fullpath;
+   KVBase::SearchKVFile(GetDBEnv("Runlist"), runlist_fullpath, fDataSet.Data());
+
+   //set comment character for current dataset runlist
+   SetRLCommentChar(GetDBEnv("Runlist.Comment")[0]);
+
+   //set field separator character for current dataset runlist
+   if (!strcmp(GetDBEnv("Runlist.Separator"), "<TAB>"))
+      SetRLSeparatorChar('\t');
+   else
+      SetRLSeparatorChar(GetDBEnv("Runlist.Separator")[0]);
+
+   //by default we set two keys for both recognising the 'header' lines and deciding
+   //if we have a good run line: the "Run" and "Events" fields must be present
+   GetLineReader()->SetFieldKeys(2, GetDBEnv("Runlist.Run"),
+                                 GetDBEnv("Runlist.Events"));
+   GetLineReader()->SetRunKeys(2, GetDBEnv("Runlist.Run"),
+                               GetDBEnv("Runlist.Events"));
+
+   kFirstRun = 999999;
+   kLastRun = 0;
+   ReadRunList(runlist_fullpath.Data());
+   //new style runlist
+   if (IsNewRunList())
+      ReadNewRunList();
+
+   ReadSystemList();
+   ReadChIoPressures();
+   ReadGainList();
+//   ReadPedestalList();
+//   ReadChannelVolt();
+//   ReadVoltEnergyChIoSi();
+//   ReadCalibCsI();
+//   ReadAbsentDetectors();
+//   ReadOoOACQParams();
+//   ReadOoODetectors();
+
+//   // read all available mean pulser data and store in tree
+//   fPulserData.reset(new KVINDRAPulserDataTree(GetDataBaseDir(), kFALSE));
+//   fPulserData->SetRunList(GetRuns());
+//   fPulserData->Build();
+
+//   ReadCsITotalLightGainCorrections();
+}
+

@@ -545,12 +545,13 @@ namespace KVSQLite {
       fDBserv->Exec(query);
    }
 
-   void database::add_column(const TString& table, const TString& name, const TString& type)
+   column& database::add_column(const TString& table, const TString& name, const TString& type)
    {
       // add column to existing table
+      // return reference to new column
       TString query = Form("ALTER TABLE \"%s\" ADD COLUMN \"%s\" %s", table.Data(), name.Data(), type.Data());
       fDBserv->Exec(query);
-      (*this)[table].add_column(name, type);
+      return (*this)[table].add_column(name, type);
    }
 
    void database::add_missing_columns(const TString& _table_, const KVNameValueList& l)
@@ -579,7 +580,7 @@ namespace KVSQLite {
    void database::copy_table_data(const TString& source, const TString& destination, const TString& columns, const TString& selection)
    {
       // Copy all selected data in 'source' table to 'destination'
-      // If the columns of the two tables are not identical, specify the columns to copy in 'column'
+      // If the columns of the two tables are not identical, specify the columns to copy in 'columns'
       // (comma-separated list)
       // N.B. SQLite will not allow copy if the number of selected columns from 'source' is not
       // exactly equal to the number of columns in 'destination'

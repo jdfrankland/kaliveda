@@ -383,7 +383,7 @@ namespace KVSQLite {
       bool update(const TString& table, const TString& selection, const TString& columns);
       void delete_data(const TString& table, const TString& selection = "");
 
-      void add_column(const TString& table, const TString& name, const TString& type);
+      column& add_column(const TString& table, const TString& name, const TString& type);
       void add_missing_columns(const TString& table, const KVNameValueList& l);
 
       void copy_table_data(const TString& source, const TString& destination, const TString& columns = "*", const TString& selection = "");
