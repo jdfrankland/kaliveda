@@ -398,7 +398,6 @@ void KVINDRADB::ReadChIoPressures()
 
             //have we just finished reading some pressures ?
             if (read_pressure) {
-               prlist.Print();
                GetDB().prepare_data_insertion("ChIo Pressures");
                GetDB()["ChIo Pressures"].prepare_data(prlist);
                GetDB().insert_data_row();
@@ -447,7 +446,7 @@ void KVINDRADB::ReadChIoPressures()
 
          sline.Remove(TString::kBoth, ' ');
          //split up ChIo ring numbers and pressure
-         sline.Begin(" \t");
+         sline.Begin(" \t");//beware use of tabs in file...(e613)
          TString chio = sline.Next(kTRUE);
          KVString press = sline.Next(kTRUE);
          read_pressure = kTRUE;
@@ -1098,8 +1097,10 @@ void KVINDRADB::ReadPedestalList()
    //in file with name defined by the environment variable:
    //   [dataset name].INDRADB.Pedestals:    ...
    //
-   // Filenames are stored in the "Calibrations" table in columns
-   // "Pedestals_ChIoSi" and "Pedestals_CsI"
+   // Each set of pedestals are stored in tables with names
+   // "Pedestals_ChIoSi_1", "Pedestals_ChIoSi_2", etc. etc.;
+   // the name of the table to use for each run is stored in the "Calibrations" table
+   // columns "Pedestals_ChIoSi" and "Pedestals_CsI"
 
    ifstream fin;
    if (!OpenCalibFile("Pedestals", fin)) {

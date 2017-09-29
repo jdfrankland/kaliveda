@@ -19,6 +19,8 @@ public:
    KVINDRADB_e613(const Char_t* name);
    virtual ~KVINDRADB_e613();
 
+   KVNameValueList GetGains(int run);
+
    ClassDef(KVINDRADB_e613, 1) //Child class for e613 experiment
    void Build();
 };

@@ -4,6 +4,7 @@
 #include "KVINDRAUpDater_e613.h"
 #include "KVDBParameterSet.h"
 #include "KVINDRA.h"
+#include "KVINDRADB.h"
 #include "KVDetector.h"
 #include "KVACQParam.h"
 #include "KVCalibrator.h"
@@ -36,14 +37,13 @@ void KVINDRAUpDater_e613::SetGains(KVDBRun* kvrun)
 {
    //Set gains used during this run
    //Read gains in database just print detectors for which gains have changed
-   //
 
-   KVRList* gain_list = kvrun->GetLinks("Gains");
-   if (!gain_list) {
+   KVNameValueList gain_list = gIndraDB->GetGains(kvrun->GetNumber());
+   if (gain_list.IsEmpty()) {
       return;
       Warning("SetGains", "No gains defined for this run in database");
    }
-   Int_t ndets = gain_list->GetSize();
+   Int_t ndets = gain_list.GetNpar();
    Info("SetGains", "Loop on %d detectors : ...", ndets);
 
    Int_t nchange = 0;
@@ -51,7 +51,7 @@ void KVINDRAUpDater_e613::SetGains(KVDBRun* kvrun)
    Double_t oldgain;
    TString list;
    for (Int_t i = 0; i < ndets; i++) {
-      KVDBParameterSet* dbps = (KVDBParameterSet*) gain_list->At(i);
+      KVNamedParameter* dbps = gain_list.GetParameter(i);
       kvd = gIndra->GetDetector(dbps->GetName());
       if (!kvd) {
          //Error("SetGains",
@@ -60,8 +60,8 @@ void KVINDRAUpDater_e613::SetGains(KVDBRun* kvrun)
          continue;
       } else {
          oldgain = kvd->GetGain();
-         if (oldgain != dbps->GetParameter(0)) {
-            kvd->SetGain(dbps->GetParameter(0));
+         if (oldgain != dbps->GetDouble()) {
+            kvd->SetGain(dbps->GetDouble());
             //cout << "            " << kvd->GetName() << " set gain from " << oldgain << " to G=" << kvd->GetGain() << endl;
             list += kvd->GetName();
             list += ",";
@@ -70,44 +70,67 @@ void KVINDRAUpDater_e613::SetGains(KVDBRun* kvrun)
       }
    }
    if (nchange == 0)
-      Info("SetGains", "Gains of the %d detectors are the same than the run before ", ndets);
+      Info("SetGains", "Gains of the %d detectors are the same as the run before ", ndets);
    else
       Info("SetGains", "Gains have been changed for %d detectors (total = %d)", nchange, ndets);
 
 }
 
-//_______________________________________________________________//
+////_______________________________________________________________//
 
 void KVINDRAUpDater_e613::SetPedestals(KVDBRun* kvrun)
 {
    //Set pedestals for this run
 
-   KVRList* ped_list = kvrun->GetLinks("Pedestals");
-   if (!ped_list) {
-      return;
-      Warning("SetPedestals", "No pedestals defined for this run in database");
+   gIndraDB->select_runs_in_dbtable("Calibrations", kvrun->GetNumber(), "Pedestals_ChIoSi,Pedestals_CsI");
+   TString ped_chio_tab, ped_csi_tab;
+   while (gIndraDB->GetDB().get_next_result()) {
+      ped_chio_tab = gIndraDB->GetDB()["Calibrations"]["Pedestals_ChIoSi"].data().GetString();
+      ped_csi_tab = gIndraDB->GetDB()["Calibrations"]["Pedestals_CsI"].data().GetString();
    }
-   Int_t ndets = ped_list->GetSize();
-   Info("SetPedestals", "Loop on %d acquisition parameter : ...", ndets);
+   if (ped_chio_tab == "" && ped_csi_tab == "") {
+      Warning("SetPedestals", "No pedestals defined for this run in database");
+      return;
+   }
 
-   Int_t nchange = 0;
-   KVACQParam* acq = 0;
-   KVDBParameterSet* dbps = 0;
-   Float_t oldped;
+   Int_t nchange(0), ndets(0);
    TString list;
-   for (Int_t i = 0; i < ndets; i++) {
-      dbps = (KVDBParameterSet*) ped_list->At(i);
-      acq = gIndra->GetACQParam(dbps->GetName());
+
+   gIndraDB->GetDB().select_data(ped_chio_tab);
+   KVSQLite::table& ped_chio = gIndraDB->GetDB()[ped_chio_tab];
+   while (gIndraDB->GetDB().get_next_result()) {
+      KVACQParam* acq = gIndra->GetACQParam(ped_chio["detName"].data().GetString());
       if (!acq) {
-         //Error("SetPedestals","ACQ Parameter not defined %s",dbps->GetName());
+         Error("SetPedestals", "ACQ Parameter not defined %s", ped_chio["detName"].data().GetString());
       } else {
-         oldped = acq->GetPedestal();
-         if (oldped != Float_t(dbps->GetParameter(0))) {
-            acq->SetPedestal(Float_t(dbps->GetParameter(0)));
+         ++ndets;
+         Float_t oldped = acq->GetPedestal();
+         Float_t newped = ped_chio["pedestal"].data().GetDouble();
+         if (oldped != newped) {
+            acq->SetPedestal(newped);
 
             list += acq->GetName();
             list += ",";
-            nchange += 1;
+            ++nchange;
+         }
+      }
+   }
+   gIndraDB->GetDB().select_data(ped_csi_tab);
+   KVSQLite::table& ped_csi = gIndraDB->GetDB()[ped_csi_tab];
+   while (gIndraDB->GetDB().get_next_result()) {
+      KVACQParam* acq = gIndra->GetACQParam(ped_csi["detName"].data().GetString());
+      if (!acq) {
+         Error("SetPedestals", "ACQ Parameter not defined %s", ped_csi["detName"].data().GetString());
+      } else {
+         ++ndets;
+         Float_t oldped = acq->GetPedestal();
+         Float_t newped = ped_csi["pedestal"].data().GetDouble();
+         if (oldped != newped) {
+            acq->SetPedestal(newped);
+
+            list += acq->GetName();
+            list += ",";
+            ++nchange;
          }
       }
    }
@@ -119,52 +142,52 @@ void KVINDRAUpDater_e613::SetPedestals(KVDBRun* kvrun)
 }
 //______________________________________________________________________________
 
-void KVINDRAUpDater_e613::SetChVoltParameters(KVDBRun* kvrun)
-{
+//void KVINDRAUpDater_e613::SetChVoltParameters(KVDBRun* kvrun)
+//{
 
 
-   KVRList* param_list = kvrun->GetLinks("Channel-Volt");
-   if (!param_list)
-      return;
-   if (!param_list->GetSize())
-      return;
+//   KVRList* param_list = kvrun->GetLinks("Channel-Volt");
+//   if (!param_list)
+//      return;
+//   if (!param_list->GetSize())
+//      return;
 
-   KVDetector* kvd;
-   KVDBParameterSet* kvps;
-   KVCalibrator* kvc;
-   TIter next_ps(param_list);
+//   KVDetector* kvd;
+//   KVDBParameterSet* kvps;
+//   KVCalibrator* kvc;
+//   TIter next_ps(param_list);
 
 
-   TString str;
+//   TString str;
 
-   // Setting Channel-Volts calibration parameters
-   while ((kvps = (KVDBParameterSet*) next_ps())) {     // boucle sur les parametres
-      str = kvps->GetName();
-      str.Remove(str.Sizeof() - 4, 3);  //Removing 3 last letters (ex : "_PG")
-      kvd = gIndra->GetDetector(str.Data());
-      if (!kvd) {
-         //    Warning("SetChVoltParameters(UInt_t)", "Dectector %s not found !",
-         //            str.Data());
-      } else {                  // detector found
-         kvc = kvd->GetCalibrator(kvps->GetName(), kvps->GetTitle());
-         if (!kvc)
-            Warning("SetChVoltParameters(UInt_t)",
-                    "Calibrator %s %s not found !", kvps->GetName(),
-                    kvps->GetTitle());
-         else {                 //calibrator found
-            //Prise en compte du gain du detecteur quand la rampe gene a ete faite
-            //pour ponderation des coef dans KVChannelVolt
-            Double_t gain_ref = kvps->GetParameter(kvc->GetNumberParams());
-            ((KVChannelVolt*)kvc)->SetGainRef(gain_ref);
-            for (Int_t i = 0; i < kvc->GetNumberParams(); i++) {
-               kvc->SetParameter(i, kvps->GetParameter(i));
-            }
-            kvc->SetStatus((gain_ref != 0)); // calibrator ready
-         }                      //calibrator found
-      }                         //detector found
-   }                            //boucle sur les parameters
-}
-//_______________________________________________________________//
+//   // Setting Channel-Volts calibration parameters
+//   while ((kvps = (KVDBParameterSet*) next_ps())) {     // boucle sur les parametres
+//      str = kvps->GetName();
+//      str.Remove(str.Sizeof() - 4, 3);  //Removing 3 last letters (ex : "_PG")
+//      kvd = gIndra->GetDetector(str.Data());
+//      if (!kvd) {
+//         //    Warning("SetChVoltParameters(UInt_t)", "Dectector %s not found !",
+//         //            str.Data());
+//      } else {                  // detector found
+//         kvc = kvd->GetCalibrator(kvps->GetName(), kvps->GetTitle());
+//         if (!kvc)
+//            Warning("SetChVoltParameters(UInt_t)",
+//                    "Calibrator %s %s not found !", kvps->GetName(),
+//                    kvps->GetTitle());
+//         else {                 //calibrator found
+//            //Prise en compte du gain du detecteur quand la rampe gene a ete faite
+//            //pour ponderation des coef dans KVChannelVolt
+//            Double_t gain_ref = kvps->GetParameter(kvc->GetNumberParams());
+//            ((KVChannelVolt*)kvc)->SetGainRef(gain_ref);
+//            for (Int_t i = 0; i < kvc->GetNumberParams(); i++) {
+//               kvc->SetParameter(i, kvps->GetParameter(i));
+//            }
+//            kvc->SetStatus((gain_ref != 0)); // calibrator ready
+//         }                      //calibrator found
+//      }                         //detector found
+//   }                            //boucle sur les parameters
+//}
+////_______________________________________________________________//
 
 void KVINDRAUpDater_e613::SetParameters(UInt_t run)
 {

@@ -157,7 +157,7 @@ public:
    void ReadNewRunList();
 
    KVDBChIoPressures GetChIoPressures(int run);
-   KVNameValueList GetGains(int run);
+   virtual KVNameValueList GetGains(int run);
 
    KVList* GetCalibrationPeaks(Int_t run, KVDetector* detector = 0,
                                Int_t peak_type = -1, Int_t signal_type = 0,

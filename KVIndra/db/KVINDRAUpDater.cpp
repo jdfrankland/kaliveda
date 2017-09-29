@@ -487,7 +487,7 @@ void KVINDRAUpDater::set_pedestals(Int_t run_number, const TString& column_name,
 {
    // set pedestals for run
 
-   gIndraDB->GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", run_number));
+   gIndraDB->GetDB().select_data("Calibrations", column_name, Form("\"Run Number\"=%d", run_number));
    TString tablename;
    while (gIndraDB->GetDB().get_next_result())
       tablename = gIndraDB->GetDB()["Calibrations"][column_name.Data()].data().GetString();

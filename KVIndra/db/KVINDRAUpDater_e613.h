@@ -15,7 +15,7 @@ public:
    virtual void SetParameters(UInt_t run);
    virtual void SetGains(KVDBRun*);
    virtual void SetPedestals(KVDBRun*);
-   virtual void SetChVoltParameters(KVDBRun*);
+//   virtual void SetChVoltParameters(KVDBRun*);
 
    ClassDef(KVINDRAUpDater_e613, 1) //Sets run parameters for INDRA_e613 dataset
 };

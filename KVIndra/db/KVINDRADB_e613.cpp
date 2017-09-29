@@ -38,6 +38,68 @@ KVINDRADB_e613::~KVINDRADB_e613()
    // Destructor
 }
 
+KVNameValueList KVINDRADB_e613::GetGains(int run)
+{
+   // Override KVINDRADB method due to different database structure (see KVINDRADB_e613::ReadGainList)
+   // INDRA array object must have been built before using this method
+
+   KVNameValueList gainlist;
+
+   if (!gIndra || !gIndra->IsBuilt()) {
+      Warning("GetGains(int)", "Build multidetector for dataset before calling this method");
+      return gainlist;
+   }
+   KVHashList* chio = gIndra->GetListOfChIo();
+   KVHashList* sili = gIndra->GetListOfSi();
+
+   KVNameValueList gain_individual;//for individual detectors
+   KVSQLite::table& gain_table = GetDB()["Gains"];
+   int ncols = gain_table.number_of_columns();
+   select_runs_in_dbtable("Gains", run);
+   while (GetDB().get_next_result()) {
+      for (int col = 1; col < ncols; ++col) {
+         if (!gain_table[col].is_null()) {
+            // are we dealing with a set of detectors or an individual detector?
+            TString det(gain_table[col].name());
+            Double_t Gain = gain_table[col].data().GetDouble();
+            if (gIndra->GetDetector(det)) {
+               // put in individual list; apply after treating all sets
+               gain_individual.SetValue(det, Gain);
+            } else {
+               // range of detectors i.e. "CI_02", "SI_06", "SILI" etc.
+               KVHashList* dets(nullptr);
+               switch (det[0]) {
+                  case 'S':
+                     dets = sili;
+                     break;
+                  case 'C':
+                     dets = chio;
+                     break;
+                  default:
+                     Error("GetGains(int)",
+                           "Unknown detector specification %s", det.Data());
+                     continue;
+               }
+               unique_ptr<KVSeqCollection> detset(dets->GetSubListWithName(Form("%s*", det.Data())));
+               TIter it(detset.get());
+               TObject* d;
+               while ((d = it())) {
+                  gainlist.SetValue(d->GetName(), Gain);
+               }
+            }
+         }
+      }
+   }
+   // any individual detector gains?
+   if (gain_individual.GetNpar()) {
+      for (int i = 0; i < gain_individual.GetNpar(); ++i) {
+         KVNamedParameter* p = gain_individual.GetParameter(i);
+         gainlist.SetValue(p->GetName(), p->GetDouble());
+      }
+   }
+   return gainlist;
+}
+
 //____________________________________________________________________________
 void KVINDRADB_e613::ReadGainList()
 {
@@ -146,6 +208,12 @@ void KVINDRADB_e613::ReadPedestalList()
    //   [dataset name].INDRADB.Pedestals:    ...
    //Actuellement lecture d un seul run de piedestal
    //et donc valeur unique pour l ensemble des runs
+   //
+   // Each set of pedestals are stored in tables with names
+   // "Pedestals_ChIoSi_1", "Pedestals_ChIoSi_2", etc. etc.;
+   // the name of the table to use for each run is stored in the "Calibrations" table
+   // columns "Pedestals_ChIoSi" (CI, SI, SILI, SI75) and "Pedestals_CsI"
+
 
    KVFileReader flist;
    TString fp;
@@ -153,17 +221,34 @@ void KVINDRADB_e613::ReadPedestalList()
       Error("ReadPedestalList", "Fichier %s, inconnu au bataillon", gDataSet->GetDataSetEnv("INDRADB.Pedestals", ""));
       return;
    }
-   //fPedestals->SetTitle("Values of pedestals");
+
    if (!flist.OpenFileToRead(fp.Data())) {
       return;
    }
-   TEnv* env = 0;
-   TEnvRec* rec = 0;
-   KVDBParameterSet* par = 0;
+
+   GetDB().add_column("Calibrations", "Pedestals_ChIoSi", "TEXT");
+   GetDB().add_column("Calibrations", "Pedestals_CsI", "TEXT");
+
+   // set up the 2 unique tables used for all runs
+   TString pchiosi_table = "Pedestals_ChIoSi_1";
+   TString pcsi_table = "Pedestals_CsI_1";
+   KVSQLite::table pchio(pchiosi_table);
+   pchio.add_column("detName", "TEXT");
+   pchio.add_column("pedestal", "REAL");
+   GetDB().add_table(pchio);
+   KVSQLite::table pcsi(pcsi_table);
+   pcsi.add_column("detName", "TEXT");
+   pcsi.add_column("pedestal", "REAL");
+   GetDB().add_table(pcsi);
 
    KVNumberList default_run_list;
    default_run_list.SetMinMax(kFirstRun, kLastRun);
    Info("ReadPedestalList", "liste des runs par defaut %s", default_run_list.AsString());
+
+   // set the table names for all runs
+   GetDB()["Calibrations"]["Pedestals_ChIoSi"].set_data(pchiosi_table);
+   GetDB()["Calibrations"]["Pedestals_CsI"].set_data(pcsi_table);
+   GetDB().update("Calibrations", default_run_list.GetSQL("Run Number"), "Pedestals_ChIoSi,Pedestals_CsI");
 
    while (flist.IsOK()) {
       flist.ReadLine(NULL);
@@ -172,21 +257,25 @@ void KVINDRADB_e613::ReadPedestalList()
       if (file != "" && !file.BeginsWith('#')) {
          if (KVBase::SearchKVFile(file.Data(), fp, gDataSet->GetName())) {
             Info("ReadPedestalList", "Lecture de %s", fp.Data());
-            env = new TEnv();
-            env->ReadFile(fp.Data(), kEnvAll);
-            TIter it(env->GetTable());
+            TString tablename;
+            if (file.BeginsWith("pied_CSI")) tablename = pcsi_table;
+            else tablename = pchiosi_table;
+            KVSQLite::table& ped_tab = GetDB()[tablename];
+            GetDB().prepare_data_insertion(tablename);
+            TEnv env;
+            env.ReadFile(fp.Data(), kEnvAll);
+            TIter it(env.GetTable());
+            TEnvRec* rec;
             while ((rec = (TEnvRec*)it.Next())) {
                if (!strcmp(rec->GetName(), "RunRange")) {
-                  nl.SetList(rec->GetValue());
+                  nl.SetList(rec->GetValue());// run range read but not used
                } else {
-                  par = new KVDBParameterSet(rec->GetName(), "Piedestal", 1);
-                  par->SetParameter(env->GetValue(rec->GetName(), 0.0));
-                  //fPedestals->AddRecord(par);
-                  //LinkRecordToRunRange(par, default_run_list);
+                  ped_tab["detName"].set_data(rec->GetName());
+                  ped_tab["pedestal"].set_data(env.GetValue(rec->GetName(), 0.0));
+                  GetDB().insert_data_row();
                }
             }
-            delete env;
-
+            GetDB().end_data_insertion();
          }
       }
    }
@@ -423,7 +512,7 @@ void KVINDRADB_e613::Build()
    ReadSystemList();
    ReadChIoPressures();
    ReadGainList();
-//   ReadPedestalList();
+   ReadPedestalList();
 //   ReadChannelVolt();
 //   ReadVoltEnergyChIoSi();
 //   ReadCalibCsI();
