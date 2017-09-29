@@ -23,16 +23,23 @@ $Id: KVDBSystem.h,v 1.12 2008/03/07 15:01:34 ebonnet Exp $
 #include "KVList.h"
 #include "KV2Body.h"
 #include "KVNumberList.h"
+#include "RVersion.h"
 
 class KVDBSystem: public KVBase {
 
 private:
 
-   mutable unique_ptr<KV2Body> fCinema; // used to calculate kinematics of entrance channel
-   unique_ptr<KVTarget> fTarget;// physical target used for experiment run
+   mutable unique_ptr<KV2Body> fCinema; //! used to calculate kinematics of entrance channel
+   unique_ptr<KVTarget> fTarget;//! physical target used for experiment run
    KVNumberList fRunlist;       //sorted list of run numbers
    Int_t fRuns;                 //!temporary variable used to stock number of associated runs
-
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,0,0)
+   KVDBSystem(const KVDBSystem&) : KVBase() {} // avoid problems with ROOT5 dictionary/gcc6
+   KVDBSystem& operator=(const KVDBSystem&)
+   {
+      return *this;   // avoid problems with ROOT5 dictionary/gcc6
+   }
+#endif
 protected:
    UInt_t fZbeam;              // charge of the projectile nucleus
    UInt_t fAbeam;               // Mass of the projectile nucleus
@@ -131,7 +138,7 @@ public:
    void RemoveAllRuns();
    virtual const Char_t* GetBatchName();
 
-   ClassDef(KVDBSystem, 2)      // System class
+   ClassDef(KVDBSystem, 0)      // System class
 };
 
 //.............. inline functions ...............

@@ -25,6 +25,13 @@ $Date: 2009/03/27 16:42:58 $
 #endif
 
 class KVINDRAPulserDataTree : public KVBase {
+#if ROOT_VERSION_CODE < ROOT_VERSION(6,0,0)
+   KVINDRAPulserDataTree(const KVINDRAPulserDataTree&) : KVBase() {} // avoid problems with ROOT5 dictionary/gcc6
+   KVINDRAPulserDataTree& operator=(const KVINDRAPulserDataTree&)
+   {
+      return *this;   // avoid problems with ROOT5 dictionary/gcc6
+   }
+#endif
 protected:
    unique_ptr<TFile> fArbFile;//!file containing tree
    TTree* fArb;//!tree containing pulser data
@@ -74,7 +81,7 @@ public:
 
    Float_t GetMean(const Char_t*, Int_t);
 
-   ClassDef(KVINDRAPulserDataTree, 1) //Handles TTree with mean pulser data for every run
+   ClassDef(KVINDRAPulserDataTree, 0) //Handles TTree with mean pulser data for every run
 };
 
 #endif

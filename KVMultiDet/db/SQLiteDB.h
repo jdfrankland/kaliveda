@@ -12,9 +12,8 @@
 #include <iostream>
 #ifdef WITH_CPP11
 #include <unordered_map>
-#else
-#include <map>
 #endif
+#include <map>
 #include <KVNameValueList.h>
 #include <KVNumberList.h>
 
