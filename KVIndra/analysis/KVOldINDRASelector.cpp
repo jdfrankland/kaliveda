@@ -1199,7 +1199,7 @@ Bool_t KVOldINDRASelector::IsOptGiven(const Char_t* opt)
 
 //_________________________________________________________________
 
-const TString& KVOldINDRASelector::GetOpt(const Char_t* opt) const
+TString KVOldINDRASelector::GetOpt(const Char_t* opt) const
 {
    // Returns the value of the option
    // Only use after checking existence of option with IsOptGiven(const Char_t* opt)

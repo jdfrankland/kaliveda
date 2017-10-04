@@ -85,8 +85,8 @@ void KVINDRAUpDater_e613::SetPedestals(KVDBRun* kvrun)
    gIndraDB->select_runs_in_dbtable("Calibrations", kvrun->GetNumber(), "Pedestals_ChIoSi,Pedestals_CsI");
    TString ped_chio_tab, ped_csi_tab;
    while (gIndraDB->GetDB().get_next_result()) {
-      ped_chio_tab = gIndraDB->GetDB()["Calibrations"]["Pedestals_ChIoSi"].data().GetString();
-      ped_csi_tab = gIndraDB->GetDB()["Calibrations"]["Pedestals_CsI"].data().GetString();
+      ped_chio_tab = gIndraDB->GetDB()["Calibrations"]["Pedestals_ChIoSi"].get_data<TString>();
+      ped_csi_tab = gIndraDB->GetDB()["Calibrations"]["Pedestals_CsI"].get_data<TString>();
    }
    if (ped_chio_tab == "" && ped_csi_tab == "") {
       Warning("SetPedestals", "No pedestals defined for this run in database");
@@ -99,13 +99,13 @@ void KVINDRAUpDater_e613::SetPedestals(KVDBRun* kvrun)
    gIndraDB->GetDB().select_data(ped_chio_tab);
    KVSQLite::table& ped_chio = gIndraDB->GetDB()[ped_chio_tab];
    while (gIndraDB->GetDB().get_next_result()) {
-      KVACQParam* acq = gIndra->GetACQParam(ped_chio["detName"].data().GetString());
+      KVACQParam* acq = gIndra->GetACQParam(ped_chio["detName"].get_data<TString>());
       if (!acq) {
-         Error("SetPedestals", "ACQ Parameter not defined %s", ped_chio["detName"].data().GetString());
+         Error("SetPedestals", "ACQ Parameter not defined %s", ped_chio["detName"].get_data<cstring>());
       } else {
          ++ndets;
          Float_t oldped = acq->GetPedestal();
-         Float_t newped = ped_chio["pedestal"].data().GetDouble();
+         Float_t newped = ped_chio["pedestal"].get_data<double>();
          if (oldped != newped) {
             acq->SetPedestal(newped);
 
@@ -118,13 +118,13 @@ void KVINDRAUpDater_e613::SetPedestals(KVDBRun* kvrun)
    gIndraDB->GetDB().select_data(ped_csi_tab);
    KVSQLite::table& ped_csi = gIndraDB->GetDB()[ped_csi_tab];
    while (gIndraDB->GetDB().get_next_result()) {
-      KVACQParam* acq = gIndra->GetACQParam(ped_csi["detName"].data().GetString());
+      KVACQParam* acq = gIndra->GetACQParam(ped_csi["detName"].get_data<TString>());
       if (!acq) {
-         Error("SetPedestals", "ACQ Parameter not defined %s", ped_csi["detName"].data().GetString());
+         Error("SetPedestals", "ACQ Parameter not defined %s", ped_csi["detName"].get_data<cstring>());
       } else {
          ++ndets;
          Float_t oldped = acq->GetPedestal();
-         Float_t newped = ped_csi["pedestal"].data().GetDouble();
+         Float_t newped = ped_csi["pedestal"].get_data<double>();
          if (oldped != newped) {
             acq->SetPedestal(newped);
 

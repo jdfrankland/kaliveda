@@ -140,13 +140,13 @@ TObject* KVDataBase::read_object_from_root_file(Int_t id, const TString& object_
    fSQLdb.select_data(object_table, "*", Form("id=%d", id));
    TObject* o = nullptr;
    while (fSQLdb.get_next_result()) {
-      TString root_file = fSQLdb[object_table.Data()]["fileName"].data().GetString();
+      TString root_file = fSQLdb[object_table.Data()]["fileName"].get_data<TString>();
       TFile* f = access_root_file(root_file);
       if (!f) {
          Error("read_object_from_root_file", "Problem accessing file %s while looking for object with id=%d in table %s.",
                root_file.Data(), id, object_table.Data());
       } else {
-         o = f->Get(fSQLdb[object_table.Data()]["uuid"].data().GetString());
+         o = f->Get(fSQLdb[object_table.Data()]["uuid"].get_data<TString>());
       }
    }
    cwd_save->cd();

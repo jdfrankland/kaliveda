@@ -484,7 +484,7 @@ Bool_t KVPROOFSelector::IsOptGiven(const Char_t* opt)
 
 //_________________________________________________________________
 
-const TString& KVPROOFSelector::GetOpt(const Char_t* opt) const
+TString KVPROOFSelector::GetOpt(const Char_t* opt) const
 {
    // Returns the value of the option
    // Only use after checking existence of option with IsOptGiven(const Char_t* opt)

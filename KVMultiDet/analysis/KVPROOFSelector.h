@@ -97,7 +97,7 @@ public:
 
    virtual void SetOpt(const Char_t* option, const Char_t* value);
    virtual Bool_t IsOptGiven(const Char_t* option);
-   virtual const TString& GetOpt(const Char_t* option) const;
+   virtual TString GetOpt(const Char_t* option) const;
    virtual void UnsetOpt(const Char_t* opt);
 
    void SetCombinedOutputFile(const TString& filename)

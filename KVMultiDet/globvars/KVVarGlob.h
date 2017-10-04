@@ -223,7 +223,7 @@ public:
 
    virtual void SetOption(const Char_t* option, const Char_t* value);
    virtual Bool_t IsOptionGiven(const Char_t* option);
-   virtual const TString& GetOptionString(const Char_t* option) const;
+   virtual TString GetOptionString(const Char_t* option) const;
    virtual void UnsetOption(const Char_t* opt);
 
    virtual void SetParameter(const Char_t* par, Double_t value);

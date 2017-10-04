@@ -61,7 +61,7 @@ KVNameValueList KVINDRADB_e613::GetGains(int run)
          if (!gain_table[col].is_null()) {
             // are we dealing with a set of detectors or an individual detector?
             TString det(gain_table[col].name());
-            Double_t Gain = gain_table[col].data().GetDouble();
+            Double_t Gain = gain_table[col].get_data<double>();
             if (gIndra->GetDetector(det)) {
                // put in individual list; apply after treating all sets
                gain_individual.SetValue(det, Gain);
@@ -285,9 +285,6 @@ void KVINDRADB_e613::ReadPedestalList()
 //____________________________________________________________________________
 void KVINDRADB_e613::ReadChannelVolt()
 {
-   //Read the names of pedestal files to use for each run range, found
-   //in file with name defined by the environment variable:
-   //   [dataset name].INDRADB.Pedestals:    ...
 
    //need description of INDRA geometry
    if (!gIndra) {
@@ -312,23 +309,14 @@ void KVINDRADB_e613::ReadChannelVolt()
       return;
    }
 
-   TEnv* env = 0;
-   TEnvRec* rec = 0;
-   KVDBParameterSet* par = 0;
-   KVDBParameterSet* par_pied = 0;
-   TObjArray* toks = 0;
    Double_t a0, a1, a2; //parametre du polynome d ordre 2
    Double_t gain = 0; //valeur du gain de reference
    Double_t dum2 = -2;
    Double_t pied = 0; //valeur du piedestal
 
-   KVINDRADBRun* dbrun = 0;
-   KVINDRADBRun* dbpied = 0;
-   KVNameValueList ring_run;
    while (flist.IsOK()) {
       flist.ReadLine(NULL);
       KVString file = flist.GetCurrentLine();
-      KVNumberList nl;
       if (file != "" && !file.BeginsWith('#')) {
          if (KVBase::SearchKVFile(file.Data(), fp, gDataSet->GetName())) {
             Info("ReadChannelVolt", "Lecture de %s", fp.Data());
@@ -337,9 +325,12 @@ void KVINDRADB_e613::ReadChannelVolt()
             if (fp.Contains("PGtoVolt")) sgain = "PG";
             cal_type = "Channel-Volt " + sgain;
 
-            env = new TEnv();
-            env->ReadFile(fp.Data(), kEnvAll);
-            TIter it(env->GetTable());
+            TEnv env;
+            env.ReadFile(fp.Data(), kEnvAll);
+            TIter it(env.GetTable());
+            TEnvRec* rec;
+
+            KVNameValueList pedestals; // pedestals from run given on line "Pedestal: xxx"
             while ((rec = (TEnvRec*)it.Next())) {
                KVNumberList nring;
                TString srec(rec->GetName());
@@ -513,7 +504,7 @@ void KVINDRADB_e613::Build()
    ReadChIoPressures();
    ReadGainList();
    ReadPedestalList();
-//   ReadChannelVolt();
+   ReadChannelVolt();
 //   ReadVoltEnergyChIoSi();
 //   ReadCalibCsI();
 //   ReadAbsentDetectors();

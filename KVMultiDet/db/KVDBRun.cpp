@@ -202,7 +202,7 @@ void KVDBRun::FillDefaultDBColumns(KVNameValueList& l)
 void KVDBRun::ReadDefaultDBColumns(KVSQLite::table& t)
 {
    // Set values of parameters in list from 'Runs' table in database
-   SetNumber(t["Run Number"].data().GetInt());
+   SetNumber(t["Run Number"].get_data<int>());
 }
 
 

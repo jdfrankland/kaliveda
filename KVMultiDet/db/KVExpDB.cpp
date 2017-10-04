@@ -39,11 +39,11 @@ void KVExpDB::fill_runlist_from_database()
    fSQLdb.select_data("Runs");
    KVSQLite::table& runs = fSQLdb["Runs"];
    while (fSQLdb.get_next_result()) {
-      KVDBRun* r = (KVDBRun*)TClass::GetClass(runs["class_name"].data().GetString())->New();
+      KVDBRun* r = (KVDBRun*)TClass::GetClass(runs["class_name"].get_data<TString>())->New();
       KVNameValueList default_params;
       r->GetDefaultDBColumns(default_params);
       r->ReadDefaultDBColumns(runs);
-      r->SetRunid(runs["runid"].data().GetInt());
+      r->SetRunid(runs["runid"].get_data<int>());
       int ncols = runs.number_of_columns();
       for (int i = 0; i < ncols; ++i) {
          KVSQLite::column& col = runs[i];
@@ -65,15 +65,15 @@ void KVExpDB::fill_systemlist_from_database()
    KVSQLite::table& systems = fSQLdb["Systems"];
    std::vector<int> target_id;
    while (fSQLdb.get_next_result()) {
-      KVDBSystem* sys = new KVDBSystem(systems["sysname"].data().GetString());
-      sys->SetSysid(systems["sysid"].data().GetInt());
-      sys->SetZbeam(systems["Zbeam"].data().GetInt());
-      sys->SetAbeam(systems["Abeam"].data().GetInt());
-      sys->SetEbeam(systems["Ebeam"].data().GetDouble());
-      sys->SetZtarget(systems["Ztarget"].data().GetInt());
-      sys->SetAtarget(systems["Atarget"].data().GetInt());
+      KVDBSystem* sys = new KVDBSystem(systems["sysname"].get_data<TString>());
+      sys->SetSysid(systems["sysid"].get_data<int>());
+      sys->SetZbeam(systems["Zbeam"].get_data<int>());
+      sys->SetAbeam(systems["Abeam"].get_data<int>());
+      sys->SetEbeam(systems["Ebeam"].get_data<double>());
+      sys->SetZtarget(systems["Ztarget"].get_data<int>());
+      sys->SetAtarget(systems["Atarget"].get_data<int>());
       AddSystem(sys);
-      target_id.push_back(systems["target"].data().GetInt());
+      target_id.push_back(systems["target"].get_data<int>());
    }
    // rebuild runlist for each system, and link run<->system
    TIter next(&fSystems);
@@ -84,7 +84,7 @@ void KVExpDB::fill_systemlist_from_database()
    while ((sys = (KVDBSystem*)next())) {
       fSQLdb.select_data("Runs", "Run Number", Form("sysid=%d", sys->GetSysid()));
       while (fSQLdb.get_next_result()) {
-         int run = runs["Run Number"].data().GetInt();
+         int run = runs["Run Number"].get_data<int>();
          runlist.Add(run);
          GetRun(run)->SetSystem(sys);
       }

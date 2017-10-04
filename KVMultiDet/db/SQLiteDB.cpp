@@ -430,7 +430,7 @@ namespace KVSQLite {
       KVNumberList result;
       if (select_data(table, column, selection, true, anything_else)) {
          while (get_next_result()) {
-            result.Add((*this)[table][column].data().GetInt());
+            result.Add((*this)[table][column].get_data<int>());
          }
       }
       return result;
@@ -447,7 +447,25 @@ namespace KVSQLite {
          while (get_next_result()) {
             if ((*this)[table][column].is_null()) continue;
             if (result != "") result += ",";
-            result += (*this)[table][column].data().GetString();
+            result += (*this)[table][column].get_data<TString>();
+         }
+      }
+      return result;
+   }
+
+   KVNameValueList database::get_name_value_list(const TString& tablename, const TString& name_column, const TString& value_column, const TString& selection, const TString& anything_else)
+   {
+      // Fill KVNameValueList with selected rows from table, adding for each row a parameter with the
+      // name contained in "name_column" (must be of type "TEXT") and the value contained in "value_column"
+      // (can be "INTEGER", "REAL", or "TEXT")
+
+      KVNameValueList result;
+      if (select_data(tablename, Form("%s,%s", name_column.Data(), value_column.Data()), selection, false, anything_else)) {
+         table& tb = (*this)[tablename];
+         column& nom = tb[name_column];
+         column& val = tb[value_column];
+         while (get_next_result()) {
+            result.SetValue(nom.get_data<TString>(), val.data());
          }
       }
       return result;
@@ -612,6 +630,12 @@ namespace KVSQLite {
    const char* column::_type()
    {
       return inv_type_map[fNameType.second];
+   }
+
+   template<> void column::set_data(const KVNamedParameter& x)
+   {
+      fData.Set(x.GetName(), x);
+      fIsNull = false;
    }
 
    void column::set_data_in_statement(TSQLStatement* s, int idx) const
@@ -804,7 +828,6 @@ namespace KVSQLite {
          (*this)[i].set_null();
       }
    }
-
 
    //____________________________________________________________________________//
 

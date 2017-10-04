@@ -118,9 +118,9 @@ void KVINDRAUpDater::CheckStatusOfDetectors(KVDBRun* kvrun)
    gIndraDB->select_runs_in_dbtable("DetectorStatus", kvrun->GetNumber());
    TString absent_table, oo_dets_table, oo_acq_table;
    while (gIndraDB->GetDB().get_next_result()) {
-      absent_table = gIndraDB->GetDB()["DetectorStatus"]["Absent"].data().GetString();
-      oo_dets_table = gIndraDB->GetDB()["DetectorStatus"]["OoODet"].data().GetString();
-      oo_acq_table = gIndraDB->GetDB()["DetectorStatus"]["OoOACQPar"].data().GetString();
+      absent_table = gIndraDB->GetDB()["DetectorStatus"]["Absent"].get_data<TString>();
+      oo_dets_table = gIndraDB->GetDB()["DetectorStatus"]["OoODet"].get_data<TString>();
+      oo_acq_table = gIndraDB->GetDB()["DetectorStatus"]["OoOACQPar"].get_data<TString>();
    }
    TString absdet, ooodet, oooacq;
    if (absent_table != "") {
@@ -287,8 +287,8 @@ void KVINDRAUpDater::SetChVoltParameters(KVDBRun* kvrun)
    gIndraDB->GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", kvrun->GetNumber()));
    TString calib_table[2];
    while (gIndraDB->GetDB().get_next_result()) {
-      calib_table[0] = gIndraDB->GetDB()["Calibrations"]["ElectronicCalibration"].data().GetString();
-      calib_table[1] = gIndraDB->GetDB()["Calibrations"]["ElectronicCalibration.Etalons"].data().GetString();
+      calib_table[0] = gIndraDB->GetDB()["Calibrations"]["ElectronicCalibration"].get_data<TString>();
+      calib_table[1] = gIndraDB->GetDB()["Calibrations"]["ElectronicCalibration.Etalons"].get_data<TString>();
    }
 
    for (int calib = 0; calib < 2; ++calib) {
@@ -297,24 +297,24 @@ void KVINDRAUpDater::SetChVoltParameters(KVDBRun* kvrun)
 
       while (gIndraDB->GetDB().get_next_result()) {
 
-         KVDetector* kvd = gIndra->GetDetector(caltab["detName"].data().GetString());
+         KVDetector* kvd = gIndra->GetDetector(caltab["detName"].get_data<TString>());
          if (!kvd)
             Warning("SetChVoltParameters(UInt_t)", "Dectector %s not found !",
-                    caltab["detName"].data().GetString());
+                    caltab["detName"].get_data<cstring>());
          else {                    // detector found
-            KVCalibrator* kvc = kvd->GetCalibrator(caltab["parName"].data().GetString(), caltab["type"].data().GetString());
+            KVCalibrator* kvc = kvd->GetCalibrator(caltab["parName"].get_data<TString>(), caltab["type"].get_data<TString>());
             if (!kvc)
                Warning("SetChVoltParameters(UInt_t)",
-                       "Calibrator %s %s not found !", caltab["parName"].data().GetString(), caltab["type"].data().GetString());
+                       "Calibrator %s %s not found !", caltab["parName"].get_data<cstring>(), caltab["type"].get_data<cstring>());
             else {                 //calibrator found
-               Int_t npars = caltab["npar"].data().GetInt();
+               Int_t npars = caltab["npar"].get_data<int>();
                if (npars != kvc->GetNumberParams())
                   Warning("SetChVoltParameters(UInt_t)",
                           "Mismatch for calibrator with %d parameters, database provides %d",
                           kvc->GetNumberParams(), npars);
                Int_t imax = TMath::Min(npars, kvc->GetNumberParams());
                for (Int_t i = 0; i < imax; i++) {
-                  kvc->SetParameter(i, caltab[Form("a%d", i)].data().GetDouble());
+                  kvc->SetParameter(i, caltab[Form("a%d", i)].get_data<double>());
                }
                kvc->SetStatus(kTRUE);   // calibrator ready
             }                      //calibrator found
@@ -333,7 +333,7 @@ void KVINDRAUpDater::SetVoltEnergyChIoSiParameters(KVDBRun* kvrun)
    gIndraDB->GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", kvrun->GetNumber()));
    TString calib_table;
    while (gIndraDB->GetDB().get_next_result())
-      calib_table = gIndraDB->GetDB()["Calibrations"]["ChIoSiVoltMeVCalib"].data().GetString();
+      calib_table = gIndraDB->GetDB()["Calibrations"]["ChIoSiVoltMeVCalib"].get_data<TString>();
 
    // Setting Channel-Volts calibration parameters
    KVSQLite::table& caltab = gIndraDB->GetDB()[calib_table.Data()];
@@ -341,7 +341,7 @@ void KVINDRAUpDater::SetVoltEnergyChIoSiParameters(KVDBRun* kvrun)
 
    while (gIndraDB->GetDB().get_next_result()) {
 
-      KVDetector* kvd = gIndra->GetDetector(caltab["detName"].data().GetString());
+      KVDetector* kvd = gIndra->GetDetector(caltab["detName"].get_data<TString>());
       if (!kvd) {
          /*
          Warning("SetVoltEnergyParameters(UInt_t)",
@@ -353,14 +353,14 @@ void KVINDRAUpDater::SetVoltEnergyChIoSiParameters(KVDBRun* kvrun)
             Warning("SetVoltEnergyParameters(UInt_t)",
                     "Detector %s: Volt-Energy calibrator not found !", kvd->GetName());
          else {                 //calibrator found
-            Int_t npars = caltab["npar"].data().GetInt();
+            Int_t npars = caltab["npar"].get_data<int>();
             if (npars != kvc->GetNumberParams())
                Warning("SetVoltEnergyChIoSiParameters(UInt_t)",
                        "Mismatch for calibrator with %d parameters, database provides %d",
                        kvc->GetNumberParams(), npars);
             Int_t imax = TMath::Min(npars, kvc->GetNumberParams());
             for (Int_t i = 0; i < imax; i++) {
-               kvc->SetParameter(i, caltab[Form("a%d", i)].data().GetDouble());
+               kvc->SetParameter(i, caltab[Form("a%d", i)].get_data<double>());
             }
             kvc->SetStatus(kTRUE);      // calibrator ready
          }                      //calibrator found
@@ -427,7 +427,7 @@ void KVINDRAUpDater::SetCsIGainCorrectionParameters(KVDBRun* kvrun)
                continue;
             }
          }
-         csi->SetTotalLightGainCorrection(csi_corr[i].data().GetDouble());
+         csi->SetTotalLightGainCorrection(csi_corr[i].get_data<double>());
          Info("SetCsIGainCorrectionParameters", "%s gain correction = %f", csi->GetName(), csi->GetTotalLightGainCorrection());
       }
    }
@@ -443,8 +443,8 @@ void KVINDRAUpDater::SetLitEnergyCsIParameters(KVDBRun* kvrun)
    gIndraDB->GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", kvrun->GetNumber()));
    TString calib_table[2];
    while (gIndraDB->GetDB().get_next_result()) {
-      calib_table[0] = gIndraDB->GetDB()["Calibrations"]["CalibCsI.Z_eq_1"].data().GetString();
-      calib_table[1] = gIndraDB->GetDB()["Calibrations"]["CalibCsI.Z_gt_1"].data().GetString();
+      calib_table[0] = gIndraDB->GetDB()["Calibrations"]["CalibCsI.Z_eq_1"].get_data<TString>();
+      calib_table[1] = gIndraDB->GetDB()["Calibrations"]["CalibCsI.Z_gt_1"].get_data<TString>();
    }
 
    for (int calib = 0; calib < 2; ++calib) {
@@ -453,27 +453,27 @@ void KVINDRAUpDater::SetLitEnergyCsIParameters(KVDBRun* kvrun)
 
       while (gIndraDB->GetDB().get_next_result()) {
 
-         KVDetector* kvd = gIndra->GetDetector(caltab["detName"].data().GetString());
+         KVDetector* kvd = gIndra->GetDetector(caltab["detName"].get_data<TString>());
          if (!kvd)
             Warning("SetLitEnergyCsIParameters(UInt_t)",
-                    "Dectector %s not found !", caltab["detName"].data().GetString());
+                    "Dectector %s not found !", caltab["detName"].get_data<cstring>());
          else {                    // detector found
-            KVCalibrator* kvc = kvd->GetCalibrator(caltab["type"].data().GetString());
+            KVCalibrator* kvc = kvd->GetCalibrator(caltab["type"].get_data<TString>());
             if (!kvc) {
                Warning("SetLitEnergyCsIParameters(UInt_t)",
                        "Calibrator %s %s not found ! - it will be created",
-                       kvd->GetName(), caltab["type"].data().GetString());
+                       kvd->GetName(), caltab["type"].get_data<cstring>());
                kvd->SetCalibrators();
-               kvc = kvd->GetCalibrator(caltab["type"].data().GetString());
+               kvc = kvd->GetCalibrator(caltab["type"].get_data<TString>());
             }
-            Int_t npars = caltab["npar"].data().GetInt();
+            Int_t npars = caltab["npar"].get_data<int>();
             if (npars != kvc->GetNumberParams())
                Warning("SetLitEnergyCsIParameters(UInt_t)",
                        "Mismatch for calibrator with %d parameters, database provides %d",
                        kvc->GetNumberParams(), npars);
             Int_t imax = TMath::Min(npars, kvc->GetNumberParams());
             for (Int_t i = 0; i < imax; i++) {
-               kvc->SetParameter(i, caltab[Form("a%d", i)].data().GetDouble());
+               kvc->SetParameter(i, caltab[Form("a%d", i)].get_data<double>());
             }
             kvc->SetStatus(kTRUE);      // calibrator ready
          }                         //detector found
@@ -490,7 +490,7 @@ void KVINDRAUpDater::set_pedestals(Int_t run_number, const TString& column_name,
    gIndraDB->GetDB().select_data("Calibrations", column_name, Form("\"Run Number\"=%d", run_number));
    TString tablename;
    while (gIndraDB->GetDB().get_next_result())
-      tablename = gIndraDB->GetDB()["Calibrations"][column_name.Data()].data().GetString();
+      tablename = gIndraDB->GetDB()["Calibrations"][column_name.Data()].get_data<TString>();
 
    if (tablename == "") return;
 
@@ -502,23 +502,23 @@ void KVINDRAUpDater::set_pedestals(Int_t run_number, const TString& column_name,
    while (gIndraDB->GetDB().get_next_result()) {
       if (first) {
          cout << "--> Setting Pedestals" << endl;
-         cout << "    " << pedestal_type << ": " << peds["filename"].data().GetString() << endl;
+         cout << "    " << pedestal_type << ": " << peds["filename"].get_data<TString>() << endl;
          first = false;
       }
-      KVACQParam* a = gIndra->GetACQParamByType(peds["cou"].data().GetInt(),
-                      peds["mod"].data().GetInt(),
-                      peds["typ"].data().GetInt());
+      KVACQParam* a = gIndra->GetACQParamByType(peds["cou"].get_data<int>(),
+                      peds["mod"].get_data<int>(),
+                      peds["typ"].get_data<int>());
       if (!a) {
          Warning("set_pedestals",
                  "Unknown acquisition parameter cou=%d mod=%d typ=%d in pedestal file %s",
-                 peds["cou"].data().GetInt(),
-                 peds["mod"].data().GetInt(),
-                 peds["typ"].data().GetInt(),
-                 peds["filename"].data().GetString());
+                 peds["cou"].get_data<int>(),
+                 peds["mod"].get_data<int>(),
+                 peds["typ"].get_data<int>(),
+                 peds["filename"].get_data<cstring>());
          continue;
       }
 
-      a->SetPedestal(peds["pedestal"].data().GetDouble());
+      a->SetPedestal(peds["pedestal"].get_data<double>());
    }
 }
 

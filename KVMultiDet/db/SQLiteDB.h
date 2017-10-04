@@ -155,6 +155,11 @@ namespace KVSQLite {
       {
          return fData;
       }
+      template <typename T>
+      T get_data() const
+      {
+         return fData.Get<T>();
+      }
       template<typename T>
       T* binary_data() const
       {
@@ -163,6 +168,7 @@ namespace KVSQLite {
 
       ClassDef(column, 0) //Column in an SQLite database table
    };
+   template<> void column::set_data(const KVNamedParameter&);
 
    class table {
       TString fName;//name of table
@@ -375,6 +381,8 @@ namespace KVSQLite {
                                     const TString& selection = "", const TString& anything_else = "");
       TString get_string_list(const TString& table, const TString& column,
                               const TString& selection = "", const TString& anything_else = "");
+      KVNameValueList get_name_value_list(const TString& table, const TString& name_column, const TString& value_column,
+                                          const TString& selection = "", const TString& anything_else = "");
 
       void clear_table(const TString& name);
 

@@ -90,9 +90,9 @@ void sqlite_example()
 
    db.select_data("Cars"); //  ====>  SELECT * FROM Cars
    while (db.get_next_result()) {
-      std::cout << db["Cars"]["Id"].data().GetInt()
-                << "\t\t\t" << db["Cars"]["Name"].data().GetString()
-                << "\t\t\t" << db["Cars"]["Price"].data().GetInt()
+      std::cout << db["Cars"]["Id"].get_data<int>()
+                << "\t\t\t" << db["Cars"]["Name"].get_data<TString>()
+                << "\t\t\t" << db["Cars"]["Price"].get_data<int>()
                 << std::endl;
    }
    std::cout << std::endl << std::endl;
@@ -103,9 +103,9 @@ void sqlite_example()
    // we can use a reference to the Cars table
    KVSQLite::table& Cars = db["Cars"];
    while (db.get_next_result()) {
-      std::cout << Cars["Id"].data().GetInt()
-                << "\t\t\t" << Cars["Name"].data().GetString()
-                << "\t\t\t" << Cars["Price"].data().GetInt()
+      std::cout << Cars["Id"].get_data<int>()
+                << "\t\t\t" << Cars["Name"].get_data<TString>()
+                << "\t\t\t" << Cars["Price"].get_data<int>()
                 << std::endl;
    }
    std::cout << std::endl << std::endl;
@@ -114,7 +114,7 @@ void sqlite_example()
    std::cout << "SELECT DISTINCT Name FROM Cars\n" << std::endl;
    db.select_data("Cars", "Name", "", true); //  ====>  SELECT DISTINCT Name FROM Cars
    while (db.get_next_result()) {
-      std::cout << Cars["Name"].data().GetString() << ", ";
+      std::cout << Cars["Name"].get_data<TString>() << ", ";
    }
    std::cout << std::endl << std::endl;
 
@@ -123,21 +123,21 @@ void sqlite_example()
    std::cout << "Task numbers for worker WRK01: ";
    KVNumberList nl;
    while (db.get_next_result()) {
-      nl.Add(db["Tasks"]["Number"].data().GetInt());
+      nl.Add(db["Tasks"]["Number"].get_data<int>());
    }
    std::cout << nl.AsString() << std::endl << std::endl;
    // using KVNumberList for numerical column selection
    db.select_data("Tasks", "*", nl.GetSQL("Number"));
    while (db.get_next_result()) {
-      std::cout << "Number=" << db["Tasks"]["Number"].data().GetInt() <<
-                " Worker=" << db["Tasks"]["Worker"].data().GetString() << std::endl;
+      std::cout << "Number=" << db["Tasks"]["Number"].get_data<int>() <<
+                " Worker=" << db["Tasks"]["Worker"].get_data<TString>() << std::endl;
    }
 
    nl.Clear();
    db.select_data("Tasks", "Number", "Worker IS NULL");
    std::cout << "Task numbers with no worker: ";
    while (db.get_next_result()) {
-      nl.Add(db["Tasks"]["Number"].data().GetInt());
+      nl.Add(db["Tasks"]["Number"].get_data<int>());
    }
    std::cout << nl.AsString() << std::endl << std::endl;
 

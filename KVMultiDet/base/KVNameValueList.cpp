@@ -180,179 +180,13 @@ Int_t KVNameValueList::Compare(const TObject* obj) const
 
 }
 
-//______________________________________________
-void KVNameValueList::SetValue_str(const Char_t* name, const Char_t* value)
-{
-   //associate a parameter (defined by its name) and a value
-   //if the parameter is not in the list, it is added
-   //if it's in the list replace its value
-
-   KVNamedParameter* par = FindParameter(name);
-   par ? par->Set(value) : fList.Add(new KVNamedParameter(name, value));
-}
-
-//______________________________________________
-void KVNameValueList::SetValue_int(const Char_t* name, Int_t value)
-{
-   //associate a parameter (define by its name) and a value
-   //if the parameter is not in the list, it is added
-   //if it's in the list replace its value
-   KVNamedParameter* par = FindParameter(name);
-   par ? par->Set(value) : fList.Add(new KVNamedParameter(name, value));
-}
-
-void KVNameValueList::SetValue_bool(const Char_t* name, Bool_t value)
-{
-   //associate a parameter (define by its name) and a value
-   //if the parameter is not in the list, it is added
-   //if it's in the list replace its value
-   KVNamedParameter* par = FindParameter(name);
-   par ? par->Set(value) : fList.Add(new KVNamedParameter(name, value));
-}
-
-//______________________________________________
-void KVNameValueList::SetValue_flt(const Char_t* name, Double_t value)
-{
-   //associate a parameter (define by its name) and a value
-   //if the parameter is not in the list, it is added
-   //if it's in the list replace its value
-   KVNamedParameter* par = FindParameter(name);
-   par ? par->Set(value) : fList.Add(new KVNamedParameter(name, value));
-}
-
-//______________________________________________
-Double_t KVNameValueList::IncValue_flt(const Char_t* name, Double_t value)
-{
-   //increment a parameter (define by its name) by a value
-   //if the parameter is not in the list, it is added
-   //if it's in the list increment its value
-   //the new value of the parameter is returned
-   KVNamedParameter* par = FindParameter(name);
-   par ? par->Set(value += par->GetDouble()) : fList.Add(new KVNamedParameter(name, value));
-   return value;
-}
-
-//______________________________________________
-Int_t KVNameValueList::IncValue_int(const Char_t* name, Int_t value)
-{
-   //increment a parameter (define by its name) by a value
-   //if the parameter is not in the list, it is added
-   //if it's in the list increment its value
-   //the new value of the parameter is returned
-   KVNamedParameter* par = FindParameter(name);
-   par ? par->Set(value += par->GetInt()) : fList.Add(new KVNamedParameter(name, value));
-   return value;
-}
-
-//______________________________________________
-void KVNameValueList::SetValue(const Char_t* name, const Char_t* value)
-{
-   //associate a parameter (defined by its name) and a value
-   //if the parameter is not in the list, it is added
-   //if it's in the list replace its value
-
-   SetValue_str(name, value);
-}
-
-//______________________________________________
-void KVNameValueList::SetValue(const Char_t* name, Int_t value)
-{
-   //associate a parameter (define by its name) and a value
-   //if the parameter is not in the list, it is added
-   //if it's in the list replace its value
-   SetValue_int(name, value);
-}
-
-void KVNameValueList::SetValue(const Char_t* name, Bool_t value)
-{
-   //associate a parameter (define by its name) and a value
-   //if the parameter is not in the list, it is added
-   //if it's in the list replace its value
-   SetValue_bool(name, value);
-}
-
-//______________________________________________
-void KVNameValueList::SetValue(const Char_t* name, Double_t value)
-{
-   //associate a parameter (define by its name) and a value
-   //if the parameter is not in the list, it is added
-   //if it's in the list replace its value
-   SetValue_flt(name, value);
-}
-
 void KVNameValueList::SetValue(const KVNamedParameter& p)
 {
    // add (or replace) a parameter with the same name, type & value as 'p'
 
    KVNamedParameter* par = FindParameter(p.GetName());
-   par ? par->Set(p) : fList.Add(new KVNamedParameter(p));
+   par ? par->Set(p.GetName(), p) : fList.Add(new KVNamedParameter(p));
 
-}
-
-//______________________________________________
-void KVNameValueList::SetValueAt(const Char_t* name, Double_t value, Int_t idx)
-{
-   //associate a parameter (define by its name) and a value
-   //if the parameter is not in the list, it is inserted at
-   //location idx in the list.
-   //if it's in the list replace its value and move it at
-   //location idx in the list.
-   KVNamedParameter* par = FindParameter(name);
-   if (par) {
-      par->Set(value);
-      if (fList.IndexOf(par) != idx) {
-         fList.GetCollection()->Remove(par);
-         fList.AddAt(par, idx);
-      }
-   } else fList.AddAt(new KVNamedParameter(name, value), idx);
-}
-
-//______________________________________________
-void KVNameValueList::SetFirstValue(const Char_t* name, Double_t value)
-{
-   //associate a parameter (define by its name) and a value
-   //if the parameter is not in the list, it is inserted at
-   //the begining of the list.
-   //if it's in the list replace its value and move it at
-   //the begining of the list.
-   KVNamedParameter* par = FindParameter(name);
-   if (par) {
-      par->Set(value);
-      if (fList.First() != par) {
-         fList.GetCollection()->Remove(par);
-         fList.AddFirst(par);
-      }
-   } else fList.AddFirst(new KVNamedParameter(name, value));
-}
-
-//______________________________________________
-void KVNameValueList::SetLastValue(const Char_t* name, Double_t value)
-{
-   //associate a parameter (define by its name) and a value
-   //if the parameter is not in the list, it is inserted at
-   //the end of the list.
-   //if it's in the list replace its value and move it at
-   //the end of the list.
-   KVNamedParameter* par = FindParameter(name);
-   if (par) {
-      par->Set(value);
-      if (fList.Last() != par) {
-         fList.GetCollection()->Remove(par);
-         fList.AddLast(par);
-      }
-   } else fList.AddLast(new KVNamedParameter(name, value));
-}
-
-//______________________________________________
-Double_t KVNameValueList::IncrementValue(const Char_t* name, Double_t value)
-{
-   return IncValue_flt(name, value);
-}
-
-//______________________________________________
-Int_t KVNameValueList::IncrementValue(const Char_t* name, Int_t value)
-{
-   return IncValue_int(name, value);
 }
 
 //______________________________________________
@@ -391,38 +225,6 @@ Bool_t KVNameValueList::HasParameter(const Char_t* name) const
    return (FindParameter(name) != nullptr);
 }
 
-Bool_t KVNameValueList::HasIntParameter(const Char_t* name) const
-{
-   // Return kTRUE if list has parameter called 'name' and it is an integer value
-
-   KVNamedParameter* p = FindParameter(name);
-   return (p && p->IsInt());
-}
-
-Bool_t KVNameValueList::HasBoolParameter(const Char_t* name) const
-{
-   // Return kTRUE if list has parameter called 'name' and it is a boolean value
-
-   KVNamedParameter* p = FindParameter(name);
-   return (p && p->IsBool());
-}
-
-Bool_t KVNameValueList::HasDoubleParameter(const Char_t* name) const
-{
-   // Return kTRUE if list has parameter called 'name' and it is a double/floating-point value
-
-   KVNamedParameter* p = FindParameter(name);
-   return (p && p->IsDouble());
-}
-
-Bool_t KVNameValueList::HasStringParameter(const Char_t* name) const
-{
-   // Return kTRUE if list has parameter called 'name' and it is a string value
-
-   KVNamedParameter* p = FindParameter(name);
-   return (p && p->IsString());
-}
-
 //______________________________________________
 Int_t KVNameValueList::GetNameIndex(const Char_t* name)
 {
@@ -457,64 +259,16 @@ const Char_t* KVNameValueList::GetNameAt(Int_t idx) const
 }
 
 //______________________________________________
-Int_t KVNameValueList::GetIntValue(const Char_t* name) const
-{
-   //return the value in integer format
-   //for a parameter using its name
-   //return -1 if no parameter with such name are present
-
-   KVNamedParameter* par = FindParameter(name);
-   return (par ? par->GetInt() : -1);
-}
-
-Bool_t KVNameValueList::GetBoolValue(const Char_t* name) const
-{
-   //return the value in boolean format
-   //for a parameter using its name
-   //return false if no parameter with such name is present
-
-   KVNamedParameter* par = FindParameter(name);
-   return (par ? par->GetBool() : kFALSE);
-}
-
-//______________________________________________
-Double_t KVNameValueList::GetDoubleValue(const Char_t* name) const
-{
-   //return the value in double format
-   //for a parameter using its name
-   //return -1 if no parameter with such name are present
-
-   KVNamedParameter* par = FindParameter(name);
-   return (par ? par->GetDouble() : -1.0);
-}
-
-//______________________________________________
-const Char_t* KVNameValueList::GetStringValue(const Char_t* name) const
-{
-   //return the value in string format
-   //for a parameter using its name
-   //return string "-1" if no parameter with such name are present
-
-   KVNamedParameter* par = FindParameter(name);
-   if (!par) {
-      Error("GetStringValue(const Char_t*)", "\"%s\" does not correspond to an existing parameter, default value \"-1\" is returned", name);
-      return Form("%d", -1);
-   }
-   return par->GetString();
-}
-
-//______________________________________________
-const TString& KVNameValueList::GetTStringValue(const Char_t* name) const
+TString KVNameValueList::GetTStringValue(const Char_t* name) const
 {
    //return the value in TString format
    //for a parameter using its name
    //return string "-1" if no parameter with such name are present
 
    KVNamedParameter* par = FindParameter(name);
-   static TString tmp("-1");
    if (!par) {
       Error("GetStringValue(const Char_t*)", "\"%s\" does not correspond to an existing parameter, default value \"-1\" is returned", name);
-      return tmp;
+      return "-1";
    }
    return par->GetTString();
 }
@@ -527,49 +281,7 @@ Int_t KVNameValueList::GetNpar() const
 }
 
 //______________________________________________
-Int_t KVNameValueList::GetIntValue(Int_t idx) const
-{
-   //return the value in integer format
-   //for a parameter using its position
-   //return -1 idx is greater than the number of stored parameters
-   KVNamedParameter* par = GetParameter(idx);
-   return (par ? par->GetInt() : -1);
-}
-
-Bool_t KVNameValueList::GetBoolValue(Int_t idx) const
-{
-   //return the value in bool format
-   //for a parameter using its position
-   //return false if idx is greater than the number of stored parameters
-   KVNamedParameter* par = GetParameter(idx);
-   return (par ? par->GetBool() : kFALSE);
-}
-
-//______________________________________________
-Double_t KVNameValueList::GetDoubleValue(Int_t idx) const
-{
-   //return the value in double format
-   //for a parameter using its position
-   //return -1 idx is greater than the number of stored parameters
-   KVNamedParameter* par = GetParameter(idx);
-   return (par ? par->GetDouble() : -1.0);
-}
-
-//______________________________________________
-const Char_t* KVNameValueList::GetStringValue(Int_t idx) const
-{
-   //return the value in string format
-   //for a parameter using its position
-   //return -1 idx is greater than the number of stored parameters
-   if (idx >= GetNpar()) {
-      Error("GetStringValue(Int_t)", "index has to be less than %d, \"-1\" is returned\n", GetNpar());
-      return Form("%d", -1);
-   }
-   return GetParameter(idx)->GetString();
-}
-
-//______________________________________________
-const TString& KVNameValueList::GetTStringValue(Int_t idx) const
+TString KVNameValueList::GetTStringValue(Int_t idx) const
 {
    //return the value in string format
    //for a parameter using its position
@@ -580,49 +292,6 @@ const TString& KVNameValueList::GetTStringValue(Int_t idx) const
       return tmp;
    }
    return GetParameter(idx)->GetTString();
-}
-Bool_t KVNameValueList::IsValue(const Char_t* name, const Char_t* value)
-{
-   // Returns kTRUE if parameter with given name exists and is equal to given value
-   KVNamedParameter* par = FindParameter(name);
-   if (par) {
-      KVNamedParameter tmp(name, value);
-      return (*par) == tmp;
-   }
-   return kFALSE;
-}
-
-Bool_t KVNameValueList::IsValue(const Char_t* name, Int_t value)
-{
-   // Returns kTRUE if parameter with given name exists and is equal to given value
-   KVNamedParameter* par = FindParameter(name);
-   if (par) {
-      KVNamedParameter tmp(name, value);
-      return (*par) == tmp;
-   }
-   return kFALSE;
-}
-
-Bool_t KVNameValueList::IsValue(const Char_t* name, Bool_t value)
-{
-   // Returns kTRUE if parameter with given name exists and is equal to given value
-   KVNamedParameter* par = FindParameter(name);
-   if (par) {
-      KVNamedParameter tmp(name, value);
-      return (*par) == tmp;
-   }
-   return kFALSE;
-}
-
-Bool_t KVNameValueList::IsValue(const Char_t* name, Double_t value)
-{
-   // Returns kTRUE if parameter with given name exists and is equal to given value
-   KVNamedParameter* par = FindParameter(name);
-   if (par) {
-      KVNamedParameter tmp(name, value);
-      return (*par) == tmp;
-   }
-   return kFALSE;
 }
 
 void KVNameValueList::ReadEnvFile(const Char_t* filename)

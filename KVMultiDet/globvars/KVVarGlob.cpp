@@ -436,7 +436,7 @@ Bool_t KVVarGlob::IsOptionGiven(const Char_t* opt)
 
 //_________________________________________________________________
 
-const TString& KVVarGlob::GetOptionString(const Char_t* opt) const
+TString KVVarGlob::GetOptionString(const Char_t* opt) const
 {
    //Returns the value of the option
 

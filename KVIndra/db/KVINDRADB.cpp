@@ -741,7 +741,7 @@ KVDBChIoPressures KVINDRADB::GetChIoPressures(int run)
    GetDB().select_data("Calibrations", "ChIo Pressures", Form("\"Run Number\"=%d", run));
    int id = 0;
    while (GetDB().get_next_result())
-      id = GetDB()["Calibrations"]["ChIo Pressures"].data().GetInt();
+      id = GetDB()["Calibrations"]["ChIo Pressures"].get_data<int>();
 
    if (!id) {
       Info("GetChIoPressures", "No ChIo pressures defined for run %d", run);
@@ -752,11 +752,11 @@ KVDBChIoPressures KVINDRADB::GetChIoPressures(int run)
    GetDB().select_data("ChIo Pressures", "*", Form("id=%d", id));
    while (GetDB().get_next_result()) {
       p.SetPressures(
-         pressures["2_3"].data().GetDouble(),
-         pressures["4_5"].data().GetDouble(),
-         pressures["6_7"].data().GetDouble(),
-         pressures["8_12"].data().GetDouble(),
-         pressures["13_17"].data().GetDouble()
+         pressures["2_3"].get_data<double>(),
+         pressures["4_5"].get_data<double>(),
+         pressures["6_7"].get_data<double>(),
+         pressures["8_12"].get_data<double>(),
+         pressures["13_17"].get_data<double>()
       );
    }
    return p;
@@ -770,13 +770,13 @@ KVNameValueList KVINDRADB::GetGains(int run)
    select_runs_in_dbtable("Calibrations", run, "Gains");
    TString tablename;
    while (GetDB().get_next_result())
-      tablename = GetDB()["Calibrations"]["Gains"].data().GetString();
+      tablename = GetDB()["Calibrations"]["Gains"].get_data<TString>();
 
    if (tablename != "") {
       GetDB().select_data(tablename);
       KVSQLite::table& t = GetDB()[tablename];
       while (GetDB().get_next_result()) {
-         gains.SetValue(t["detName"].data().GetString(), t["gain"].data().GetDouble());
+         gains.SetValue(t["detName"].get_data<TString>(), t["gain"].get_data<double>());
       }
    }
    return gains;
@@ -1423,7 +1423,7 @@ void KVINDRADB::ReadTEnvStatusFile(const TString& calling_method,
          GetDB().select_data(status_table, status_table_column, runlist_selection, true);
          KVString update_tables;
          while (GetDB().get_next_result()) {
-            KVString bibit = GetDB()[status_table][status_table_column].data().GetString();
+            KVString bibit = GetDB()[status_table][status_table_column].get_data<TString>();
             if (bibit == "") continue;
             if (update_tables != "") update_tables += ",";
             update_tables += bibit;
