@@ -1073,7 +1073,7 @@ void KVINDRADB::ReadChannelVolt()
 
    etalon_channel_volt_reader ecvr(this);
    ecvr.ReadCalib("ElectronicCalibration.Etalons",
-                  "ReadChannelVolt()", "Reading electronic calibration for Si75 and SiLi...");
+                  "ReadChannelVolt", "Reading electronic calibration for Si75 and SiLi...");
 }
 
 //__________________________________________________________________________________

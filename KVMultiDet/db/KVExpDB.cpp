@@ -435,6 +435,7 @@ Bool_t KVExpDB::OpenCalibFile(const Char_t* type, ifstream& fs) const
    //where 'INDRA_camp5' is the name of the dataset in question.
    //GetDBEnv() always returns the correct filename for the currently active dataset.
 
+   if (TString(GetDBEnv(type)) == "") return kFALSE; //no such parameter file defined
    return KVBase::SearchAndOpenKVFile(GetDBEnv(type), fs, fDataSet.Data());
 }
 
