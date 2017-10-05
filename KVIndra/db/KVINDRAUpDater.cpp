@@ -284,16 +284,24 @@ void KVINDRAUpDater::SetChVoltParameters(KVDBRun* kvrun)
    // For ChIo & Si detectors, the name of the table to use is in column "ElectronicCalibration" of
    // table "Calibrations". For etalon detectors, it is in column "ElectronicCalibration.Etalons".
 
-   gIndraDB->GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", kvrun->GetNumber()));
-   TString calib_table[2];
+   TString calibrations = "ElectronicCalibration";
+   Bool_t with_etalon_cal = gIndraDB->GetDB().has_table("ElectronicCalibration.Etalons");
+   if (with_etalon_cal) calibrations += ",ElectronicCalibration.Etalons";
+   gIndraDB->select_runs_in_dbtable("Calibrations", kvrun->GetNumber(), calibrations);
+   vector<TString> calib_tables;
    while (gIndraDB->GetDB().get_next_result()) {
-      calib_table[0] = gIndraDB->GetDB()["Calibrations"]["ElectronicCalibration"].get_data<TString>();
-      calib_table[1] = gIndraDB->GetDB()["Calibrations"]["ElectronicCalibration.Etalons"].get_data<TString>();
+      calib_tables.push_back(gIndraDB->GetDB()["Calibrations"]["ElectronicCalibration"].get_data<TString>());
+      if (with_etalon_cal) calib_tables.push_back(gIndraDB->GetDB()["Calibrations"]["ElectronicCalibration.Etalons"].get_data<TString>());
    }
-
-   for (int calib = 0; calib < 2; ++calib) {
-      gIndraDB->GetDB().select_data(calib_table[calib]);
-      KVSQLite::table& caltab = gIndraDB->GetDB()[calib_table[calib].Data()];
+#ifdef WITH_CPP11
+   for (auto calib : calib_tables) {
+#else
+   for (vector<TString>::iterator it = calib_tables.begin(); it != calib_tables.end(); ++it) {
+      TString calib = *it;
+#endif
+      gIndraDB->GetDB().select_data(calib);
+      KVSQLite::table& caltab = gIndraDB->GetDB()[calib];
+      Bool_t with_gain_ref = caltab.has_column("gainRef");// reference values for gains given?
 
       while (gIndraDB->GetDB().get_next_result()) {
 
@@ -302,10 +310,10 @@ void KVINDRAUpDater::SetChVoltParameters(KVDBRun* kvrun)
             Warning("SetChVoltParameters(UInt_t)", "Dectector %s not found !",
                     caltab["detName"].get_data<cstring>());
          else {                    // detector found
-            KVCalibrator* kvc = kvd->GetCalibrator(caltab["parName"].get_data<TString>(), caltab["type"].get_data<TString>());
+            KVChannelVolt* kvc = dynamic_cast<KVChannelVolt*>(kvd->GetCalibrator(caltab["parName"].get_data<TString>(), caltab["type"].get_data<TString>()));
             if (!kvc)
                Warning("SetChVoltParameters(UInt_t)",
-                       "Calibrator %s %s not found !", caltab["parName"].get_data<cstring>(), caltab["type"].get_data<cstring>());
+                       "Calibrator %s %s not found (or wrong class) !", caltab["parName"].get_data<cstring>(), caltab["type"].get_data<cstring>());
             else {                 //calibrator found
                Int_t npars = caltab["npar"].get_data<int>();
                if (npars != kvc->GetNumberParams())
@@ -316,7 +324,15 @@ void KVINDRAUpDater::SetChVoltParameters(KVDBRun* kvrun)
                for (Int_t i = 0; i < imax; i++) {
                   kvc->SetParameter(i, caltab[Form("a%d", i)].get_data<double>());
                }
-               kvc->SetStatus(kTRUE);   // calibrator ready
+               if (with_gain_ref) {
+                  if (!caltab["gainRef"].is_null()) {
+                     kvc->SetGainRef(caltab["gainRef"].get_data<double>());
+                     kvc->SetStatus(kTRUE);
+                  } else
+                     kvc->SetStatus(kFALSE);
+               } else {
+                  kvc->SetStatus(kTRUE);   // calibrator ready
+               }
             }                      //calibrator found
          }                         //detector found
       }                            //boucle sur les parameters
@@ -384,8 +400,18 @@ void KVINDRAUpDater::SetPedestals(KVDBRun* kvrun)
 {
    //Set pedestals for this run
 
-   set_pedestals(kvrun->GetNumber(), "Pedestals_ChIoSi", "ChIo/Si/Etalons");
-   set_pedestals(kvrun->GetNumber(), "Pedestals_CsI", "CsI");
+   KVNameValueList p = gIndraDB->GetPedestals_ChIoSi(kvrun->GetNumber());
+   if (!p.IsEmpty()) {
+      Info("SetPedestals", "Setting ChIo-Si pedestals for run %d", kvrun->GetNumber());
+      int N = p.GetNpar();
+      for (int i = 0; i < N; ++i) gIndra->GetACQParam(p.GetNameAt(i))->SetPedestal(p.GetDoubleValue(i));
+   }
+   p = gIndraDB->GetPedestals_CsI(kvrun->GetNumber());
+   if (!p.IsEmpty()) {
+      Info("SetPedestals", "Setting CsI pedestals for run %d", kvrun->GetNumber());
+      int N = p.GetNpar();
+      for (int i = 0; i < N; ++i) gIndra->GetACQParam(p.GetNameAt(i))->SetPedestal(p.GetDoubleValue(i));
+   }
 }
 
 //______________________________________________________________________________
@@ -478,47 +504,6 @@ void KVINDRAUpDater::SetLitEnergyCsIParameters(KVDBRun* kvrun)
             kvc->SetStatus(kTRUE);      // calibrator ready
          }                         //detector found
       }                            //boucle sur les parameters
-   }
-}
-
-//______________________________________________________________________________
-
-void KVINDRAUpDater::set_pedestals(Int_t run_number, const TString& column_name, const TString& pedestal_type)
-{
-   // set pedestals for run
-
-   gIndraDB->GetDB().select_data("Calibrations", column_name, Form("\"Run Number\"=%d", run_number));
-   TString tablename;
-   while (gIndraDB->GetDB().get_next_result())
-      tablename = gIndraDB->GetDB()["Calibrations"][column_name.Data()].get_data<TString>();
-
-   if (tablename == "") return;
-
-   gIndraDB->GetDB().select_data(tablename);
-   KVSQLite::table& peds = gIndraDB->GetDB()[tablename.Data()];
-
-   bool first = true;
-
-   while (gIndraDB->GetDB().get_next_result()) {
-      if (first) {
-         cout << "--> Setting Pedestals" << endl;
-         cout << "    " << pedestal_type << ": " << peds["filename"].get_data<TString>() << endl;
-         first = false;
-      }
-      KVACQParam* a = gIndra->GetACQParamByType(peds["cou"].get_data<int>(),
-                      peds["mod"].get_data<int>(),
-                      peds["typ"].get_data<int>());
-      if (!a) {
-         Warning("set_pedestals",
-                 "Unknown acquisition parameter cou=%d mod=%d typ=%d in pedestal file %s",
-                 peds["cou"].get_data<int>(),
-                 peds["mod"].get_data<int>(),
-                 peds["typ"].get_data<int>(),
-                 peds["filename"].get_data<cstring>());
-         continue;
-      }
-
-      a->SetPedestal(peds["pedestal"].get_data<double>());
    }
 }
 

@@ -39,7 +39,7 @@ void sqlite_example()
       int row = 0;
       while (names[row] != "-") {
          db["Cars"]["Name"].set_data(names[row]); // N.B. do not use the 'cars' variable
-         db["Cars"]["Price"].set_data(prices[row]);
+         db["Cars"]["Price"] = prices[row]; // use 'set_data' or simply '=' to fill columns in row
          db.insert_data_row();
          ++row;
       }
@@ -68,9 +68,9 @@ void sqlite_example()
       db.prepare_data_insertion("Tasks");
       row = 0;
       while (numbers[row] > 0) {
-         db["Tasks"]["Number"].set_data(numbers[row]);
+         db["Tasks"]["Number"] = numbers[row];
          if (wrks[row] != "") {
-            db["Tasks"]["Worker"].set_data(wrks[row]);
+            db["Tasks"]["Worker"] = wrks[row];
          } else {
             db["Tasks"]["Worker"].set_null();// N.B. this is not the same as filling with an empty string
          }
@@ -151,7 +151,7 @@ void sqlite_example()
 
    // 6. Updating a table: change all 'NULL' Worker values to "WRK04"
    db["Tasks"]["Worker"].set_data("WRK04");
-   db.update("Tasks", "Worker IS NULL", "Worker");
+   db.update("Tasks", "Worker", "Worker IS NULL");
    std::cout << "The number of unique Worker names in table Tasks is " <<
              db.count("Tasks", "Worker", "", true)
              << std::endl;  // prints 4, i.e. "WRK01", "WRK02", "WRK03", and "WRK04"

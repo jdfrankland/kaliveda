@@ -446,28 +446,25 @@ Bool_t KVString::Match(TString pattern)
    if (!pattern.Contains("*")) return this->Contains(pattern);
    else if (pattern == "*") return kTRUE;
    else {
-      TObjArray* tok = pattern.Tokenize("*");
+      unique_ptr<TObjArray> tok(pattern.Tokenize("*"));
       Int_t n_tok = tok->GetEntries();
       if (!pattern.BeginsWith("*"))
-         if (!this->BeginsWith(((TObjString*)tok->First())->GetString())) {
-            delete tok;
+         if (!BeginsWith(((TObjString*)tok->First())->GetString())) {
             return kFALSE;
          }
       if (!pattern.EndsWith("*"))
-         if (!this->EndsWith(((TObjString*)tok->Last())->GetString())) {
-            delete tok;
+         if (!EndsWith(((TObjString*)tok->Last())->GetString())) {
             return kFALSE;
          }
 
       Int_t idx = 0, num = 0;
       for (Int_t ii = 0; ii < n_tok; ii += 1) {
-         idx = this->Index(((TObjString*)tok->At(ii))->GetString() , idx);
+         idx = Index(((TObjString*)tok->At(ii))->GetString(), idx);
          if (idx != -1) {
             num += 1;
             idx++;
          } else break;
       }
-      delete tok;
       if (num == n_tok) return kTRUE;
       else return kFALSE;
    }
@@ -575,13 +572,30 @@ KVString KVString::Next(Bool_t strip_whitespace) const
 
 Int_t KVString::GetNValues(TString delim)
 {
+   // Count the number of substrings in this string separated by the given character(s)
+   // e.g. given a string "one | two | three", GetNValues("|") returns 3
+   // Note that if the 'delim' character is not contained in the string,
+   // GetNValues() will return 1 (not 0) - see Begin().
    Int_t nn = 0;
    Begin(delim);
    while (!End()) {
-      KVString dummy = Next();
+      Next();
       nn += 1;
    }
    return nn;
+}
+
+std::vector<KVString> KVString::Vectorize(TString delim, Bool_t strip_whitespace)
+{
+   // Split string into components according to delimiter 'delim'
+   // See Begin()/Next()/End()
+
+   std::vector<KVString> v;
+   Begin(delim);
+   while (!End()) {
+      v.push_back(Next(strip_whitespace));
+   }
+   return v;
 }
 #ifdef __WITH_KVSTRING_ITOA
 //______________________________________________________________________________

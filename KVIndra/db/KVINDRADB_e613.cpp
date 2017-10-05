@@ -177,14 +177,14 @@ void KVINDRADB_e613::ReadGainList()
                      Double_t gain = ffile.GetDoubleReadPar(1);
                      if (!GetDB()["Gains"].has_column(detname)) GetDB().add_column("Gains", detname, "REAL");
                      GetDB()["Gains"][detname].set_data(gain);
-                     GetDB().update("Gains", nl.GetSQL("Run Number"), detname);
+                     GetDB().update("Gains", detname, nl.GetSQL("Run Number"));
 
                      printf("%s     -> Runs=%s Gain=%1.3lf\n", detname.Data(), nl.AsString(), gain);
                   } else {
                      nl.SetList(((TObjString*)toks->At(1))->GetString());
                      Double_t gain = ffile.GetDoubleReadPar(1);
                      GetDB()["Gains"][new_column_name].set_data(gain);
-                     GetDB().update("Gains", nl.GetSQL("Run Number"), new_column_name);
+                     GetDB().update("Gains", new_column_name, nl.GetSQL("Run Number"));
 
                      if (ring) printf("%s Ring %d -> Runs=%s Gain=%1.3lf\n", det_type.Data(), ring, nl.AsString(), gain);
                      else printf("%s     -> Runs=%s Gain=%1.3lf\n", det_type.Data(), nl.AsString(), gain);
@@ -248,7 +248,7 @@ void KVINDRADB_e613::ReadPedestalList()
    // set the table names for all runs
    GetDB()["Calibrations"]["Pedestals_ChIoSi"].set_data(pchiosi_table);
    GetDB()["Calibrations"]["Pedestals_CsI"].set_data(pcsi_table);
-   GetDB().update("Calibrations", default_run_list.GetSQL("Run Number"), "Pedestals_ChIoSi,Pedestals_CsI");
+   GetDB().update("Calibrations", "Pedestals_ChIoSi,Pedestals_CsI", default_run_list.GetSQL("Run Number"));
 
    while (flist.IsOK()) {
       flist.ReadLine(NULL);
@@ -285,6 +285,13 @@ void KVINDRADB_e613::ReadPedestalList()
 //____________________________________________________________________________
 void KVINDRADB_e613::ReadChannelVolt()
 {
+   // Read channel-volt calibrations for ChIo/Si detectors
+   // The value of the "ElectronicCalibration" column in the "Calibrations" table for each run
+   // gives the name of the table containing the calibrations for the run.
+   // [As only one calibration is used for all runs, this is "ElectronicCalibration_1" for all]
+   //
+   // The "ElectronicCalibration_x" tables have the following structure:
+   // detName | parName | type | npar | a0 | a1 | a2 | gainRef
 
    //need description of INDRA geometry
    if (!gIndra) {
@@ -293,10 +300,6 @@ void KVINDRADB_e613::ReadChannelVolt()
    //gIndra exists, but has it been built ?
    if (!gIndra->IsBuilt())
       gIndra->Build();
-
-   KVNumberList default_run_list;
-   default_run_list.SetMinMax(kFirstRun, kLastRun);
-   Info("ReadChannelVolt", "liste des runs par defaut %s", default_run_list.AsString());
 
    KVFileReader flist;
    TString fp;
@@ -309,10 +312,20 @@ void KVINDRADB_e613::ReadChannelVolt()
       return;
    }
 
-   Double_t a0, a1, a2; //parametre du polynome d ordre 2
-   Double_t gain = 0; //valeur du gain de reference
-   Double_t dum2 = -2;
-   Double_t pied = 0; //valeur du piedestal
+   GetDB().add_column("Calibrations", "ElectronicCalibration", "TEXT");
+   GetDB()["Calibrations"]["ElectronicCalibration"] = "ElectronicCalibration_1";
+   GetDB().update("Calibrations", "ElectronicCalibration");
+   KVSQLite::table ec("ElectronicCalibration_1");
+   ec.add_column("detName", "TEXT");
+   ec.add_column("parName", "TEXT");
+   ec.add_column("type", "TEXT");
+   ec.add_column("npar", "INTEGER");
+   ec.add_column("a0", "REAL");
+   ec.add_column("a1", "REAL");
+   ec.add_column("a2", "REAL");
+   ec.add_column("gainRef", "REAL");
+   GetDB().add_table(ec);
+   KVSQLite::table& ecTab = GetDB()["ElectronicCalibration_1"];
 
    while (flist.IsOK()) {
       flist.ReadLine(NULL);
@@ -331,76 +344,70 @@ void KVINDRADB_e613::ReadChannelVolt()
             TEnvRec* rec;
 
             KVNameValueList pedestals; // pedestals from run given on line "Pedestal: xxx"
+            std::map<int, int> ring_run; // run to use as gain reference for each ring
+            std::map<int, KVNameValueList> gains; // gains for each run given as reference
+
             while ((rec = (TEnvRec*)it.Next())) {
-               KVNumberList nring;
+
                TString srec(rec->GetName());
                //On recupere le run reference pour lequel a ete fait la calibration
                if (srec.BeginsWith("Ring.")) {
                   srec.ReplaceAll("Ring.", "");
-                  nring.SetList(srec);
+                  KVNumberList nring(srec);
                   nring.Begin();
+                  int run = TString(rec->GetValue()).Atoi();
                   while (!nring.End()) {
                      Int_t rr = nring.Next();
-                     ring_run.SetValue(Form("%d", rr), TString(rec->GetValue()).Atoi());
+                     ring_run[rr] = run;
                      Info("ReadChannelVolt", "Couronne %d, run associee %d", rr, TString(rec->GetValue()).Atoi());
                   }
+                  // store gains for runs
+                  if (!gains.count(run)) gains[run] = GetGains(run);
                } else if (srec.BeginsWith("Pedestal")) {
                   srec.ReplaceAll("Pedestal.", "");
-                  dbpied = GetRun(TString(rec->GetValue()).Atoi());
+                  int pedrun = TString(rec->GetValue()).Atoi();
+                  // Get ChIoSi pedestals for run
+                  pedestals = GetPedestals_ChIoSi(pedrun);
                } else {
 
-                  TString spar(rec->GetValue());
-                  toks = spar.Tokenize(",");
-                  if (toks->GetEntries() >= 3) {
-                     a0 = ((TObjString*)toks->At(1))->GetString().Atof();
-                     a1 = ((TObjString*)toks->At(2))->GetString().Atof();
-                     a2 = ((TObjString*)toks->At(3))->GetString().Atof();
-                     //par_pied = ((KVDBParameterSet*)dbpied->GetLink("Pedestals", Form("%s_%s", rec->GetName(), sgain.Data())));
-                     if (par_pied)
-                        pied = par_pied->GetParameter();
+                  if (!GetDB().is_inserting()) GetDB().prepare_data_insertion("ElectronicCalibration_1");
+
+                  KVString spar(rec->GetValue());
+                  std::vector<KVString> toks = spar.Vectorize(",");
+                  if (toks.size() >= 3) {
+                     Double_t a0 = toks[1].Atof();
+                     Double_t a1 = toks[2].Atof();
+                     Double_t a2 = toks[3].Atof();
+                     Double_t pied = pedestals.GetValue<double>(Form("%s_%s", srec.Data(), sgain.Data()));
                      //Fit Canal-Volt realise avec soustraction piedestal
                      //chgmt de variable pour passer de (Canal-piedestal) a Canal brut
                      a0 = a0 - pied * a1 + pied * pied * a2;
                      a1 = a1 - 2 * pied * a2;
                      //a2 inchange
-                     //On recupere le run de ref, pour avoir le gain associe a chaque detecteur
-                     KVINDRADetector* det = (KVINDRADetector*)gIndra->GetDetector(rec->GetName());
+                     KVINDRADetector* det = (KVINDRADetector*)gIndra->GetDetector(srec);
                      if (det) {
 
-                        Int_t runref = ring_run.GetIntValue(Form("%d", det->GetRingNumber()));
-                        if (!dbrun) {
-                           dbrun = GetRun(runref);
-                        } else if (dbrun->GetNumber() != runref) {
-                           dbrun = GetRun(runref);
-                        }
-                        if (!dbrun) {
-                           Warning("ReadChannelVolt", "Pas de run reference numero %d", runref);
-                        }
+                        //On recupere le run de ref, pour avoir le gain associe a chaque detecteur
+                        Double_t gain = gains[ring_run[det->GetRingNumber()]].GetValue<double>(srec);
                         //le gain est mis comme troisieme parametre
-                        KVDBParameterSet* pargain;// = ((KVDBParameterSet*) dbrun->GetLink("Gains", rec->GetName()));
-                        if (pargain) {
-                           gain = pargain->GetParameter(0);
-                        } else {
-                           Info("ReadChannelVolt", "pas de gain defini pour le run %d et le detecteur %s", runref, rec->GetName());
-                        }
 
-                        //Si tout est dispo on enregistre la calibration pour ce detecteur
-                        //
-                        par = new KVDBParameterSet(Form("%s_%s", rec->GetName(), sgain.Data()), cal_type, 5);
-                        par->SetParameters(a0, a1, a2, gain, dum2);
+                        ecTab["detName"] = srec;
+                        ecTab["parName"] = Form("%s_%s", rec->GetName(), sgain.Data());
+                        ecTab["type"] = cal_type;
+                        ecTab["npar"] = 3;
+                        ecTab["a0"] = a0;
+                        ecTab["a1"] = a1;
+                        ecTab["a2"] = a2;
+                        ecTab["gainRef"] = gain;
 
-                        //fChanVolt->AddRecord(par);
-                        //LinkRecordToRunRange(par, default_run_list);
+                        GetDB().insert_data_row();
                      }
                   } else {
-                     a0 = a1 = a2 = gain = 0;
                      Warning("ReadChannelVolt", "Pb de format %s", rec->GetValue());
                   }
-                  delete toks;
                }
             }
-            delete env;
-
+            GetDB().end_data_insertion();
          }
       }
    }

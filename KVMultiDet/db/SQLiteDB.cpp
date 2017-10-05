@@ -502,14 +502,14 @@ namespace KVSQLite {
       return number.Atoi();
    }
 
-   bool database::update(const TString& table, const TString& selection, const TString& columns)
+   bool database::update(const TString& table, const TString& columns, const TString& selection)
    {
-      // update the given columns of an entry in the table corresponding to selection
+      // update the given columns of an entry in the table corresponding to selection (if given)
       // the current values of the data members of the columns will be used
       //
       // This is equivalent to
       //
-      //    UPDATE [table] SET col1=newval,col2=newval,... WHERE [selection]
+      //    UPDATE [table] SET col1=newval,col2=newval,... [WHERE [selection]]
 
       if (fInserting) {
          Error("database::update",
@@ -534,7 +534,7 @@ namespace KVSQLite {
             ++idx;
          }
       }
-      query += Form(" WHERE %s", selection.Data());
+      if (selection != "") query += Form(" WHERE %s", selection.Data());
       //std::cout << query << std::endl;
       fSQLstmt.reset(fDBserv->Statement(query));
       fSQLstmt->NextIteration();

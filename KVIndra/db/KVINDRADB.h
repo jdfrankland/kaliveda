@@ -191,6 +191,8 @@ public:
    KVINDRAPulserDataTree* GetPulserData() const;
 
    virtual const Char_t* GetDBEnv(const Char_t* type) const;
+   KVNameValueList GetPedestals_ChIoSi(int run);
+   KVNameValueList GetPedestals_CsI(int run);
 
    ClassDef(KVINDRADB, 5)       //DataBase of parameters for an INDRA campaign
 };

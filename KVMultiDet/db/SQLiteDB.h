@@ -104,6 +104,14 @@ namespace KVSQLite {
          fData.Set(x);
          fIsNull = false;
       }
+      template <typename T>
+      const column& operator=(const T& x)
+      {
+         // set data in column
+         set_data(x);
+         return *this;
+      }
+
       void set_null()
       {
          fIsNull = true;
@@ -387,7 +395,7 @@ namespace KVSQLite {
       void clear_table(const TString& name);
 
       int count(const TString& table, const TString& column = "*", const TString& selection = "", bool distinct = false);
-      bool update(const TString& table, const TString& selection, const TString& columns);
+      bool update(const TString& table, const TString& columns, const TString& selection = "");
       void delete_data(const TString& table, const TString& selection = "");
 
       column& add_column(const TString& table, const TString& name, const TString& type);

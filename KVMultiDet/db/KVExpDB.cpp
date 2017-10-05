@@ -337,7 +337,7 @@ void KVExpDB::ReadSystemList()
    next.Reset();
    while ((s = (KVDBSystem*)next())) {
       fSQLdb["Runs"]["sysid"].set_data(s->GetSysid());
-      fSQLdb.update("Runs", s->GetRunList().GetSQL("Run Number"), "sysid");
+      fSQLdb.update("Runs", "sysid", s->GetRunList().GetSQL("Run Number"));
       s->GetRunList().Begin();
       KVDBRun* r;
       while (!s->GetRunList().End()) if ((r = GetRun(s->GetRunList().Next()))) r->SetSystem(s);

@@ -14,9 +14,6 @@ class KVDBRun;
 
 class KVINDRAUpDater: public KVUpDater {
 
-protected:
-   void set_pedestals(Int_t run_number, const TString& column_name, const TString& pedestal_type);
-
 public:
 
    KVINDRAUpDater();

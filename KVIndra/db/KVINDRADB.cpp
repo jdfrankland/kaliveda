@@ -403,7 +403,7 @@ void KVINDRADB::ReadChIoPressures()
                GetDB().insert_data_row();
                GetDB().end_data_insertion();
                GetDB()["Calibrations"]["ChIo Pressures"].set_data(id);
-               GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "ChIo Pressures");
+               GetDB().update("Calibrations", "ChIo Pressures", runrange.GetSQL("Run Number"));
                ++id;
                read_pressure = kFALSE;
                prlist.Clear();
@@ -435,7 +435,7 @@ void KVINDRADB::ReadChIoPressures()
             GetDB().insert_data_row();
             GetDB().end_data_insertion();
             GetDB()["Calibrations"]["ChIo Pressures"].set_data(id);
-            GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "ChIo Pressures");
+            GetDB().update("Calibrations", "ChIo Pressures", runrange.GetSQL("Run Number"));
             ++id;
             read_pressure = kFALSE;
             prlist.Clear();
@@ -1147,13 +1147,13 @@ void KVINDRADB::ReadPedestalList()
          TString pchiosi_table = Form("Pedestals_ChIoSi_%d", nped_chiosi);
          if (ReadPedestals(filename_chio, pchiosi_table)) {
             GetDB()["Calibrations"]["Pedestals_ChIoSi"].set_data(pchiosi_table);
-            GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "Pedestals_ChIoSi");
+            GetDB().update("Calibrations", "Pedestals_ChIoSi", runrange.GetSQL("Run Number"));
             ++nped_chiosi;
          }
          TString pcsi_table = Form("Pedestals_CsI_%d", nped_csi);
          if (ReadPedestals(filename_csi, pcsi_table)) {
             GetDB()["Calibrations"]["Pedestals_CsI"].set_data(pcsi_table);
-            GetDB().update("Calibrations", runrange.GetSQL("Run Number"), "Pedestals_CsI");
+            GetDB().update("Calibrations", "Pedestals_CsI", runrange.GetSQL("Run Number"));
             ++nped_csi;
          }
          runrange.Clear();
@@ -1162,9 +1162,49 @@ void KVINDRADB::ReadPedestalList()
    fin.close();
 }
 
+KVNameValueList KVINDRADB::GetPedestals_ChIoSi(int run)
+{
+   // Fill list with pedestals for run (ChIo/Si detectors)
+
+   select_runs_in_dbtable("Calibrations", run, "Pedestals_ChIoSi");
+   TString pedtab;
+   while (GetDB().get_next_result())
+      pedtab = GetDB()["Calibrations"]["Pedestals_ChIoSi"].get_data<TString>();
+   if (pedtab == "") {
+      Warning("GetPedestals_ChIoSi", "No pedestals defined for run %d", run);
+      return KVNameValueList();
+   }
+   return GetDB().get_name_value_list(pedtab, "detName", "pedestal");
+}
+
+KVNameValueList KVINDRADB::GetPedestals_CsI(int run)
+{
+   // Fill list with pedestals for run (CsI detectors)
+
+   select_runs_in_dbtable("Calibrations", run, "Pedestals_CsI");
+   TString pedtab;
+   while (GetDB().get_next_result())
+      pedtab = GetDB()["Calibrations"]["Pedestals_CsI"].get_data<TString>();
+   if (pedtab == "") {
+      Warning("GetPedestals_CsI", "No pedestals defined for run %d", run);
+      return KVNameValueList();
+   }
+   return GetDB().get_name_value_list(pedtab, "detName", "pedestal");
+}
+
 Bool_t KVINDRADB::ReadPedestals(const TString& filename, const TString& tablename)
 {
    // read pedestals in "filename" and fill new table "tablename" with them
+   // table will have two columns: "detName" (actually: name of acquisition parameter)
+   // and "pedestal"
+
+   //need description of INDRA geometry
+   if (!gIndra) {
+      KVMultiDetArray::MakeMultiDetector(fDataSet.Data());
+   }
+   //gIndra exists, but has it been built ?
+   if (!gIndra->IsBuilt())
+      gIndra->Build();
 
    ifstream file_pied;
    if (!KVBase::SearchAndOpenKVFile(filename, file_pied, fDataSet)) {
@@ -1174,11 +1214,8 @@ Bool_t KVINDRADB::ReadPedestals(const TString& filename, const TString& tablenam
    }
 
    KVSQLite::table ped(tablename.Data());
-   ped.add_column("cou", "INTEGER");
-   ped.add_column("mod", "INTEGER");
-   ped.add_column("typ", "INTEGER");
+   ped.add_column("detName", "TEXT");
    ped.add_column("pedestal", "REAL");
-   ped.add_column("filename", "TEXT");
    GetDB().add_table(ped);
    KVSQLite::table& pedTable = GetDB()[tablename];
    GetDB().prepare_data_insertion(tablename);
@@ -1196,12 +1233,16 @@ Bool_t KVINDRADB::ReadPedestals(const TString& filename, const TString& tablenam
 
       file_pied >> cou >> mod >> type >> n_phys >> ave_phys >>
                 sig_phys >> n_gene >> ave_gene >> sig_gene;
+      KVACQParam* a = gIndra->GetACQParamByType(cou, mod, type);
+      if (!a) {
+         Warning("ReadPedestals",
+                 "Unknown acquisition parameter cou=%d mod=%d typ=%d in pedestal file %s",
+                 cou, mod, type, filename.Data());
+         continue;
+      }
 
-      pedTable["cou"].set_data(cou);
-      pedTable["mod"].set_data(mod);
-      pedTable["typ"].set_data(type);
+      pedTable["detName"].set_data(a->GetName());
       pedTable["pedestal"].set_data(ave_gene);
-      pedTable["filename"].set_data(filename);
       GetDB().insert_data_row();
    }
    GetDB().end_data_insertion();
@@ -1286,7 +1327,7 @@ void KVINDRADB::ReadLightEnergyCsI(const Char_t* zrange)
    //these calibrators are valid for all runs
    KVNumberList runrange(Form("%d-%d", kFirstRun, kLastRun));
    GetDB()["Calibrations"][filename].set_data(tablename);
-   GetDB().update("Calibrations", runrange.GetSQL("Run Number"), filename);
+   GetDB().update("Calibrations", filename, runrange.GetSQL("Run Number"));
 }
 
 //__________________________________________________________________________________________________________________
@@ -1446,7 +1487,7 @@ void KVINDRADB::ReadTEnvStatusFile(const TString& calling_method,
                GetDB().copy_table_data(next_table, t.name());
                GetDB().copy_table_data(info_table_basename, t.name());
                GetDB()[status_table][status_table_column].set_data(t.name());
-               GetDB().update(status_table, full_runlist.GetSQL("Run Number"), status_table_column);
+               GetDB().update(status_table, status_table_column, full_runlist.GetSQL("Run Number"));
             } else {
                // update existing table with new names
                GetDB().copy_table_data(info_table_basename, next_table);
@@ -1461,7 +1502,7 @@ void KVINDRADB::ReadTEnvStatusFile(const TString& calling_method,
          GetDB().add_table(t);
          GetDB().copy_table_data(info_table_basename, t.name());
          GetDB()[status_table][status_table_column].set_data(t.name());
-         GetDB().update(status_table, null_runlist.GetSQL("Run Number"), status_table_column);
+         GetDB().update(status_table, status_table_column, null_runlist.GetSQL("Run Number"));
       }
       // empty temporary table list of detectors
       GetDB().clear_table(info_table_basename);
@@ -1585,7 +1626,7 @@ void KVINDRADB::calib_file_reader::write_data_to_db(const TString& calib_type)
 {
    GetDB().end_data_insertion();
    GetDB()["Calibrations"][calib_type].set_data(get_table().name());
-   GetDB().update("Calibrations", runrange.GetSQL("Run Number"), calib_type);
+   GetDB().update("Calibrations", calib_type, runrange.GetSQL("Run Number"));
    runrange.Clear();
 }
 
