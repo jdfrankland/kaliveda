@@ -141,6 +141,9 @@ protected:
    virtual Bool_t ReadPedestals(const TString& filename, const TString& tablename);
    void ReadTEnvStatusFile(const TString& calling_method, const TString& informational, const TString& calibfilename,
                            const TString& status_table, const TString& status_table_column, const TString& info_table_basename);
+
+   TString GetStatusList(int run, const TString& what);
+
 public:
    KVINDRADB();
    KVINDRADB(const Char_t* name);
@@ -193,6 +196,9 @@ public:
    virtual const Char_t* GetDBEnv(const Char_t* type) const;
    KVNameValueList GetPedestals_ChIoSi(int run);
    KVNameValueList GetPedestals_CsI(int run);
+   virtual TString GetListOfAbsentDetectors(int run);
+   virtual TString GetListOfOoODetectors(int run);
+   virtual TString GetListOfOoOACQPar(int run);
 
    ClassDef(KVINDRADB, 5)       //DataBase of parameters for an INDRA campaign
 };

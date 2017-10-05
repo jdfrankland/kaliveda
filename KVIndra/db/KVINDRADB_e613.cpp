@@ -100,6 +100,15 @@ KVNameValueList KVINDRADB_e613::GetGains(int run)
    return gainlist;
 }
 
+TString KVINDRADB_e613::GetListOfOoOACQPar(int run)
+{
+   select_runs_in_dbtable("OoOACQPar", run, "OutOfOrder");
+   TString ooo;
+   while (GetDB().get_next_result())
+      ooo = GetDB()["OoOACQPar"]["OutOfOrder"].get_data<TString>();
+   return ooo;
+}
+
 //____________________________________________________________________________
 void KVINDRADB_e613::ReadGainList()
 {
@@ -421,6 +430,13 @@ void KVINDRADB_e613::ReadVoltEnergyChIoSi()
    //Read Volt-Energy(MeV) calibrations for ChIo and Si detectors.
    //The parameter filename is taken from the environment variable
    //        [dataset name].INDRADB.ChIoSiVoltMeVCalib:
+   //
+   // For each run, the "ChIoSiVoltMeVCalib" column of "Calibrations" table holds the name
+   // of the table to use ("ChIoSiVoltMeVCalib_1", "ChIoSiVoltMeVCalib_2", etc.)
+   //
+   // Each table has following structure:
+   //
+   //   detName | npar | a0 | a1
 
    KVFileReader flist;
    TString fp;
@@ -432,97 +448,115 @@ void KVINDRADB_e613::ReadVoltEnergyChIoSi()
    if (!flist.OpenFileToRead(fp.Data())) {
       return;
    }
-   TEnv* env = 0;
-   TEnvRec* rec = 0;
-   KVDBParameterSet* par = 0;
-   TObjArray* toks = 0;
 
-   KVNumberList default_run_list;
-   default_run_list.SetMinMax(kFirstRun, kLastRun);
-   Info("ReadVoltEnergyChIoSi", "liste des runs par defaut %s", default_run_list.AsString());
+   KVSQLite::table mev("ChIoSiVoltMeVCalib_1");
+   GetDB().add_column("Calibrations", "ChIoSiVoltMeVCalib", "TEXT") = mev.name();
+   GetDB().update("Calibrations", "ChIoSiVoltMeVCalib"); // one calibration for all runs
+   mev.add_column("detName", "TEXT");
+   mev.add_column("npar", "INTEGER");
+   mev.add_column("a0", "REAL");
+   mev.add_column("a1", "REAL");
+   GetDB().add_table(mev);
+   KVSQLite::table& mevTab = GetDB()[mev.name()];
+   GetDB().prepare_data_insertion(mev.name());
 
    while (flist.IsOK()) {
       flist.ReadLine(NULL);
       KVString file = flist.GetCurrentLine();
-      KVNumberList nl;
       if (file != "" && !file.BeginsWith('#')) {
          if (KVBase::SearchKVFile(file.Data(), fp, gDataSet->GetName())) {
-            Info("ReadPedestalList", "Lecture de %s", fp.Data());
-            env = new TEnv();
-            env->ReadFile(fp.Data(), kEnvAll);
-            TIter it(env->GetTable());
+            Info("ReadVoltEnergyChIoSi", "Lecture de %s", fp.Data());
+            TEnv env;
+            env.ReadFile(fp.Data(), kEnvAll);
+            TIter it(env.GetTable());
+            TEnvRec* rec;
             while ((rec = (TEnvRec*)it.Next())) {
-
-               Double_t a0 = 0, a1 = 1, chi = 1;
-               TString spar(rec->GetValue());
-               toks = spar.Tokenize(",");
-               if (toks->GetEntries() >= 2) {
-                  a0 = ((TObjString*)toks->At(1))->GetString().Atof();
-                  a1 = ((TObjString*)toks->At(2))->GetString().Atof();
+               Double_t a0(0), a1(1);
+               KVString spar(rec->GetValue());
+               vector<KVString> toks = spar.Vectorize(",");
+               if (toks.size() >= 2) {
+                  a0 = toks[1].Atof();
+                  a1 = toks[2].Atof();
                }
-               delete toks;
-
-               par = new KVDBParameterSet(rec->GetName(), "Volt-Energy", 3);
-               par->SetParameters(a0, a1, chi);
-               //fVoltMeVChIoSi->AddRecord(par);
-               //LinkRecordToRunRange(par, default_run_list);
-
+               mevTab["detName"] = rec->GetName();
+               mevTab["npar"] = 2;
+               mevTab["a0"] = a0;
+               mevTab["a1"] = a1;
+               GetDB().insert_data_row();
             }
-            delete env;
          }
       }
    }
+   GetDB().end_data_insertion();
    Info("ReadVoltEnergyChIoSi", "End of reading");
 
 }
 
-void KVINDRADB_e613::Build()
+void KVINDRADB_e613::ReadOoOACQParams()
 {
-   // Build and fill the database for an INDRA experiment
+   // So many out of order parameters (and with such a complicated history)
+   // So we add a table called "OoOACQPar" with a column "Run Number"
+   // and a column "OutOfOrder" which contains a comma-separated list of
+   // out of order parameters for each run
 
-   //get full path to runlist file, using environment variables for the current dataset
-   TString runlist_fullpath;
-   KVBase::SearchKVFile(GetDBEnv("Runlist"), runlist_fullpath, fDataSet.Data());
+   KVSQLite::table ooo("OoOACQPar");
+   ooo.add_column("Run Number", "INTEGER");
+   ooo.add_column("OutOfOrder", "TEXT");
+   GetDB().add_table(ooo);
 
-   //set comment character for current dataset runlist
-   SetRLCommentChar(GetDBEnv("Runlist.Comment")[0]);
+   GetDB().prepare_data_insertion(ooo.name());
 
-   //set field separator character for current dataset runlist
-   if (!strcmp(GetDBEnv("Runlist.Separator"), "<TAB>"))
-      SetRLSeparatorChar('\t');
-   else
-      SetRLSeparatorChar(GetDBEnv("Runlist.Separator")[0]);
+   TString calling_method = "ReadOoOACQParams";
+   TString informational = "Lecture des parametres d acq hors service ...";
+   TString calibfilename = "OoOACQPar";
+   TString fp;
+   if (!KVBase::SearchKVFile(GetCalibFileName(calibfilename), fp, fDataSet.Data())) {
+      Error(calling_method, "Fichier %s, inconnu au bataillon", GetCalibFileName(calibfilename));
+      return;
+   }
+   Info(calling_method, "%s", informational.Data());
 
-   //by default we set two keys for both recognising the 'header' lines and deciding
-   //if we have a good run line: the "Run" and "Events" fields must be present
-   GetLineReader()->SetFieldKeys(2, GetDBEnv("Runlist.Run"),
-                                 GetDBEnv("Runlist.Events"));
-   GetLineReader()->SetRunKeys(2, GetDBEnv("Runlist.Run"),
-                               GetDBEnv("Runlist.Events"));
+   TEnv env;
+   TEnvRec* rec = 0;
+   env.ReadFile(fp.Data(), kEnvAll);
+   TIter it(env.GetTable());
 
-   kFirstRun = 999999;
-   kLastRun = 0;
-   ReadRunList(runlist_fullpath.Data());
-   //new style runlist
-   if (IsNewRunList())
-      ReadNewRunList();
+   // list with one entry per runlist, each holds list of all parameters for runlist
+   KVNameValueList runlists;
 
-   ReadSystemList();
-   ReadChIoPressures();
-   ReadGainList();
-   ReadPedestalList();
-   ReadChannelVolt();
-//   ReadVoltEnergyChIoSi();
-//   ReadCalibCsI();
-//   ReadAbsentDetectors();
-//   ReadOoOACQParams();
-//   ReadOoODetectors();
+   while ((rec = (TEnvRec*)it.Next())) {
 
-//   // read all available mean pulser data and store in tree
-//   fPulserData.reset(new KVINDRAPulserDataTree(GetDataBaseDir(), kFALSE));
-//   fPulserData->SetRunList(GetRuns());
-//   fPulserData->Build();
+      KVNamedParameter* par = runlists.FindParameter(rec->GetValue());
+      if (par) {
+         TString old = par->GetTString();
+         old += ",";
+         old += rec->GetName();
+         par->Set(old);
+      } else
+         runlists.SetValue(rec->GetValue(), rec->GetName());
 
-//   ReadCsITotalLightGainCorrections();
+   }
+
+   int nrunlists = runlists.GetNpar();
+   KVNumberList all_runs(kFirstRun, kLastRun, 1);
+   all_runs.Begin();
+   while (!all_runs.End()) {
+      int run = all_runs.Next();
+      // build complete list for this run
+      TString all_pars;
+      for (int i = 0; i < nrunlists; ++i) {
+         KVNamedParameter* par = runlists.GetParameter(i);
+         if (KVNumberList(par->GetName()).Contains(run)) {
+            if (all_pars != "") all_pars += ",";
+            all_pars += par->GetTString();
+         }
+      }
+      //std::cout << run << " : " << all_pars << std::endl;
+      if (all_pars != "") {
+         GetDB()[ooo.name()]["Run Number"] = run;
+         GetDB()[ooo.name()]["OutOfOrder"] = all_pars;
+         GetDB().insert_data_row();
+      }
+   }
+   GetDB().end_data_insertion();
 }
-

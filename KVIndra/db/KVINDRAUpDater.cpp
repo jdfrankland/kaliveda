@@ -115,23 +115,9 @@ void KVINDRAUpDater::SetTrigger(KVDBRun* kvrun)
 //_______________________________________________________________//
 void KVINDRAUpDater::CheckStatusOfDetectors(KVDBRun* kvrun)
 {
-   gIndraDB->select_runs_in_dbtable("DetectorStatus", kvrun->GetNumber());
-   TString absent_table, oo_dets_table, oo_acq_table;
-   while (gIndraDB->GetDB().get_next_result()) {
-      absent_table = gIndraDB->GetDB()["DetectorStatus"]["Absent"].get_data<TString>();
-      oo_dets_table = gIndraDB->GetDB()["DetectorStatus"]["OoODet"].get_data<TString>();
-      oo_acq_table = gIndraDB->GetDB()["DetectorStatus"]["OoOACQPar"].get_data<TString>();
-   }
-   TString absdet, ooodet, oooacq;
-   if (absent_table != "") {
-      absdet = gIndraDB->GetDB().get_string_list(absent_table, "Name");
-   }
-   if (oo_dets_table != "") {
-      ooodet = gIndraDB->GetDB().get_string_list(oo_dets_table, "Name");
-   }
-   if (oo_acq_table != "") {
-      oooacq = gIndraDB->GetDB().get_string_list(oo_acq_table, "Name");
-   }
+   TString absdet = gIndraDB->GetListOfAbsentDetectors(kvrun->GetNumber());
+   TString ooodet = gIndraDB->GetListOfOoODetectors(kvrun->GetNumber());
+   TString oooacq = gIndraDB->GetListOfOoOACQPar(kvrun->GetNumber());
 
    TIter next(gIndra->GetListOfDetectors());
    KVDetector* det;
@@ -346,14 +332,14 @@ void KVINDRAUpDater::SetVoltEnergyChIoSiParameters(KVDBRun* kvrun)
    // Read and set volt<-->mev conversion parameters for ChIo, Si and Etalon detectors for run
    // The name of the table to use is in column "ChIoSiVoltMeVCalib" of table "Calibrations".
 
-   gIndraDB->GetDB().select_data("Calibrations", "*", Form("\"Run Number\"=%d", kvrun->GetNumber()));
+   gIndraDB->select_runs_in_dbtable("Calibrations", kvrun->GetNumber(), "ChIoSiVoltMeVCalib");
    TString calib_table;
    while (gIndraDB->GetDB().get_next_result())
       calib_table = gIndraDB->GetDB()["Calibrations"]["ChIoSiVoltMeVCalib"].get_data<TString>();
 
    // Setting Channel-Volts calibration parameters
-   KVSQLite::table& caltab = gIndraDB->GetDB()[calib_table.Data()];
-   gIndraDB->GetDB().select_data(calib_table.Data());
+   KVSQLite::table& caltab = gIndraDB->GetDB()[calib_table];
+   gIndraDB->GetDB().select_data(calib_table);
 
    while (gIndraDB->GetDB().get_next_result()) {
 

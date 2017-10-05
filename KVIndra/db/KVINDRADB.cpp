@@ -1386,6 +1386,35 @@ Double_t KVINDRADB::GetTotalCrossSection(KVNumberList runs,
                                      Coul_par_top);
 }
 
+TString KVINDRADB::GetStatusList(int run, const TString& what)
+{
+   gIndraDB->select_runs_in_dbtable("DetectorStatus", run);
+   TString tabi;
+   while (gIndraDB->GetDB().get_next_result()) {
+      tabi = gIndraDB->GetDB()["DetectorStatus"][what].get_data<TString>();
+   }
+   TString listos;
+   if (tabi != "") {
+      listos = gIndraDB->GetDB().get_string_list(tabi, "Name");
+   }
+   return listos;
+}
+
+TString KVINDRADB::GetListOfAbsentDetectors(int run)
+{
+   return GetStatusList(run, "Absent");
+}
+
+TString KVINDRADB::GetListOfOoODetectors(int run)
+{
+   return GetStatusList(run, "OoODet");
+}
+
+TString KVINDRADB::GetListOfOoOACQPar(int run)
+{
+   return GetStatusList(run, "OoOACQPar");
+}
+
 void KVINDRADB::ReadTEnvStatusFile(const TString& calling_method,
                                    const TString& informational,
                                    const TString& calibfilename,
@@ -1434,6 +1463,7 @@ void KVINDRADB::ReadTEnvStatusFile(const TString& calling_method,
    while ((rec = (TEnvRec*)it.Next())) {
 
       KVString srec(rec->GetName());//list of names
+      std::cout << srec << std::endl;
       KVNumberList current_runlist(rec->GetValue());//runs concerned
       // fill temporary table with names
       GetDB().prepare_data_insertion(info_table_basename);

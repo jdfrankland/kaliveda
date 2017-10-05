@@ -13,6 +13,7 @@ protected:
    virtual void ReadPedestalList();
    virtual void ReadChannelVolt();
    virtual void ReadVoltEnergyChIoSi();
+   virtual void ReadOoOACQParams();
 
 public:
    KVINDRADB_e613();
@@ -20,9 +21,9 @@ public:
    virtual ~KVINDRADB_e613();
 
    KVNameValueList GetGains(int run);
+   virtual TString GetListOfOoOACQPar(int run);
 
    ClassDef(KVINDRADB_e613, 1) //Child class for e613 experiment
-   void Build();
 };
 
 #endif
