@@ -48,8 +48,8 @@ KVIVDB::~KVIVDB()
 void KVIVDB::init()
 {
    // Default initialisations
-   fDeltaPed = AddTable("DeltaPedestal", "Pedestal correction value of detectors");
-   fVAMOSCalConf = AddTable("VAMOS calib. & conf.", "Calibration and configuration parameters for VAMOS and its detectors");
+   //fDeltaPed = AddTable("DeltaPedestal", "Pedestal correction value of detectors");
+   //fVAMOSCalConf = AddTable("VAMOS calib. & conf.", "Calibration and configuration parameters for VAMOS and its detectors");
 
 }
 //________________________________________________________________
@@ -69,19 +69,28 @@ void KVIVDB::Build()
 void KVIVDB::ReadDeltaPedestal(ifstream& ifile)
 {
    // Reading the pedestal correction (DeltaPed). Method called by
-   // KVINDRADB_e503::ReadPedestalCorrection(). DeltaPed is equal to
+   // ReadPedestalCorrection(). DeltaPed is equal to
    // DeltaNoise for high gain coder data. For anyother coder data,
    // DetaPed is given by DeltaGene if DeltaGene is less than 20 channels,
    // otherwise it is given by DeltaNoise. DeltaGene (DeltaNoise) is the
    // difference between pedestal positions from the generator (noise)
    // of the current run and of the reference run.
+   //
+   // Creates database table "PedestalCorrection" with following columns:
+   // Run Number | QDC | DeltaPedGG | DeltaPedPG
 
-
-   KVString sline, signal, parname;
-   KVDBParameterSet* parset = NULL;
+   KVString sline, signal;
    Int_t numQDC = -1;
    KVNumberList runs;
    Double_t Dped = -1., Dgene = -1., Dbruit = -1.;
+
+   KVSQLite::table dp("PedestalCorrection");
+   dp.add_column("Run Number", "INTEGER");
+   dp.add_column("QDC", "INTEGER");
+   dp.add_column("DeltaPedGG", "REAL");
+   dp.add_column("DeltaPedPG", "REAL");
+   GetDB().add_table(dp);
+   GetDB().prepare_data_insertion(dp.name());
 
    while (ifile.good()) {         //reading the file
       sline.ReadLine(ifile);
@@ -95,6 +104,7 @@ void KVIVDB::ReadDeltaPedestal(ifstream& ifile)
       if (sline.BeginsWith("QDC=")) {
          sline.Remove(0, 4);
          numQDC = sline.Atof();
+         GetDB()[dp.name()]["QDC"] = numQDC;
          continue;
       }
       // DeltaPed for each signal
@@ -111,13 +121,15 @@ void KVIVDB::ReadDeltaPedestal(ifstream& ifile)
          Dped = ((Dgene > 20) || !strcmp(signal.Data(), "GG") ? Dbruit : Dgene);
          if (Dped > 20) Warning("ReadDeltaPedestal", "DeltaPed>20 for runs %s, signal %s", runs.GetList(), signal.Data());
 
-         parname.Form("QDC%.2d", numQDC);
-         parset = new KVDBParameterSet(parname.Data(), signal.Data(), 1);
-         parset->SetParameter(Dped);
-         fDeltaPed->AddRecord(parset);
-         LinkRecordToRunRange(parset, runs);
+         GetDB()[dp.name()][Form("DeltaPed%s", signal.Data())] = Dped;
+      }
+      runs.Begin();
+      while (!runs.End()) {
+         GetDB()[dp.name()]["Run Number"] = runs.Next();
+         GetDB().insert_data_row();
       }
    }
+   GetDB().end_data_insertion();
 }
 //________________________________________________________________
 

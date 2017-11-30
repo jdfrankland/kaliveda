@@ -12,8 +12,8 @@ private:
    static const Char_t fVAMOSscalerNames[40][8];
 
 protected:
-   KVDBTable* fDeltaPed;   //-> table of INDRA detector pedestal corrections
-   KVDBTable* fVAMOSCalConf; //-> table of VAMOS detector calibration and configuration parameters
+   //KVDBTable* fDeltaPed;   //-> table of INDRA detector pedestal corrections
+   //KVDBTable* fVAMOSCalConf; //-> table of VAMOS detector calibration and configuration parameters
 
    virtual void   ReadDeltaPedestal(ifstream& ifile);
    virtual void   ReadPedestalCorrection();
