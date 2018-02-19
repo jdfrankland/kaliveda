@@ -470,7 +470,7 @@ void KVVAMOS::SetArrayACQParams()
          } else par->SetType("T");
       }
       par->SetWorking(gDataSet->GetDataSetEnv(Form("KVACQParam.%s.Working", par->GetName()), kTRUE));
-      AddACQParam(par , kTRUE);
+      AddACQParam(par, kTRUE);
    }
    cout << endl;
    delete tok;
@@ -796,11 +796,11 @@ void KVVAMOS::GetIDTelescopes(KVDetector* de, KVDetector* e,
    // prefix of the URI
    TString prefix[2];
    prefix[0].Form("%s.%s.", fDataSet.Data(), GetName());
-   prefix[1].Form("%s."   , GetName());
+   prefix[1].Form("%s.", GetName());
 
 
    //look for ID telescopes with only one of the two detectors
-   KVDetector* dets[3] = { de , e, NULL };
+   KVDetector* dets[3] = { de, e, NULL };
    KVDetector* det     = NULL;
 
    for (UChar_t i = 0; (det = dets[i]);  i++) {

@@ -696,7 +696,7 @@ void KVDataAnalyser::ChooseRuns(KVDBSystem* system,
       }
       //cout << "CHECKED RUNLIST : " <<  endl; fRunList.PrintLimits();
       if (fRunList.IsEmpty()) {
-         Error("ChooseRuns" ,
+         Error("ChooseRuns",
                "None of the runs you chose appear in the list");
          //we force the user to choose again
          fChoozRuns = kTRUE;
@@ -1502,7 +1502,7 @@ void KVDataAnalyser::ScanWorkingDirectory(TList** ls)
 {
    //Fill TList with list of files in current working directory.
    //If ls!=0 it is deleted beforehand
-   if (*ls) delete(*ls);
+   if (*ls) delete (*ls);
    TSystemDirectory dir("LocDir", gSystem->WorkingDirectory());
    (*ls) = dir.GetListOfFiles();
 }

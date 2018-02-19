@@ -22,7 +22,7 @@ public:
       KVGeoStrucElement::SetNumber(num);
    }
    void Reset();
-    void ClearHitDetectors();
+   void ClearHitDetectors();
    const TCollection* GetTrajectories() const
    {
       return &fTrajectories;

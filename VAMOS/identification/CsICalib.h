@@ -155,7 +155,7 @@ public:
    void CalculateESi(Double_t);   //UShort_t
    void Bisection(Int_t, Double_t);  //UShort_t
    //void ECsIch(Double_t);
-   Double_t BisectionLight(Double_t , Double_t , Double_t);
+   Double_t BisectionLight(Double_t, Double_t, Double_t);
    void CompleteSimulation(Double_t);   //UShort_t
    //void CalculateECsI();
    //void SimulateEvent();

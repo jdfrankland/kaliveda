@@ -32,7 +32,7 @@ ClassImp(KVTimeEntry)
 //__________________________________________
 KVTimeEntry::KVTimeEntry(const TGWindow* parent, Double_t val,
                          Int_t digitwidth, Int_t id,
-                         EStyle ,
+                         EStyle,
                          EAttribute attr,
                          ELimit limits,
                          Double_t min, Double_t max):
@@ -54,7 +54,7 @@ KVTimeEntry::KVTimeEntry(const TGWindow* parent, Double_t val,
    // Constructs a numeric entry widget.
 
    // create gui elements
-   fTimeEntry = new TGTextEntry(this, "01234567890123456789" , id);
+   fTimeEntry = new TGTextEntry(this, "01234567890123456789", id);
    fTimeEntry->SetAlignment(kTextRight);
    fTimeEntry->Associate(this);
 

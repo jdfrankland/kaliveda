@@ -233,16 +233,16 @@ public:
       // dE-E telescopes used to identify charged ions.
       return (Z > 0);
    }
-    Bool_t IsIndependent() const
-    {
-       // Returns kTRUE is this identification can be made independently of any
-       // other telescopes/detectors in the group/array etc.
-       // This is the case if
-       //   - the identification is made with a single detector e.g. fast-slow id in Cesium Iodide
-       //   - for a dE-E telescope, if only one trajectory passes through the dE detector
+   Bool_t IsIndependent() const
+   {
+      // Returns kTRUE is this identification can be made independently of any
+      // other telescopes/detectors in the group/array etc.
+      // This is the case if
+      //   - the identification is made with a single detector e.g. fast-slow id in Cesium Iodide
+      //   - for a dE-E telescope, if only one trajectory passes through the dE detector
 
-       return (GetSize()==1 || (GetSize()==2&&GetDetector(1)->GetNode()->GetNTraj()==1));
-    }
+      return (GetSize() == 1 || (GetSize() == 2 && GetDetector(1)->GetNode()->GetNTraj() == 1));
+   }
    ClassDef(KVIDTelescope, 5)   //A delta-E - E identification telescope
 };
 

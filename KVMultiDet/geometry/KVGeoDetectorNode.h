@@ -11,20 +11,20 @@ class KVDetector;
 class KVGeoDNTrajectory;
 
 class KVGeoDetectorNode : public KVBase {
-    KVDetector*      fDetector;//!associated detector
+   KVDetector*      fDetector;//!associated detector
    KVSeqCollection* fInFront;//list of detectors in front
    KVSeqCollection* fBehind;//list of detectors behind
-    KVSeqCollection* fTraj;//list of trajectories passing through this node
-    KVSeqCollection* fTrajF;//list of trajectories passing through this node going forwards
-    KVSeqCollection* fTrajB;//list of trajectories passing through this node going backwards
-    Int_t fNTraj;//number of trajectories passing through this node
-    Int_t fNTrajForwards;//number of trajectories going forwards from this node
-    Int_t fNTrajBackwards;//number of trajectories going backwards from this node
+   KVSeqCollection* fTraj;//list of trajectories passing through this node
+   KVSeqCollection* fTrajF;//list of trajectories passing through this node going forwards
+   KVSeqCollection* fTrajB;//list of trajectories passing through this node going backwards
+   Int_t fNTraj;//number of trajectories passing through this node
+   Int_t fNTrajForwards;//number of trajectories going forwards from this node
+   Int_t fNTrajBackwards;//number of trajectories going backwards from this node
 
    void init();
 
-    void CalculateForwardsTrajectories();
-    void CalculateBackwardsTrajectories();
+   void CalculateForwardsTrajectories();
+   void CalculateBackwardsTrajectories();
 
 public:
    KVGeoDetectorNode();
@@ -59,8 +59,8 @@ public:
    Int_t GetNTrajForwards() const;
    Int_t GetNTrajBackwards() const;
 
-        void BuildTrajectoriesForwards(TSeqCollection*);
-	void AddTrajectory(KVGeoDNTrajectory*);
+   void BuildTrajectoriesForwards(TSeqCollection*);
+   void AddTrajectory(KVGeoDNTrajectory*);
 
    void RehashLists();
 
@@ -69,7 +69,7 @@ public:
 
    void ls(Option_t* option = "") const;
 
-   ClassDef(KVGeoDetectorNode,2)//Information on relative positions of detectors & particle trajectories
+   ClassDef(KVGeoDetectorNode, 2) //Information on relative positions of detectors & particle trajectories
 };
 
 #endif

@@ -1113,7 +1113,7 @@ Double_t KV2Body::GetSphereDureReactionXSec(Double_t r0)
    Double_t A2third = pow(((KVNucleus*)fNuclei[2])->GetA(), 1. / 3.);
 
    Double_t Xsec = TMath::Pi() * pow(r0, 2) *
-                   pow(A1third + A2third , 2);
+                   pow(A1third + A2third, 2);
 
    return Xsec / 100.;
 }

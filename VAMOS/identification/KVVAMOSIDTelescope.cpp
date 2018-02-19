@@ -53,10 +53,10 @@ const Char_t* KVVAMOSIDTelescope::GetArrayName()
 
       if (Edet) {
          SetName(Form("VID_%s_%s", DEdet->GetName(), Edet->GetName()));
-         SetType(Form("%s_%s"    , DEdet->GetName(), Edet->GetName()));
+         SetType(Form("%s_%s", DEdet->GetName(), Edet->GetName()));
       } else {
          SetName(Form("VID_%s", DEdet->GetName()));
-         SetType(Form("%s"    , DEdet->GetName()));
+         SetType(Form("%s", DEdet->GetName()));
       }
    } else SetName("VID_EMPTY");
 

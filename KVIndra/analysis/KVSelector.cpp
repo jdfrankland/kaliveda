@@ -203,7 +203,7 @@ void KVSelector::Init(TTree* tree)
 
    data = 0;
    b_data = 0;
-   fChain->SetBranchAddress(fBranchName.Data() , &data, &b_data);
+   fChain->SetBranchAddress(fBranchName.Data(), &data, &b_data);
 
    //
    // Builds a TEventList by adding the contents of the lists for each run

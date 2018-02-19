@@ -327,7 +327,7 @@ void KVSeqCollection::RecursiveRemove(TObject* obj)
 
 void  KVSeqCollection::PrintCollectionHeader(Option_t*) const
 {
-    // Overrides TCollection::PrintCollectionHeader
+   // Overrides TCollection::PrintCollectionHeader
    TROOT::IndentLevel();
 //    printf("Collection name='%s', embedded list class='%s', size=%d\n", GetName(),
 //           fCollection->ClassName(), GetSize());
@@ -581,7 +581,7 @@ TObject* KVSeqCollection::FindObjectAny(const Char_t* att, const Char_t* keys, B
       }
       nmatches = 0;
       for (int i = 0; i < nkeys; i++) {
-         nmatches += (_att.Contains(((TObjString*)keywords->At(i))->String() , casecmp));
+         nmatches += (_att.Contains(((TObjString*)keywords->At(i))->String(), casecmp));
       }
       if ((nmatches && !contains_all) || ((nmatches == nkeys) && contains_all)) {
          delete keywords;

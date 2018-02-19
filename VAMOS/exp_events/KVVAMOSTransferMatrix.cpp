@@ -405,10 +405,10 @@ Bool_t KVVAMOSTransferMatrix::ReconstructFPtoLab(KVVAMOSReconTrajectory* traj)
          Decode_ijkl(f_ijkl[p][c], i, j, k, l);
 
          res[p] += fCoef[p][c]                //Cijkl
-                   *TMath::Power(xytpf[p][0] , i)   //Xf^i
-                   *TMath::Power(xytpf[p][1] , j)   //Yf^j
-                   *TMath::Power(xytpf[p][2] , k)   //ThetaF^k
-                   *TMath::Power(xytpf[p][3] , l);  //PhiF^l
+                   *TMath::Power(xytpf[p][0], i)    //Xf^i
+                   *TMath::Power(xytpf[p][1], j)    //Yf^j
+                   *TMath::Power(xytpf[p][2], k)    //ThetaF^k
+                   *TMath::Power(xytpf[p][3], l);   //PhiF^l
       }
    }
 

@@ -8,21 +8,20 @@
 
 namespace MicroStat {
 
-   class mcweight : public StatWeight
-   {
+   class mcweight : public StatWeight {
 
-      protected:
+   protected:
 
-      public:
+   public:
       mcweight();
       virtual ~mcweight();
 
       virtual void SetWeight(KVEvent* e, Double_t E);
-      void initGenerateEvent(KVEvent *partition);
+      void initGenerateEvent(KVEvent* partition);
       void resetGenerateEvent();
-      virtual void nextparticleGenerateEvent(Int_t,KVNucleus*);
+      virtual void nextparticleGenerateEvent(Int_t, KVNucleus*);
 
-      ClassDef(mcweight,1)//Calculate microcanonical statistical weights for events
+      ClassDef(mcweight, 1) //Calculate microcanonical statistical weights for events
    };
 
 }/*  namespace MicroStat */

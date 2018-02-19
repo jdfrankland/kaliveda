@@ -115,7 +115,7 @@ KVDigitalFilter KVDigitalFilter::BuildRCHighPassWithPZ(const double&  tau_usec, 
    KVDigitalFilter highpass = KVDigitalFilter::BuildRCHighPass(tau_usec, tau_clk);
    double ycoef[] = {0};
    double xcoef[] = {tau_usec / (preamp_decay_usec + tau_usec)};
-   KVDigitalFilter polez(tau_clk , 1, xcoef, ycoef);
+   KVDigitalFilter polez(tau_clk, 1, xcoef, ycoef);
    return KVDigitalFilter::CombineStages(&highpass, &polez, 1);
 }
 //============================================
@@ -763,8 +763,8 @@ void KVDigitalFilter::Quantize(int nbits, int use_pow2,
    if (xgain != NULL) {
       *xgain = factor;
    }
-   if (x_out  != NULL) memset(x_out  , 0, GetNCoeff()*sizeof(int));
-   if (y_out  != NULL) memset(y_out  , 0, GetNCoeff()*sizeof(int));
+   if (x_out  != NULL) memset(x_out, 0, GetNCoeff()*sizeof(int));
+   if (y_out  != NULL) memset(y_out, 0, GetNCoeff()*sizeof(int));
    if (x_scale != NULL) memset(x_scale, 0, GetNCoeff()*sizeof(int));
    if (y_scale != NULL) memset(y_scale, 0, GetNCoeff()*sizeof(int));
 

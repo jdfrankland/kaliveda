@@ -882,7 +882,7 @@ KVDataAnalysisLauncher::~KVDataAnalysisLauncher()
 
 // On va maintenant agir si un evenemnt se produit
 //__________________________________________
-Bool_t KVDataAnalysisLauncher::ProcessMessage(Long_t msg, Long_t , Long_t)
+Bool_t KVDataAnalysisLauncher::ProcessMessage(Long_t msg, Long_t, Long_t)
 {
    // Process messages
 #ifdef KVDAL_DEBUG
@@ -1534,7 +1534,7 @@ void KVDataAnalysisLauncher::SetAutoBatchName(void)
    if (GetDataAnalyser()) {
       if (GetDataAnalyser()->GetAnalysisTask()) {
          if (GetDataAnalyser()->GetAnalysisTask()->WithUserClass()) {
-            GetDataAnalyser()->SetUserClass(GetUserClass() , kFALSE);
+            GetDataAnalyser()->SetUserClass(GetUserClass(), kFALSE);
             if (GetDataAnalyser()->InheritsFrom("KVINDRAReconDataAnalyser"))
                ((KVINDRAReconDataAnalyser*)GetDataAnalyser())->SetKVDataSelector(teDataSelector->GetText());
          }
@@ -1886,9 +1886,9 @@ void KVDataAnalysisLauncher::SetUserClassList()
 
    Int_t nbcl = UserClassNames->GetEntries();
    Int_t i = 0;
-   cbUserClass->AddEntry("" , i++);
+   cbUserClass->AddEntry("", i++);
    while (i < nbcl + 1) {
-      cbUserClass->AddEntry(UserClassNames->At(i - 1)->GetName() , i);
+      cbUserClass->AddEntry(UserClassNames->At(i - 1)->GetName(), i);
       i++;
    }
    cbUserClass->Layout();

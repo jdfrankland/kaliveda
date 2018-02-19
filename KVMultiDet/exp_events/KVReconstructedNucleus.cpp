@@ -122,10 +122,10 @@ void KVReconstructedNucleus::Streamer(TBuffer& R__b)
       if (gMultiDetArray) {
          MakeDetectorList();
 
-            // Removing the leading '/' character from fDetNames gives us the title of the
-            // trajectory used to reconstruct the particle
-            TString traj_t = fDetNames.Strip(TString::kLeading,'/');
-            //fReconTraj = GetStoppingDetector()->GetNode()->FindTrajectory(traj_t);
+         // Removing the leading '/' character from fDetNames gives us the title of the
+         // trajectory used to reconstruct the particle
+         TString traj_t = fDetNames.Strip(TString::kLeading, '/');
+         //fReconTraj = GetStoppingDetector()->GetNode()->FindTrajectory(traj_t);
          if (R__v < 16) {
             ResetNSegDet();   // fNSegDet/fAnalStatus non-persistent before v.16
          }
@@ -304,8 +304,8 @@ void KVReconstructedNucleus::GetAnglesFromStoppingDetector(Option_t* opt)
    // If "mean" the (theta,phi) position of the centre of the detector
    // is used to fix the nucleus' direction.
    //
-    // *unless one of the detectors on the particle's trajectory to the stopping detector has
-    //  a smaller solid angle, in which case we use that one
+   // *unless one of the detectors on the particle's trajectory to the stopping detector has
+   //  a smaller solid angle, in which case we use that one
 
    //don't try if particle has no correctly defined energy
    if (GetEnergy() <= 0.0)
@@ -314,14 +314,14 @@ void KVReconstructedNucleus::GetAnglesFromStoppingDetector(Option_t* opt)
       return;
 
    KVDetector* angle_det = GetStoppingDetector();
-    Int_t ndets = GetNumDet();
-    if(ndets>1){
-        for(int id=1;id<ndets;id++){
-            KVDetector* d = GetDetector(id);
-      if (d->GetSolidAngle() < angle_det->GetSolidAngle())
-         angle_det = d;
+   Int_t ndets = GetNumDet();
+   if (ndets > 1) {
+      for (int id = 1; id < ndets; id++) {
+         KVDetector* d = GetDetector(id);
+         if (d->GetSolidAngle() < angle_det->GetSolidAngle())
+            angle_det = d;
+      }
    }
-    }
    if (!strcmp(opt, "random")) {
       //random angles
       TVector3 dir = angle_det->GetRandomDirection("random");

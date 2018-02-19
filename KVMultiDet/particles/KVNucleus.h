@@ -202,14 +202,14 @@ public:
    static Double_t vrelHinde1987(Double_t z1, Double_t a1, Double_t z2, Double_t a2);
    static Double_t vrelViola1985(Double_t z, Double_t a);
    static Double_t vrelViola1966(Double_t z, Double_t a);
-   
+
    Bool_t IsElement(Int_t Z) const
    {
-      return GetZ()==Z;
+      return GetZ() == Z;
    }
    Bool_t IsIsotope(Int_t Z, Int_t A) const
    {
-      return (GetZ()==Z && GetA()==A);
+      return (GetZ() == Z && GetA() == A);
    }
 
    ClassDef(KVNucleus, 6)      //Class describing atomic nuclei

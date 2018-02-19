@@ -923,7 +923,7 @@ const Char_t* KVBase::GetPluginURI(const Char_t* base, const Char_t* derived)
             Int_t cnt = 0;
             s += 7;
             //is it the right base class ?
-            if (strcmp(s , base)) continue; //skip to next env var if not right base
+            if (strcmp(s, base)) continue;  //skip to next env var if not right base
 
             char* v = StrDup(val);
             while (1) {
@@ -982,7 +982,7 @@ const Char_t* KVBase::GetListOfPlugins(const Char_t* base)
             Int_t cnt = 0;
             s += 7;
             //is it the right base class ?
-            if (strcmp(s , base)) continue; //skip to next env var if not right base
+            if (strcmp(s, base)) continue;  //skip to next env var if not right base
 
             char* v = StrDup(val);
             while (1) {

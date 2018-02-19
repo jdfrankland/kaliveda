@@ -57,7 +57,7 @@ protected:
 
    KVRangeTableGeoNavigator* fNavigator;//! for propagating particles through array geometry
 
-    KVHashList fTrajectories;//! list of all possible trajectories through detectors of array
+   KVHashList fTrajectories;//! list of all possible trajectories through detectors of array
 
    virtual void MakeListOfDetectors();
    virtual void SetACQParams();
@@ -212,7 +212,7 @@ public:
       return fSimMode;
    };
 
-    virtual Double_t GetPunchThroughEnergy(const Char_t* detector, Int_t Z, Int_t A, const KVGeoDNTrajectory* TR = nullptr);
+   virtual Double_t GetPunchThroughEnergy(const Char_t* detector, Int_t Z, Int_t A, const KVGeoDNTrajectory* TR = nullptr);
    virtual TGraph* DrawPunchThroughEnergyVsZ(const Char_t* detector, Int_t massform = KVNucleus::kBetaMass);
    virtual TGraph* DrawPunchThroughEsurAVsZ(const Char_t* detector, Int_t massform = KVNucleus::kBetaMass);
 
@@ -226,12 +226,12 @@ public:
    }
    const TSeqCollection* GetTrajectories() const
    {
-       // Get list of all possible trajectories for particles traversing array
-       return &fTrajectories;
-    }
+      // Get list of all possible trajectories for particles traversing array
+      return &fTrajectories;
+   }
    void CalculateIdentificationGrids();
 
-    ClassDef(KVMultiDetArray,7)//Base class for multidetector arrays    
+   ClassDef(KVMultiDetArray, 7) //Base class for multidetector arrays
 };
 
 //................  global variable

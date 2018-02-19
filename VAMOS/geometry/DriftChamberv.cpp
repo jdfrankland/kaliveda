@@ -66,7 +66,7 @@ DriftChamberv::DriftChamberv(LogFile* Log, Sive503* SiD)
          sline.ReadLine(in2);
          if (!in2.eof()) {
             if (!sline.BeginsWith("+") && !sline.BeginsWith("|")) {
-               sscanf(sline.Data(), "%d %f %f", &num , &ref, &propre);
+               sscanf(sline.Data(), "%d %f %f", &num, &ref, &propre);
                //L->Log << "SI_" << num << ": Ref : "<< ref << endl;
                T_DCRef[num] = ref;
                T_DCpropre_el[num] = propre;

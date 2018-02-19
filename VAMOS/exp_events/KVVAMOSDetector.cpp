@@ -209,7 +209,7 @@ void KVVAMOSDetector::SetCalibrators()
          if (!fTlist) fTlist = new TList;
          fTlist->Add(par);
          if (!fT0list) fT0list = new TList;
-         fT0list->Add(new KVNamedParameter(par->GetName() , 0.));
+         fT0list->Add(new KVNamedParameter(par->GetName(), 0.));
       }
    }
 
@@ -223,7 +223,7 @@ void KVVAMOSDetector::SetCalibrators()
             if (!fTlist) fTlist = new TList;
             fTlist->Add(par);
             if (!fT0list) fT0list = new TList;
-            fT0list->Add(new KVNamedParameter(par->GetName() , 0.));
+            fT0list->Add(new KVNamedParameter(par->GetName(), 0.));
          }
       }
    }

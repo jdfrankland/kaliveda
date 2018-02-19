@@ -235,7 +235,7 @@ void CsICalib::InitTelescopeChioSi(Int_t ci_num, Int_t si_num)
    return;
 }
 
-void CsICalib::InitTelescope(Int_t si_num , Int_t csi_num)
+void CsICalib::InitTelescope(Int_t si_num, Int_t csi_num)
 {
 
    Char_t si_name [128] = "null";

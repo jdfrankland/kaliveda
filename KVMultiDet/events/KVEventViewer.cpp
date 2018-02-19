@@ -138,8 +138,8 @@ void KVEventViewer::DrawEvent(KVEvent* event, const Char_t* frame)
    geom = new TGeoManager(Form("Event%d", event->GetNumber()), "Event view");
    geom->SetNsegments(500);
    matEmptySpace = new TGeoMaterial("EmptySpace", 0, 0, 0);
-   matNuc     = new TGeoMaterial("Nuc"    , .938, 1., 10000.);
-   matBox    = new TGeoMaterial("Box"    , .938, 1., 10000.);
+   matNuc     = new TGeoMaterial("Nuc", .938, 1., 10000.);
+   matBox    = new TGeoMaterial("Box", .938, 1., 10000.);
 
    EmptySpace = new TGeoMedium("Empty", 1, matEmptySpace);
    Nuc     = new TGeoMedium("Nuc", 1, matNuc);

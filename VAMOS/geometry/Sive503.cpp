@@ -139,7 +139,7 @@ Sive503::Sive503(LogFile* Log)
          sline.ReadLine(in2);
          if (!in2.eof()) {
             if (!sline.BeginsWith("+") && !sline.BeginsWith("|")) {
-               sscanf(sline.Data(), "%d %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &num , &ref, &propre, &off328, &off333, &off339, &off344, &off348, &off353, &off355, &off379,
+               sscanf(sline.Data(), "%d %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &num, &ref, &propre, &off328, &off333, &off339, &off344, &off348, &off353, &off355, &off379,
                       &off384, &off390, &off398, &off403, &off404, &off405, &off407, &off455, &off467, &off475, &off484, &off490, &off493, &off511, &off525, &off528, &off531, &off537, &off543, &off548);
                //L->Log << "SI_" << num << ": Ref : "<< ref << endl;
                TRef[num] = ref;

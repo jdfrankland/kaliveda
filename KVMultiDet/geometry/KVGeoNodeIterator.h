@@ -8,8 +8,7 @@
 #include "KVGeoDetectorNode.h"
 #include "KVGeoDNTrajectory.h"
 
-class KVGeoNodeIterator : public KVBase
-{
+class KVGeoNodeIterator : public KVBase {
    KVGeoDetectorNode* start_node;
    mutable KVGeoDetectorNode* current_node;
    KVGeoDNTrajectory* iter_on_traj; // limit iteration to this trajectory, if given
@@ -20,25 +19,24 @@ class KVGeoNodeIterator : public KVBase
 
    void begin_iteration_on_next_trajectory() const
    {
-      if(iter_on_traj){
-         if(current_trajectory==nullptr) current_trajectory=iter_on_traj;
-         else current_trajectory=nullptr;
-      }
-      else
-         current_trajectory=(KVGeoDNTrajectory*)(*next_trajectory)();
-      if(current_trajectory) {
-         if(iterate_backwards) current_trajectory->IterateBackFrom(start_node);
+      if (iter_on_traj) {
+         if (current_trajectory == nullptr) current_trajectory = iter_on_traj;
+         else current_trajectory = nullptr;
+      } else
+         current_trajectory = (KVGeoDNTrajectory*)(*next_trajectory)();
+      if (current_trajectory) {
+         if (iterate_backwards) current_trajectory->IterateBackFrom(start_node);
          else current_trajectory->IterateFrom(start_node);
       }
    }
    void get_next_node_on_current_trajectory() const
    {
-      if(current_trajectory) current_node=current_trajectory->GetNextNode();
-      else current_node=nullptr;
+      if (current_trajectory) current_node = current_trajectory->GetNextNode();
+      else current_node = nullptr;
    }
 
 
-   public:
+public:
    KVGeoNodeIterator(KVGeoDetectorNode* start, KVGeoDNTrajectory* trajectory = nullptr) :
       start_node(start), current_node(start), iter_on_traj(trajectory), next_trajectory(new TIter(start->GetTrajectories())),
       current_trajectory(nullptr), exclude_start_node(kFALSE), iterate_backwards(kFALSE)
@@ -50,19 +48,20 @@ class KVGeoNodeIterator : public KVBase
       begin_iteration_on_next_trajectory();
    }
 
-   virtual ~KVGeoNodeIterator() {
+   virtual ~KVGeoNodeIterator()
+   {
       delete next_trajectory;
    }
 
    void ExcludeStartNode(Bool_t u = kTRUE)
    {
       // Exclude start node from iteration
-      exclude_start_node=u;
+      exclude_start_node = u;
    }
    void IterateBackwards(Bool_t i = kTRUE)
    {
       // Perform all iterations backwards i.e. move away from target
-      iterate_backwards=i;
+      iterate_backwards = i;
    }
 
    KVGeoDetectorNode* operator()(void) const
@@ -70,18 +69,18 @@ class KVGeoNodeIterator : public KVBase
       // Return next node in iteration
 
       get_next_node_on_current_trajectory();
-      if(current_node==nullptr) {
+      if (current_node == nullptr) {
          begin_iteration_on_next_trajectory();
          get_next_node_on_current_trajectory();
       }
-      if(exclude_start_node && current_node==start_node) return this->operator()();
+      if (exclude_start_node && current_node == start_node) return this->operator()();
       return current_node;
    }
 
    void Reset(KVGeoDetectorNode* start = nullptr, KVGeoDNTrajectory* trajectory = nullptr);
    void ResetTrajectory(KVGeoDNTrajectory* trajectory = nullptr);
 
-   ClassDef(KVGeoNodeIterator,0)//Iterator over geometry nodes/trajectories
+   ClassDef(KVGeoNodeIterator, 0) //Iterator over geometry nodes/trajectories
 };
 
 #endif

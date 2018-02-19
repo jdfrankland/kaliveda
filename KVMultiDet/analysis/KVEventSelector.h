@@ -265,7 +265,7 @@ void KVEventSelector::Init(TTree* tree)
 
    if (strcmp(GetBranchName(), "")  && fChain->GetBranch(GetBranchName())) {
       Info("Init", "Analysing data in branch : %s", GetBranchName());
-      fChain->SetBranchAddress(GetBranchName() , &Event, &b_Event);
+      fChain->SetBranchAddress(GetBranchName(), &Event, &b_Event);
    }
    //user additional branches addressing
    SetAdditionalBranchAddress();

@@ -48,17 +48,16 @@ void KVGeoNodeIterator::Reset(KVGeoDetectorNode* start, KVGeoDNTrajectory* traje
    //
    //    it.Reset(start,trajectory) => iterate from a new node using given trajectory
 
-   if(start==nullptr) {
-      current_node=start_node;
+   if (start == nullptr) {
+      current_node = start_node;
       next_trajectory->Reset();
-   }
-   else {
-      current_node=start_node=start;
-      iter_on_traj=trajectory;
+   } else {
+      current_node = start_node = start;
+      iter_on_traj = trajectory;
       delete next_trajectory;
-      next_trajectory=new TIter(start->GetTrajectories());
+      next_trajectory = new TIter(start->GetTrajectories());
    }
-   current_trajectory=nullptr;
+   current_trajectory = nullptr;
    begin_iteration_on_next_trajectory();
 }
 
@@ -81,9 +80,9 @@ void KVGeoNodeIterator::ResetTrajectory(KVGeoDNTrajectory* trajectory)
    //        /* iterate only over 'trajectory2' */
    //    }
 
-   current_node=start_node;
-   iter_on_traj=trajectory;
+   current_node = start_node;
+   iter_on_traj = trajectory;
    next_trajectory->Reset();
-   current_trajectory=nullptr;
+   current_trajectory = nullptr;
    begin_iteration_on_next_trajectory();
 }

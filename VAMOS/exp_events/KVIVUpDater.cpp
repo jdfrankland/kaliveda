@@ -209,7 +209,7 @@ void KVIVUpDater::SetVamosCalibAndConfParams(KVDBRun* run)
 
       // Case 2: parameter associated to a setter method of a detector or of VAMOS
       if (!(obj = gVamos->GetDetector(par->GetName()))) {
-         if (!strcmp(gVamos->GetName() , par->GetName())) obj = gVamos;
+         if (!strcmp(gVamos->GetName(), par->GetName())) obj = gVamos;
          else {
             Error("KVIVUpDater::SetVamosCalibAndConfParams",
                   "The parameter %s is not associated to an existing calibrator, detector or VAMOS",
