@@ -460,7 +460,7 @@ Bool_t KVString::Match(TString pattern)
 
       Int_t idx = 0, num = 0;
       for (Int_t ii = 0; ii < n_tok; ii += 1) {
-         idx = this->Index(((TObjString*)tok->At(ii))->GetString() , idx);
+         idx = this->Index(((TObjString*)tok->At(ii))->GetString(), idx);
          if (idx != -1) {
             num += 1;
             idx++;
