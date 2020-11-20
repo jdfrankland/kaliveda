@@ -684,7 +684,7 @@ KVHashList* KVBreakUp::GetObjects()
 //_______________________________________________________
 void KVBreakUp::ResetTotalIterations()
 {
-   //Comme c'est ىcrit
+   //Comme c'est ecrit
    niter_tot = 0;
 
 }
@@ -751,7 +751,7 @@ void KVBreakUp::SaveHistos(KVString filename, KVString suff, Option_t* option)
 //_______________________________________________________
 void KVBreakUp::PrintConfig() const
 {
-   // Comme c'est ىcrit
+   // Comme c'est ecrit
    // Why not "Print(Option_t*)" ?
    //   - because TCollection has several 'virtual' Print methods which
    //     are overloaded (i.e. have different arguments): BAD!
