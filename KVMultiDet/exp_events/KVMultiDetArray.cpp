@@ -1314,94 +1314,16 @@ void KVMultiDetArray::Clear(Option_t*)
 }
 
 //_________________________________________________________________________________________
-//void KVMultiDetArray::AddACQParam(KVACQParam* par)
-//{
-//   //Add an acquisition parameter corresponding to a detector of the array.
-//   //The fACQParams list is added to the list of cleanups (gROOT->GetListOfCleanups).
-//   //Each acq-param has its kMustCleanup bit set.
-//   //Thus, if the acq-param is deleted (e.g. by the detector which owns it), it is
-//   //automatically removed from the fACQParams list by ROOT.
 
-//   if (!fACQParams) {
-//      fACQParams = new KVHashList;
-//      fACQParams->SetName(Form("List of acquisition parameters for multidetector array %s", GetName()));
-//      fACQParams->SetOwner(kFALSE);
-//      fACQParams->SetCleanup(kTRUE);
-//   }
-//   if (par) {
-//      fACQParams->Add(par);
-//   }
-//   else
-//      Warning("AddACQParam", "Null pointer passed as argument");
-//}
 
 //_________________________________________________________________________________________
 
-//void KVMultiDetArray::SetACQParams()
-//{
-//   // Set up acquisition parameters in all detectors of the array + any acquisition parameters which are not
-//   // directly related to a detector.
-//   //
-//   // Override the method SetArrayACQParams() in order to add any acquisition parameters not directly
-//   // related to a detector.
-//   //
-//   // For the detector acquisition parameters, we loop over all detectors of the array and call each detector's
-//   // SetACQParams() method, if it has not already been done (i.e. if the detector has no associated parameters).
-//   // Each specific implementation of a KVDetector class should redefine the KVDetector::SetACQParams()
-//   // method in order to give the detector in question the necessary acquisition parameters (KVACQParam objects).
-//   //
-//   // The list of acquisition parameters of each detector is then used to
-//   //   1) add to fACQParams list of all acquisition parameters of the array
-//   //   2) set as "not working" the acquisition parameters for which environment variables such as
-//   //        [dataset name].KVACQParam.[acq par name].Working:    NO
-//   //       are set in a .kvrootrc file.
-//   //   3) set bitmask for each detector used to determine which acquisition parameters are
-//   //       taken into account by KVDetector::Fired based on the environment variables
-//   //          [classname].Fired.ACQParameterList.[type]: PG,GG,T
-//   //   where [classname]=KVDetector by default, or the name of some class
-//   //   derived from KVDetector which calls the method KVDetector::SetKVDetectorFiredACQParameterListFormatString()
-//   //   in its constructor.
 
-//   if (fACQParams) {
-//      fACQParams->Clear();
-//   }
 
-//   SetArrayACQParams();
 
-//   TIter next(GetDetectors());
-//   KVDetector* det;
-//   while ((det = (KVDetector*) next())) {
-//      KVSeqCollection* l = det->GetACQParamList();
-//      if (!l) {
-//         //detector has no acq params
-//         //set up acqparams in detector
-//         det->SetACQParams();
-//         l = det->GetACQParamList();
-//      }
-//      //loop over acqparams and add them to fACQParams list, checking
-//      //their status (working or not working ?)
-//      TIter next_par(l);
-//      KVACQParam* par;
-//      while ((par = (KVACQParam*) next_par())) {
-//         AddACQParam(par);
-//         par->SetWorking(gDataSet->GetDataSetEnv(Form("KVACQParam.%s.Working", par->GetName()), kTRUE));
-//      }
-//      // set bitmask
-//      KVString inst;
-//      inst.Form(det->GetFiredACQParameterListFormatString(), det->GetType());
-//      KVString lpar = gDataSet->GetDataSetEnv(inst);
-//      det->SetFiredBitmask(lpar);
-//   }
-//}
 
 //_________________________________________________________________________________
 
-//void KVMultiDetArray::SetArrayACQParams()
-//{
-//   // Method called by SetACQParams() in order to define any acquisition parameters which are not
-//   // directly related to any detectors of the array.
-//   // This implementation does nothing: override it in derived classes if needed.
-//}
 
 void KVMultiDetArray::SetCalibratorParameters(KVDBRun* r, const TString& myname)
 {

@@ -97,8 +97,6 @@ protected:
    virtual void BuildGeometry();
    virtual void SetGroupsAndIDTelescopes();
    void FillListsOfDetectorsByType();
-   //void SetGGtoPGConversionFactors();
-   //void LinkToCodeurs();
    void BuildLayer(const Char_t* name);
    KVRing* BuildRing(Int_t number, const Char_t* prefix);
    KVINDRATelescope* BuildTelescope(const Char_t* prefix, Int_t mod);

@@ -19,7 +19,6 @@ class KVIDGraph;
 class KVTarget;
 class KVTelescope;
 class KVIDTelescope;
-//class KVACQParam;
 class KVReconstructedEvent;
 class KVDetectorEvent;
 class KVGroup;

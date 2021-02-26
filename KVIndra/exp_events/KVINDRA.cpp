@@ -372,71 +372,6 @@ void KVINDRA::Build(Int_t run)
    }
 }
 
-//void KVINDRA::SetArrayACQParams()
-//{
-//   // Overrides KVASMultiDetArray::SetArrayACQParams() in order to
-//   // add the following acquisition parameters which are not associated to a detector:
-//   //
-//   // STAT_EVE
-//   // R_DEC
-//   // CONFIG
-//   // PILA_01_PG
-//   // PILA_01_GG
-//   // PILA_02_PG
-//   // PILA_02_GG
-//   // PILA_03_PG
-//   // PILA_03_GG
-//   // PILA_04_PG
-//   // PILA_04_GG
-//   // PILA_05_PG
-//   // PILA_05_GG
-//   // PILA_06_PG
-//   // PILA_06_GG
-//   // PILA_07_PG
-//   // PILA_07_GG
-//   // PILA_08_PG
-//   // PILA_08_GG
-//   // SI_PIN1_PG
-//   // SI_PIN1_GG
-//   // SI_PIN2_PG
-//   // SI_PIN2_GG
-//   //
-//   // We also create and initialize the KVINDRATriggerInfo object (fSelecteur) used to read
-//   // the status of the DAQ trigger event by event (access through GetTriggerInfo()).
-
-//   KVACQParam* ste = new KVACQParam("STAT_EVE");
-//   AddArrayACQParam(ste);
-//   KVACQParam* dec = new KVACQParam("R_DEC");
-//   AddArrayACQParam(dec);
-//   KVACQParam* conf = new KVACQParam("CONFIG");
-//   AddArrayACQParam(conf);
-//   fSelecteur = new KVINDRATriggerInfo;
-//   fSelecteur->SetSTAT_EVE_PAR(ste);
-//   fSelecteur->SetR_DEC_PAR(dec);
-//   fSelecteur->SetVXCONFIG_PAR(conf);
-
-//   AddArrayACQParam(new KVACQParam("PILA_01_PG"));
-//   AddArrayACQParam(new KVACQParam("PILA_01_GG"));
-//   AddArrayACQParam(new KVACQParam("PILA_02_PG"));
-//   AddArrayACQParam(new KVACQParam("PILA_02_GG"));
-//   AddArrayACQParam(new KVACQParam("PILA_03_PG"));
-//   AddArrayACQParam(new KVACQParam("PILA_03_GG"));
-//   AddArrayACQParam(new KVACQParam("PILA_04_PG"));
-//   AddArrayACQParam(new KVACQParam("PILA_04_GG"));
-//   AddArrayACQParam(new KVACQParam("PILA_05_PG"));
-//   AddArrayACQParam(new KVACQParam("PILA_05_GG"));
-//   AddArrayACQParam(new KVACQParam("PILA_06_PG"));
-//   AddArrayACQParam(new KVACQParam("PILA_06_GG"));
-//   AddArrayACQParam(new KVACQParam("PILA_07_PG"));
-//   AddArrayACQParam(new KVACQParam("PILA_07_GG"));
-//   AddArrayACQParam(new KVACQParam("PILA_08_PG"));
-//   AddArrayACQParam(new KVACQParam("PILA_08_GG"));
-//   AddArrayACQParam(new KVACQParam("SI_PIN1_PG"));
-//   AddArrayACQParam(new KVACQParam("SI_PIN1_GG"));
-//   AddArrayACQParam(new KVACQParam("SI_PIN2_PG"));
-//   AddArrayACQParam(new KVACQParam("SI_PIN2_GG"));
-//}
-
 //_________________________________________________________________________________________
 
 void KVINDRA::MakeListOfDetectors()
@@ -833,71 +768,6 @@ void KVINDRA::SetPinLasersForCsI()
 
 //_______________________________________________________________________________________
 
-//void KVINDRA::LinkToCodeurs()
-//{
-
-//   // Link detectors with electronic modules
-//   // for the moment only QDC for Si and ChIo are implemented
-//   // This information is accessible via KVINDRADetector::GetNumeroCodeur()
-//   // To be active one has to put in the dataset directory
-//   // a file name Codeurs.dat containing the name of the file for the concerned type
-//   // of electronic module
-//   // for example see INDRA_e613 dataset
-//   // [dataset name].INDRADB.Codeurs:    ...
-
-
-//   KVFileReader flist;
-//   TString fp;
-//   if (!KVBase::SearchKVFile(gDataSet->GetDataSetEnv("INDRADB.Codeurs", ""), fp, gDataSet->GetName())) {
-//      Warning("LinkToCodeurs", "Fichier %s, inconnu au bataillon", gDataSet->GetDataSetEnv("INDRADB.Codeurs", ""));
-//      return;
-//   }
-
-//   if (!flist.OpenFileToRead(fp.Data())) {
-//      //Error("ReadGainList","Error opening file named %s",fp.Data());
-//      return;
-//   }
-//   Info("LinkToCodeurs()", "Reading correspondance Codeur-Detecteur ...");
-
-//   TEnv* env = 0;
-//   KVINDRADetector* idet = 0;
-//   while (flist.IsOK()) {
-//      flist.ReadLine(NULL);
-//      KVString file = flist.GetCurrentLine();
-//      if (file != "") {
-//         if (KVBase::SearchKVFile(file.Data(), fp, gDataSet->GetName())) {
-//            env = new TEnv();
-//            env->ReadFile(fp.Data(), kEnvAll);
-//            TEnvRec* rec = 0;
-//            TObjArray* toks = 0;
-//            TIter it(env->GetTable());
-//            while ((rec = (TEnvRec*)it.Next())) {
-//               if (!strcmp(rec->GetName(), "type")) {
-//                  Info("LinkToCodeurs", "Module type %s", rec->GetValue());
-//               }
-//               else {
-//                  toks = TString(rec->GetValue()).Tokenize(",");
-//                  for (Int_t ii = 0; ii < toks->GetEntries(); ii += 1) {
-//                     idet = (KVINDRADetector*)gIndra->GetDetector(((TObjString*)toks->At(ii))->GetString().Data());
-//                     if (idet)
-//                        idet->SetNumeroCodeur(TString(rec->GetName()).Atoi());
-//                  }
-//                  delete toks;
-//               }
-//            }
-//            delete env;
-//         }
-//      }
-//   }
-
-//   flist.CloseFile();
-
-
-//}
-
-
-//_____________________________________________________________________________
-
 void KVINDRA::GetDetectorEvent(KVDetectorEvent* detev, const TSeqCollection* fired_dets)
 {
    // Overrides KVASMultiDetArray::GetDetectorEvent.
@@ -909,61 +779,6 @@ void KVINDRA::GetDetectorEvent(KVDetectorEvent* detev, const TSeqCollection* fir
          && (GetTriggerInfo() && !GetTriggerInfo()->IsINDRAEvent())) return;
    KVASMultiDetArray::GetDetectorEvent(detev, fired_dets);
 }
-
-//_______________________________________________________________________________
-
-//void KVINDRA::SetGGtoPGConversionFactors()
-//{
-//   // Sets the parameters for linear conversion of silicon & ChIo coder values
-//   // between GG and PG, using the following formula:
-//   //
-//   //   PG  = alpha + beta*(GG - GG_0) + PG_0
-//   //
-//   // where GG_0 and PG_0 are respectively GG and PG pedestals
-//   //
-//   // We look for the file whose name is given by the .kvrootrc variable
-//   //    [dataset].INDRADB.GGtoPGFactors:
-//   // or by default
-//   //    INDRADB.GGtoPGFactors:
-//   // and expect to find in it a line for each detector of the form:
-//   //    Det_Name   alpha   beta
-//   // Comments in the file can be written on lines beginning with the character '#'
-
-//   ifstream datfile;
-//   if (!gDataSet->OpenDataSetFile(gDataSet->GetDataSetEnv("INDRADB.GGtoPGFactors", ""), datfile)) {
-
-//      Info("SetGGtoPGConversionFactors", "Cannot open file with parameters for conversion (%s).",
-//           gDataSet->GetDataSetEnv("INDRADB.GGtoPGFactors", ""));
-//      return;
-//   }
-//   else {
-//      Info("SetGGtoPGConversionFactors", "Reading parameters from file %s",
-//           gDataSet->GetDataSetEnv("INDRADB.GGtoPGFactors", ""));
-
-//      Char_t detname[30];
-//      Double_t a, b;
-//      TString aline;
-//      aline.ReadLine(datfile);
-//      while (datfile.good()) {
-
-//         if (aline[0] != '#') {   //skip comments
-
-//            sscanf(aline.Data(), "%s %lf %lf", detname, &a, &b);
-//            KVINDRADetector* det = (KVINDRADetector*)GetDetector(detname);
-//            if (!det) {
-//               //no detector found with cou, mod and type
-//               Error("SetGGtoPGConversionFactors", "Unknown detector : %s", detname);
-//            }
-//            else {
-//               det->SetGGtoPGConversionFactors(a, b);
-//               //Info("SetGGtoPGConversionFactors", "%s : PG = %f + %f * GG", detname, a, b);
-//            }
-//         }
-//         aline.ReadLine(datfile);
-//      }                            //while( datfile.good()
-//      datfile.close();
-//   }
-//}
 
 //_________________________________________________________________________________
 
@@ -1048,7 +863,7 @@ void KVINDRA::CreateROOTGeometry()
       }
       nrootgeo += (det->ROOTGeo());
    }
-
+ 
    Info("CreateROOTGeometry", "ROOT geometry initialised for %d/%d detectors", nrootgeo, GetDetectors()->GetEntries());
 
    // Set up trajectories
