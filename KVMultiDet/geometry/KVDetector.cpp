@@ -400,7 +400,8 @@ Bool_t KVDetector::AddCalibrator(KVCalibrator* cal, const KVNameValueList& opts)
    KVDetectorSignal* in  = GetDetectorSignal(cal->GetInputSignalType());
    // input signal must exist
    if (!in) {
-      Error("AddCalibrator", "No known detector signal: %s", cal->GetInputSignalType().Data());
+      Warning("AddCalibrator", "%s : input signal %s not found for calibrator %s. No output signal created.",
+              GetName(), cal->GetInputSignalType().Data(), cal->GetType());
       return kFALSE;
    }
    if (!fCalibrators)
