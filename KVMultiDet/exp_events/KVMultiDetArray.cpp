@@ -93,7 +93,6 @@ void KVMultiDetArray::init()
    //Creates detectors list fDetectors,
    //groups list fGroups, identification telescopes list
    //fIDTelescopes
-   //
    //The fGroups & fIDTelescopes lists contain objects owned by the multidetector array,
    //but which may be deleted by other objects (or as a result of the deletion of other
    //objects: i.e. if all the detectors in a group are deleted, the group itself is destroyed).
@@ -3531,7 +3530,7 @@ void KVMultiDetArray::CheckStatusOfDetectors(KVDBRun* kvrun, const TString& myna
          det->SetPresent();
       }
       else {
-         if (absdet->FindObject(det->GetName())) {
+         if (absdet->FindObject(det->GetName(), "Absent Detector")) {
             det->SetPresent(kFALSE);
             if (ndet_absent) absent_dets += ",";
             absent_dets += det->GetName();
@@ -3547,7 +3546,7 @@ void KVMultiDetArray::CheckStatusOfDetectors(KVDBRun* kvrun, const TString& myna
             det->SetDetecting();
          }
          else {
-            if (ooodet->FindObject(det->GetName())) {
+            if (ooodet->FindObject(det->GetName(), "OoO Detector")) {
                det->SetDetecting(kFALSE);
                if (ndet_ooo) ooo_dets += ",";
                ooo_dets += det->GetName();
