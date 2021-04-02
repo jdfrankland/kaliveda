@@ -40,6 +40,11 @@ class MFMEbyedatFrame;
 class MFMBufferReader;
 #ifdef WITH_MESYTEC
 class MFMMesytecMDPPFrame;
+namespace mesytec {
+   namespace mdpp {
+      struct event;
+   }
+}
 #endif
 #endif
 #ifdef WITH_PROTOBUF

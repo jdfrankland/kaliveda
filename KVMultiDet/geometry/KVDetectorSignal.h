@@ -178,6 +178,8 @@ public:
       SetName(typ);
    }
 
+   TString GetFullName() const;
+
    ClassDef(KVDetectorSignal, 1) //Data produced by a detector
 };
 
