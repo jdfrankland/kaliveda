@@ -567,6 +567,44 @@ void KVDetector::AddIDTelescope(TObject* idt)
    fIDTelescopes->Add(idt);
 }
 
+KVList* KVDetector::GetAlignedIDTelescopes()
+{
+   // Return list of all ID telescopes containing detectors placed in front of
+   // this one.
+
+   // temporary kludge during transition to trajectory-based reconstruction
+   // ROOT-geometry-based detectors will not have fIDTelAlign filled
+   if (ROOTGeo() && !fIDTelAlign->GetEntries()) {
+      const KVGeoDNTrajectory* Rtr = GetGroup()->GetTrajectoryForReconstruction(
+                                        (KVGeoDNTrajectory*)GetNode()->GetTrajectories()->First(),
+                                        GetNode()
+                                     );
+      if (Rtr) fIDTelAlign->AddAll(Rtr->GetIDTelescopes());
+   }
+   return fIDTelAlign;
+}
+
+//___________________________________________________________________________//
+
+TList* KVDetector::GetTelescopesForIdentification()
+{
+   //Returns list of identification telescopes to be used in order to try to identify
+   //particles stopping in this detector. This is the same as GetAlignedIDTelescopes
+   //but only including the telescopes of which this detector is a member.
+   if (fIDTele4Ident) return fIDTele4Ident;
+   if (!fIDTelescopes || !fIDTelAlign) return 0;
+   fIDTele4Ident = new TList;
+   TIter next(GetAlignedIDTelescopes());
+   TObject* idt;
+   while ((idt = next())) {
+      if (fIDTelescopes->FindObject(idt)) fIDTele4Ident->Add(idt);
+   }
+   return fIDTele4Ident;
+}
+
+
+//______________________________________________________________________________//
+
 Double_t KVDetector::GetCorrectedEnergy(KVNucleus* nuc, Double_t e, Bool_t transmission)
 {
    // Returns the total energy loss in the detector for a given nucleus
@@ -1320,6 +1358,40 @@ void KVDetector::ReadDefinitionFromFile(const Char_t* envrc)
          if (fEnvFile.GetValue(Form("%s.Active", layer.Data()), kFALSE)) SetActiveLayer(M);
       }
    }
+}
+
+//_________________________________________________________________________________________//
+
+TList* KVDetector::GetAlignedDetectors(UInt_t direction)
+{
+   // Returns list of detectors (including this one) which are in geometrical aligment
+   // with respect to the target position (assuming this detector is part of a multidetector
+   // array described by KVMultiDetArray).
+   //
+   // By default the list is in the order starting from this detector and going towards the target
+   // (direction=KVGroup::kBackwards).
+   // Call with argument direction=KVGroup::kForwards to have the list of detectors in the order
+   // "seen" by a particle flying out from the target and arriving in this detector.
+   //
+   // If this detector is not part of a KVMultiDetArray (i.e. we have no information on
+   // its geometrical relation to other detectors), we return 0x0.
+   //
+   // The list pointers are stored in member variable fAlignedDetectors[] for rapid retrieval,
+   // the lists will be deleted with this detector.
+   //
+   // See KVGroup::GetAlignedDetectors for more details.
+
+   if (!GetGroup() || direction > 1) return 0x0;
+   if (fAlignedDetectors[direction]) return fAlignedDetectors[direction];
+   return (fAlignedDetectors[direction] = GetGroup()->GetAlignedDetectors(this, direction));
+}
+
+//_________________________________________________________________________________________//
+
+void KVDetector::ResetAlignedDetectors(UInt_t direction)
+{
+   if (!GetGroup() || direction > 1) return;
+   if (fAlignedDetectors[direction]) fAlignedDetectors[direction] = 0;
 }
 
 Double_t KVDetector::GetRange(Int_t Z, Int_t A, Double_t Einc)

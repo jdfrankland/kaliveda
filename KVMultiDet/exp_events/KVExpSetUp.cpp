@@ -2,16 +2,11 @@
 //Author: bonnet,,,
 
 #include "KVExpSetUp.h"
-#include "KVDataSetManager.h"
 #include "TClass.h"
 #include "KVReconstructedNucleus.h"
 
 #include <KVGroup.h>
 #include <KVRangeTableGeoNavigator.h>
-
-#ifdef WITH_MFM
-#include "KVMFMDataFileReader.h"
-#endif
 
 ClassImp(KVExpSetUp)
 
