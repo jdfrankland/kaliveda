@@ -477,18 +477,10 @@ KVDetectorSignal* KVIDTelescope::GetSignalFromGridVar(const KVString& var, const
       // sig_type is not the name of a known signal: assume it is an expression using known signal names ?
       if (!det->AddDetectorSignalExpression(Form("%s-VAR%s", GetName(), axe.Data()), sig_type)) {
          // failed to get a valid expression...
-         if (!sig_type.Contains("+*/-")) { // "sig_type is not a mathematical expression..."
-            // raw data parameters may only be added when some data has been read.
-            // assume the requested signal is the name of a raw parameter and add it to the detector
-            det->AddDetectorSignal(ds = new KVDetectorSignal(sig_type, det));
-            Info("GetSignalFromGridVar", "Adding new raw detector signal: %s", ds->GetTitle());
-         }
-         else {
-            Error("GetSignalFromGridVar",
-                  "Problem initialising ID-grid %s coordinate for telescope %s. Request for unknown signal %s for detector %s. Check definition of VAR%s for grid (=%s)",
-                  axe.Data(), GetName(), sig_type.Data(), det->GetName(), axe.Data(), var.Data());
-            ds = nullptr;
-         }
+         Error("GetSignalFromGridVar",
+               "Problem initialising ID-grid %s coordinate for telescope %s. Request for unknown signal %s for detector %s. Check definition of VAR%s for grid (=%s)",
+               axe.Data(), GetName(), sig_type.Data(), det->GetName(), axe.Data(), var.Data());
+         ds = nullptr;
       }
       else
          ds = det->GetDetectorSignal(Form("%s-VAR%s", GetName(), axe.Data()));
