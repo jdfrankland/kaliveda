@@ -321,7 +321,7 @@ if( !GetEvent()->IsOK() ) return kFALSE;
 
 which was previously used at the beginning of the Analysis() method. The new mechanism is implemented by
 default in the new examples and templates for automatically-generated user analysis classes. For the moment, trigger conditions for INDRA data
-are handled; the implementation for other data will follow shortly.
+are handled; the implementation for INDRA-FAZIA data will follow shortly.
 
 __Changes 22/1/2021 in__ \ref GlobalVariables
 
