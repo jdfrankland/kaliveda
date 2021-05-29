@@ -179,7 +179,7 @@ See methods KVGemini::DecayEvent() and KVGemini::DecaySingleNucleus().
 
 __Changes 28/5/2021 in__ \ref NucEvents : __Templated event classes__
 
-In the C++ standard library, containers are generally used to store values and objects whose type is defined at compile time
+In the standard library, containers are generally used to store values and objects whose type is defined at compile time
 through template parameters: std::vector<int>, std::unordered_map<std::string, std::thread>, etc.
 
 In ROOT (and in KaliVeda), containers such as TList handle pointers to objects which may be of any type
@@ -209,7 +209,7 @@ event classes the iterators returned base class references `KVNucleus&`.
 This has now been resolved by realising that the event classes are in fact STL-style containers for particle/nucleus types:
 a KVReconstructedEvent contains KVReconstructedNucleus objects, a KVSimEvent contains KVSimNucleus objects. Regarding the original
 KVEvent base class for all events, it is now an abstract base class and KVEvent objects cannot be instantiated. An event of
-KVNucleus objects is now called KVNucleusEvent - __this could be a major code-breaker__ but was necessary to ensure backwards
+KVNucleus objects is now called KVNucleusEvent - this could be a major code-breaker but was necessary to ensure backwards
 compatibility (still able to read existing data).
 
 See \ref NucEvents for a full explanation of how to use the new event classes and iterators.

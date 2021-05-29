@@ -41,7 +41,7 @@ Given a C++ file using KaliVeda classes such as toto.cpp:
 
 You can compile and link this executable with the following CMakeLists.txt file:
 
-    cmake_minimum_required(VERSION 3.5)
+    cmake_minimum_required(VERSION 3.9)
     project(toto)
     find_package(KaliVeda REQUIRED)
     include(${KALIVEDA_USE_FILE})
