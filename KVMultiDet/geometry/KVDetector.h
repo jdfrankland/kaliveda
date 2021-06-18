@@ -80,7 +80,6 @@ is defined by the following characteristics:
       chio.SetActiveLayer(gas);                                      //make gas layer "active"
       KVMaterial *win = new KVMaterial("Myl",2.5*KVUnits::um);       //exit window
       chio.AddAbsorber(win);
-~~~~~~~~~~~
 
 A detector is created either with the constructor taking the material type as argument:
 

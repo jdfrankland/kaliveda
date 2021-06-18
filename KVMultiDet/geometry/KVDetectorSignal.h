@@ -180,6 +180,17 @@ public:
 
    TString GetFullName() const;
 
+   const Char_t* GetType() const
+   {
+      // \returns the type of the signal - this is the same as the signal name
+      return GetName();
+   }
+   void SetType(const Char_t* typ)
+   {
+      // \param[in] typ the type of the signal - will be used as the name of the signal
+      SetName(typ);
+   }
+
    ClassDef(KVDetectorSignal, 1) //Data produced by a detector
 };
 
