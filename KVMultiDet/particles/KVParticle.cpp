@@ -197,12 +197,7 @@ void KVParticle::SetKE(Double_t ecin)
       SetMomentum(0., 0., 0.);
 }
 
-//______________________________________________________________________________________
-#if ROOT_VERSION_CODE >= ROOT_VERSION(3,4,0)
 void KVParticle::Copy(TObject& obj) const
-#else
-void KVParticle::Copy(TObject& obj)
-#endif
 {
    // Copy this to obj
    // Particle kinematics are copied using operator=(const KVParticle&)
