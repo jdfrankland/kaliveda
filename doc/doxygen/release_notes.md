@@ -153,7 +153,7 @@ for(auto& n : ReconEventGroupIterator(GetEvent(), "alpha"))
     auto ec = list_of_variables.AddEventClassifier("QP", "Ex/A");
 ~~~~
 
-__Changes 21/6/2021 in__ \ref NucEvents : __Major improvements to handling of kinematical frames__
+__Changes 21/6/2021 in__ \ref NucEvents : Major improvements to handling of kinematical frames
 
 Including:
 
@@ -176,6 +176,14 @@ from \f$E*\f$ in order to calculate the thermal excitation energy \f$U\f$ availa
 the \f$E_{rot}\f$ added by KVGemini is calculated according to the GEMINI++ prescription.
 
 See methods KVGemini::DecayEvent() and KVGemini::DecaySingleNucleus().
+
+__Changes 28/5/2021 in Build system__
+
+**MAJOR** The minimum required version for cmake is now 3.5 (version by default in Ubuntu 16.04)
+
+**MAJOR** C++11 support is enabled by default for all builds if it was not already enabled by ROOT. Note that although this now means that even when using ROOT5
+auto variables, range-based for loops and lambda functions can be used, as C++11 support in the ROOT5 dictionary generator and interpreter is
+very limited (or non-existent) many new features of KaliVeda reliant on C++11 are still only enabled when building with ROOT6.
 
 __Changes 28/5/2021 in__ \ref NucEvents : __Templated event classes__
 
