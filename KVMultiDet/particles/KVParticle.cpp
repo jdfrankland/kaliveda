@@ -147,7 +147,7 @@ void KVParticle::print_frames(TString fmt) const
       TIter next(&fBoosted);
       KVKinematicalFrame* frame;
       while ((frame = (KVKinematicalFrame*)next())) {
-         cout << fmt << " " << frame->GetName() << ": ";
+         cout << fmt << " [" << frame->GetName() << "] : ";
          KVParticle* part = frame->GetParticle();
          cout << " Theta=" << part->GetTheta() << " Phi=" << part->GetPhi()
               << " KE=" << part->GetKE() << " Vpar=" << part->GetVpar() << endl;
@@ -160,11 +160,27 @@ void KVParticle::Print(Option_t*) const
 {
    // print out characteristics of particle
 
-   cout << "KVParticle mass=" << M() <<
+   cout << "Mass=" << M() << endl;
+   cout << "[" << GetFrameName() << "] :" <<
         " Theta=" << GetTheta() << " Phi=" << GetPhi()
         << " KE=" << GetKE() << " Vpar=" << GetVpar() << endl;
    print_frames();
-   GetParameters()->Print();
+   GetParameters()->ls();
+   if (GetNumberOfDefinedGroups()) {
+      auto ngroups = GetNumberOfDefinedGroups();
+      cout << "Group";
+      if (ngroups > 1) cout << "s";
+      cout << ": ";
+      TIter it(GetGroups());
+      TObject* gr;
+      int index = 1;
+      while ((gr = it())) {
+         cout << gr->GetName();
+         if (ngroups > 1 && index < ngroups) cout << ", ";
+         ++index;
+      }
+      cout << endl;
+   }
 }
 
 //_________________________________________________________________________________________
@@ -199,18 +215,36 @@ void KVParticle::SetKE(Double_t ecin)
 
 void KVParticle::Copy(TObject& obj) const
 {
-   // Copy this to obj
-   // Particle kinematics are copied using operator=(const KVParticle&)
-   // List of particle's groups is copied
-   // The particle's name is copied
-   // The list of parameters associated with the particle is copied
+   // Make a copy of this particle in obj
+   //
+   // When new kinematical frames are created this is just a shallow copy
+   // (no copy of parameters or groups - these are both handled by the original particle,
+   // i.e. the parent of all the kinematical frames)
+   //
+   // When a full copy is made, we recursively copy also all defined kinematical frames.
 
-   ((KVParticle&) obj) = *this;
+   ((KVParticle&) obj) = *this; // copy kinematics, i.e. underlying TLorentzVector
    if (!fFrameCopyOnly) {
       // do not make a full copy if particle is just a new kinematical frame
       ((KVParticle&) obj).SetGroups(GetGroups());
       ((KVParticle&) obj).SetName(GetName());
-      fParameters.Copy(((KVParticle&) obj).fParameters);
+      GetParameters()->Copy(((KVParticle&) obj).fParameters);
+      // copy kinematical frames
+      if (GetCurrentDefaultKinematics() != this) {
+         // When copying a particle through a reference/pointer to one of its derived
+         // kinematical frames, we need to copy all of the associated frames (starting from the
+         // topmost (default) kinematical frame in the graph
+         GetTopmostParentFrame()->fBoosted.Copy(((KVParticle&)obj).fBoosted);
+         ((KVParticle&)obj).SetFrameName(GetCurrentDefaultKinematics()->GetFrameName());
+         // Then, so that the copy of the reference pointer behaves in the same way as the
+         // original, we change the default reference frame of the copy to that which is
+         // currently in use
+         ((KVParticle&)obj).ChangeDefaultFrame(GetFrameName());
+      }
+      else {
+         fBoosted.Copy(((KVParticle&)obj).fBoosted);
+         ((KVParticle&)obj).SetFrameName(GetFrameName());
+      }
    }
 }
 
@@ -776,6 +810,8 @@ void KVParticle::Streamer(TBuffer& R__b)
    }
 }
 
+ClassImp(KVParticle::FrameList)
+
 void KVParticle::FrameList::Add(TObject* f)
 {
    // When a kinematical frame is added, this particle becomes the parent frame
@@ -818,4 +854,26 @@ void KVParticle::FrameList::AddAll(const TCollection* l)
       f->GetParticle()->SetParentFrame(parent);
    }
    KVList::AddAll(l);
+}
+
+void KVParticle::FrameList::Copy(TObject& _new_list) const
+{
+   // Copy all kinematical frames in the list to a new one
+   //
+   // Note that this deliberately overrides the KVSeqCollection::Copy() method.
+   //
+   // Note also that we do not copy the KVParticle pointer, parent.
+
+   auto new_list = dynamic_cast<KVParticle::FrameList*>(&_new_list);
+   TIter next(this);
+   KVKinematicalFrame* kf;
+   while ((kf = (KVKinematicalFrame*)next())) {
+      KVKinematicalFrame* new_frame;
+      new_list->Add(new_frame = new KVKinematicalFrame(*kf));   // use KVKinematicalFrame copy constructor
+      if (kf->GetParticle()->GetListOfFrames()->GetEntries()) {
+         // recursively copy all subframes
+         dynamic_cast<KVParticle::FrameList*>(kf->GetParticle()->GetListOfFrames())
+         ->Copy(*dynamic_cast<KVParticle::FrameList*>(new_frame->GetParticle()->GetListOfFrames()));
+      }
+   }
 }

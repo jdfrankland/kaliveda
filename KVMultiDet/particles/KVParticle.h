@@ -407,6 +407,7 @@ private:
    TString fName;                       //!non-persistent name field - Is useful
    TString fFrameName;                  //!non-persistent frame name field, sets when calling SetFrame method
 
+public:
    class FrameList : public KVList {
       KVParticle* parent;
    public:
@@ -415,8 +416,10 @@ private:
       TObject* Remove(TObject*);
       void Clear(Option_t* = "");
       void AddAll(const TCollection*);
+      void Copy(TObject& _new_list) const;
+      ClassDef(FrameList, 0)
    };
-
+private:
    mutable FrameList fBoosted{this};          //!list of momenta of the particle in different Lorentz-boosted frames
    mutable KVUniqueNameList fGroups;            //!list of TObjString for manage different group name
    static Double_t kSpeedOfLight;       //speed of light in cm/ns
@@ -815,7 +818,7 @@ public:
 
    KVNameValueList* GetParameters() const
    {
-      return (KVNameValueList*)&fParameters;
+      return (KVNameValueList*)&GetOriginal()->fParameters;
    }
    template<typename ValType> void SetParameter(const Char_t* name, ValType value) const
    {
