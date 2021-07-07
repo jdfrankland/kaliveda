@@ -7,12 +7,10 @@
 #include "KVBase.h"
 #include "KVGroup.h"
 #include "KVReconstructedEvent.h"
-#ifdef WITH_CPP11
 #include <unordered_map>
-#else
-#include <map>
-#endif
 #include <string>
+
+class KVSimNucleus;
 
 /**
   \class KVGroupReconstructor
@@ -41,16 +39,16 @@ protected:
    mutable int nfireddets;//! number of fired detectors in group for current event
    KVIdentificationResult partID;//! identification to be applied to current particle
    KVIDTelescope* identifying_telescope;//! telescope which identified current particle
-#ifdef WITH_CPP11
    std::unordered_map<std::string, KVIdentificationResult*> id_by_type; //! identification results by type for current particle
-#else
-   std::map<std::string, KVIdentificationResult*> id_by_type; //! identification results by type for current particle
-#endif
+
    virtual KVReconstructedNucleus* ReconstructTrajectory(const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
-   void ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
+   virtual void ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
    virtual void PostReconstructionProcessing();
    virtual void IdentifyParticle(KVReconstructedNucleus& PART);
-   virtual void CalibrateParticle(KVReconstructedNucleus* PART);
+   virtual void CalibrateParticle(KVReconstructedNucleus* PART)
+   {
+      AbstractMethod("CalibrateParticle");
+   }
    virtual void PerformSecondaryAnalysis() {}
 
    Double_t GetTargetEnergyLossCorrection(KVReconstructedNucleus* ion);
@@ -60,6 +58,11 @@ protected:
    }
    void TreatStatusStopFirstStage(KVReconstructedNucleus&);
 
+   virtual KVReconNucTrajectory* get_recon_traj_for_particle(const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
+   virtual void identify_particle(KVIDTelescope* idt, KVIdentificationResult* IDR, KVReconstructedNucleus&)
+   {
+      idt->Identify(IDR);
+   }
 public:
    KVGroupReconstructor();
    virtual ~KVGroupReconstructor();
@@ -115,6 +118,10 @@ public:
    {
       // Enable/Disable calibration step in KVGroupReconstructor::Process
       fDoCalibration = on;
+   }
+   void Clear(Option_t* = "")
+   {
+      // Reset before treating a new event
    }
 
    ClassDef(KVGroupReconstructor, 0) //Base class for handling event reconstruction in detector groups

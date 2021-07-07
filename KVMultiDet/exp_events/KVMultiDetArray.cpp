@@ -523,7 +523,7 @@ Int_t KVMultiDetArray::FilteredEventCoherencyAnalysis(Int_t round, KVReconstruct
                   if (round > 1) idtelstop->SetIDCode(recon_nuc, idtelstop->GetCoherencyIDCode());
                   recon_nuc->SetIsIdentified();
                   recon_nuc->SetIsCalibrated();
-                  idtelstop->SetIdentificationStatus(recon_nuc);
+                  // - commented because now requiring KVIdentificationResult argument: idtelstop->SetIdentificationStatus(recon_nuc);
                   break;
                }
                else {
@@ -1091,7 +1091,7 @@ void KVMultiDetArray::DetectEvent(KVEvent* event, KVReconstructedEvent* rec_even
                      part->AddGroup("INCOMPLETE");
                   if (!part->BelongsToGroup("INCOMPLETE")) {
                      idt->SetIDCode(recon_nuc, idt->GetIDCode());
-                     idt->SetIdentificationStatus(recon_nuc);
+                     //idt->SetIdentificationStatus(recon_nuc);
                   }
                   else {
                      idt->SetIDCode(recon_nuc, idt->GetZminCode());
@@ -2911,12 +2911,18 @@ KVGroupReconstructor* KVMultiDetArray::GetReconstructorForGroup(const KVGroup* g
    //
    // Plugins for specific arrays can be defined as plugins using the name of the array:
    // +Plugin.KVGroupReconstructor: my_array my_group_reconstructor my_lib "my_group_reconstructor()"
+   //
+   // If we are in 'SimMode', the default reconstructor is a KVFilterGroupReconstructor
 
    KVGroupReconstructor* gr(nullptr);
    if (GetGroup(g->GetName())) {
       // look for plugin
       gr = KVGroupReconstructor::Factory(GetName());
-      if (!gr) gr = new KVGroupReconstructor;
+      if (!gr) {
+         if (IsSimMode()) return KVGroupReconstructor::Factory("Filter");
+         else
+            gr = new KVGroupReconstructor;
+      }
    }
    return gr;
 }

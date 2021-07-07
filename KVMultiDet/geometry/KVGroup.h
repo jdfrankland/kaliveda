@@ -96,7 +96,7 @@ public:
    }
    const KVGeoDNTrajectory* FindReconTraj(const KVString& path)
    {
-      // Return reconstruction trajectory with given path i.e. "DET_1/DET_2/DET_3"
+      // Return reconstruction trajectory with given path i.e. "DET_1/DET_2/DET_3/"
       return (KVGeoDNTrajectory*)fReconTraj.FindObjectByTitle(path);
    }
 

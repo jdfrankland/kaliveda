@@ -149,12 +149,17 @@ KVReconstructedNucleus* KVGroupReconstructor::ReconstructTrajectory(const KVGeoD
    return nullptr;
 }
 
+KVReconNucTrajectory* KVGroupReconstructor::get_recon_traj_for_particle(const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node)
+{
+   return (KVReconNucTrajectory*)GetGroup()->GetTrajectoryForReconstruction(traj, node);
+}
+
 void KVGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node)
 {
    // Reconstruction of a detected nucleus from the successive energy losses
    // measured in a series of detectors/telescopes along a given trajectory
 
-   const KVReconNucTrajectory* Rtraj = (const KVReconNucTrajectory*)GetGroup()->GetTrajectoryForReconstruction(traj, node);
+   auto Rtraj = get_recon_traj_for_particle(traj, node);
    part->SetReconstructionTrajectory(Rtraj);
    part->SetParameter("ARRAY", GetGroup()->GetArray()->GetName());
 
@@ -164,7 +169,6 @@ void KVGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* part, con
 
       KVDetector* d = n->GetDetector();
       d->AddHit(part);  // add particle to list of particles hitting detector
-
    }
 
 }
@@ -275,7 +279,7 @@ void KVGroupReconstructor::IdentifyParticle(KVReconstructedNucleus& PART)
          if (idt->IsReadyForID()) { // is telescope able to identify for this run ?
             id_by_type[IDR->GetIDType()] = IDR;// map contains only attempted identifications
             IDR->IDattempted = kTRUE;
-            idt->Identify(IDR);
+            identify_particle(idt, IDR, PART);
 
             if (IDR->IDOK) n_success_id++;
          }
@@ -332,39 +336,6 @@ void KVGroupReconstructor::IdentifyParticle(KVReconstructedNucleus& PART)
 
 //_________________________________________________________________________________
 
-void KVGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
-{
-   //Calculate and set the energy of a (previously identified) reconstructed particle,
-   //including an estimate of the energy loss in the target.
-   //
-   //Starting from the detector in which the particle stopped, we add up the
-   //'corrected' energy losses in all of the detectors through which it passed.
-   //Whenever possible, for detectors which are not calibrated or not working,
-   //we calculate the energy loss. Measured & calculated energy losses are also
-   //compared for each detector, and may lead to new particles being seeded for
-   //subsequent identification. This is done by KVIDTelescope::CalculateParticleEnergy().
-   //
-   //For particles whose energy before hitting the first detector in their path has been
-   //calculated after this step we then add the calculated energy loss in the target,
-   //using gMultiDetArray->GetTargetEnergyLossCorrection().
-
-   KVIDTelescope* idt = PART->GetIdentifyingTelescope();
-   if (!idt) return;
-   idt->CalculateParticleEnergy(PART);
-   if (idt->GetCalibStatus() != KVIDTelescope::kCalibStatus_NoCalibrations) {
-      PART->SetIsCalibrated();
-      //add correction for target energy loss - moving charged particles only!
-      Double_t E_targ = 0.;
-      if (PART->GetZ() && PART->GetEnergy() > 0) {
-         E_targ = GetTargetEnergyLossCorrection(PART);
-         PART->SetTargetEnergyLoss(E_targ);
-      }
-      Double_t E_tot = PART->GetEnergy() + E_targ;
-      PART->SetEnergy(E_tot);
-      // set particle momentum from telescope dimensions (random)
-      PART->GetAnglesFromReconstructionTrajectory();
-   }
-}
 
 //_________________________________________________________________________________
 
@@ -389,8 +360,7 @@ void KVGroupReconstructor::Identify()
    // Particles stopping in first member of a telescope (KVReconstructedNucleus::GetStatus=3) will
    // have their Z estimated from the energy loss in the detector (if calibrated).
 
-   for (KVReconstructedEvent::Iterator it = GetEventFragment()->begin(); it != GetEventFragment()->end(); ++it) {
-      KVReconstructedNucleus& d = it.get_reference();
+   for (auto& d : ReconEventIterator(GetEventFragment())) {
       if (!d.IsIdentified()) {
          if (d.GetStatus() == KVReconstructedNucleus::kStatusOK) {
             // identifiable particles
@@ -411,14 +381,10 @@ void KVGroupReconstructor::Calibrate()
 {
    // Calculate and set energies of all identified but uncalibrated particles in event.
 
-   KVReconstructedNucleus* d;
-
-   while ((d = GetEventFragment()->GetNextParticle())) {
-
-      if (d->IsIdentified() && !d->IsCalibrated()) {
-         CalibrateParticle(d);
+   for (auto& d : ReconEventIterator(GetEventFragment())) {
+      if (d.IsIdentified() && !d.IsCalibrated()) {
+         CalibrateParticle(&d);
       }
-
    }
 
 }

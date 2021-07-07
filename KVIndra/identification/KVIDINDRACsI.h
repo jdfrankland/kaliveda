@@ -55,7 +55,7 @@ public:
       // For INDRA CsI Rapide-Lente detectors, identification is possible up to Z=4
       return (Z < 5);
    }
-   void SetIdentificationStatus(KVReconstructedNucleus* n);
+   void SetIdentificationStatus(KVIdentificationResult* IDR, const KVNucleus*);
 
    ClassDef(KVIDINDRACsI, 3)        //INDRA identification using CsI R-L matrices
 };

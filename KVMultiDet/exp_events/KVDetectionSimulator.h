@@ -14,19 +14,32 @@
 /**
   \class KVDetectionSimulator
   \ingroup Simulation
-  \brief Simulate detection of particles or events in a detector array
+  \brief Simulate detection of events in a detector array
  */
 class KVDetectionSimulator : public KVBase {
 
-private:
-   KVMultiDetArray* fArray;//           array used for detection
-   KVDetectorEvent fHitGroups;//        used to reset hit detectors in between events
-   Bool_t fCalcTargELoss;//             whether to include energy loss in target, if defined
+   KVMultiDetArray* fArray = nullptr;        //  array used for detection
+   KVDetectorEvent  fHitGroups;              //  used to reset hit detectors in between events
+   Bool_t           fCalcTargELoss = kTRUE;  //  whether to include energy loss in target, if defined
+   Bool_t           fGeoFilter = kFALSE;     //  when true, only consider geometry, not particle energies
 
+   KVRangeTableGeoNavigator* get_array_navigator() const
+   {
+      return static_cast<KVRangeTableGeoNavigator*>(fArray->GetNavigator());
+   }
+   KVNameValueList PropagateParticle(KVNucleus*);
 public:
-   KVDetectionSimulator() : KVBase(), fArray(nullptr), fCalcTargELoss(kTRUE) {}
+   KVDetectionSimulator() {}
    KVDetectionSimulator(KVMultiDetArray* a, Double_t cut_off = 1.e-3);
    virtual ~KVDetectionSimulator() {}
+
+   void SetGeometricFilterMode()
+   {
+      // In geometric filter mode, energy loss in target is not calculated and particles
+      // do not need to have sufficient energy to reach the detectors
+      SetIncludeTargetEnergyLoss(kFALSE);
+      fGeoFilter = kTRUE;
+   }
 
    void SetArray(KVMultiDetArray* a)
    {
@@ -50,16 +63,14 @@ public:
    }
    Double_t GetMinKECutOff() const
    {
-      return static_cast<KVRangeTableGeoNavigator*>(GetArray()->GetNavigator())->GetCutOffKEForPropagation();
+      return get_array_navigator()->GetCutOffKEForPropagation();
    }
    void SetMinKECutOff(Double_t cutoff)
    {
-      static_cast<KVRangeTableGeoNavigator*>(GetArray()->GetNavigator())->SetCutOffKEForPropagation(cutoff);
+      get_array_navigator()->SetCutOffKEForPropagation(cutoff);
    }
 
    void DetectEvent(KVEvent* event, const Char_t* detection_frame = "");
-   KVNameValueList DetectParticle(KVNucleus*);
-   KVNameValueList DetectParticleIn(const Char_t* detname, KVNucleus* kvp);
 
    void ClearHitGroups()
    {

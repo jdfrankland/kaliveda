@@ -3,27 +3,23 @@
 
 #include "KVSimEvent.h"
 
-#include <KVSimNucleus.h>
-using namespace std;
-
 ClassImp(KVSimEvent)
 
 
 void KVSimEvent::Print(Option_t* t) const
 {
    //Print a list of all particles in the event with some characteristics.
-   //Optional argument t can be used to select particles (="ok", "groupname", ...)
 
-   cout << "\nKVSimEvent with " << GetMult(t) << " particles :" << endl;
-   cout << "------------------------------------" << endl;
-   fParameters.Print();
-   KVSimNucleus* frag = 0;
-   ResetGetNextParticle();
-   while ((frag = GetNextParticle(t))) {
-      frag->Print();
-      cout << "   Position: (" << frag->GetPosition().x() << "," << frag->GetPosition().y() << "," << frag->GetPosition().z() << ")" << endl;
+   std::cout << "SimEvent #" << GetNumber() << "  MULT=" << GetMult() << std::endl;
+   fParameters.ls();
+   std::cout << std::endl;
+   int id = 1;
+   for (auto& p : *this) {
+      std::cout << id << " : ";
+      p.Print();
+      std::cout << std::endl << std::endl;
+      ++id;
    }
-
 }
 
 Double_t KVSimEvent::GetTotalCoulombEnergy() const

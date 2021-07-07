@@ -522,7 +522,8 @@ void KVNucleus::SetZandN(Int_t z, Int_t n)
 void KVNucleus::Print(Option_t* t) const
 {
    // Display nucleus parameters
-   cout << "KVNucleus Z=" << GetZ() << " A=" << GetA()  << " E*=" << GetExcitEnergy() << endl;
+   cout << "Z=" << GetZ() << " A=" << GetA() << " ";
+   if (GetExcitEnergy() > 1.e-10) cout << "E*=" << GetExcitEnergy() << " ";
    KVParticle::Print(t);
 }
 

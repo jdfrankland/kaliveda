@@ -91,41 +91,30 @@ Bool_t KVIDINDRACsI::Identify(KVIdentificationResult* IDR, Double_t x, Double_t 
    return kTRUE;
 }
 
-void KVIDINDRACsI::SetIdentificationStatus(KVReconstructedNucleus* n)
+void KVIDINDRACsI::SetIdentificationStatus(KVIdentificationResult* IDR, const KVNucleus*)
 {
    // For filtering simulations
-   // If n->GetEnergy() is above threshold for mass identification, we set
-   // n->IsAMeasured(kTRUE) (and n->IsZMeasured(kTRUE)).
-   // Otherwise, we just set n->IsZMeasured(kTRUE) and use the A given by
-   // the mass formula for the particle
+   //
+   // If energy loss in CsI is above threshold for mass identification, we set
+   // IDR->Aident=true (and IDR->Zident=true).
+   // Otherwise, we just set IDR->Zident=true and A will be given by mass formula for the particle
    //
    // individual thresholds defined for 1H, 2H, 3H, 3He, 4He
    // for A>5 identification if CsI energy > 40 MeV
-   //
-   // If A is not measured, we make sure the KE of the particle corresponds to the simulated one
 
-   n->SetZMeasured();
+   IDR->Zident = true;
 
-   if (n->GetA() > 5) {
+   if (IDR->A > 5) {
       if (GetDetector(1)->GetEnergy() > 40)
-         n->SetAMeasured();
-      else {
-         double e = n->GetE();
-         n->SetZ(n->GetZ());
-         n->SetE(e);
-      }
+         IDR->Aident = true;
       return;
    }
-   if (fThresMin[n->GetZ() - 1][n->GetA() - 1] > 0) {
-      Bool_t okmass = gRandom->Uniform() < smootherstep(fThresMin[n->GetZ() - 1][n->GetA() - 1], fThresMax[n->GetZ() - 1][n->GetA() - 1], GetDetector(1)->GetEnergy());
+   if (fThresMin[IDR->Z - 1][IDR->A - 1] > 0) {
+      Bool_t okmass = gRandom->Uniform() < smootherstep(fThresMin[IDR->Z - 1][IDR->A - 1],
+                      fThresMax[IDR->Z - 1][IDR->A - 1], GetDetector(1)->GetEnergy());
       if (okmass) {
-         n->SetAMeasured();
+         IDR->Aident = true;
       }
-   }
-   else {
-      double e = n->GetE();
-      n->SetZ(n->GetZ());
-      n->SetE(e);
    }
 }
 
