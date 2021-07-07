@@ -193,6 +193,7 @@ INDRADB.Runlist.Log:      Cahier
 +Plugin.KVGroupReconstructor:   INDRA.forward KVINDRAForwardGroupReconstructor KVIndraexp_events "KVINDRAForwardGroupReconstructor()"
 +Plugin.KVGroupReconstructor:   INDRA.backward KVINDRABackwardGroupReconstructor KVIndraexp_events "KVINDRABackwardGroupReconstructor()"
 +Plugin.KVGroupReconstructor:   INDRA.etalon KVINDRAEtalonGroupReconstructor KVIndraexp_events "KVINDRAEtalonGroupReconstructor()"
++Plugin.KVGroupReconstructor:   INDRA.Filter KVINDRAFilterGroupReconstructor KVIndraexp_events "KVINDRAFilterGroupReconstructor()"
 
 # Conditions for seeding reconstructed particles in event reconstruction
 # Dataset-dependent values can be set with [Dataset].INDRA.ReconstructedNuclei.ParticleSeedCond

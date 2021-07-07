@@ -903,12 +903,18 @@ void KVINDRA::SetMinimumOKMultiplicity(KVEvent* e) const
 KVGroupReconstructor* KVINDRA::GetReconstructorForGroup(const KVGroup* g) const
 {
    // Special INDRA group reconstructors:
-   //   KVINDRAForwardGroupReconstructor       rings 1-9
-   //   KVINDRABackwardGroupReconstructor      rings 10-17
-   //   KVINDRAEtalonGroupReconstructor for groups with etalon telescopes
+   //
+   // * for data:
+   //    - KVINDRAForwardGroupReconstructor       rings 1-9
+   //    - KVINDRABackwardGroupReconstructor      rings 10-17
+   //    - KVINDRAEtalonGroupReconstructor for groups with etalon telescopes
+   //
+   // * for filtered simulations:
+   //    - KVINDRAFilterGroupReconstructor
 
    KVGroupReconstructor* gr(nullptr);
    if (GetGroup(g->GetName())) { // make sure group belongs to us
+      if (IsSimMode()) return KVGroupReconstructor::Factory("INDRA.Filter");
       // etalons ?
       if (g->GetDetectorByType("SILI") || g->GetDetectorByType("SI75"))
          gr = KVGroupReconstructor::Factory("INDRA.etalon");

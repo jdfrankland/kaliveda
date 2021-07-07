@@ -12,6 +12,8 @@
 #pragma link C++ class KVDetectionSimulator+;
 #pragma link C++ class KVEventReconstructor+;
 #pragma link C++ class KVGroupReconstructor+;
+#pragma link C++ class KVFilterGroupReconstructor+;
+#pragma link C++ class KVFilterEventReconstructor+;
 #pragma link C++ class KVRawDataReconstructor+;
 #pragma link C++ class KVReconDataAnalyser+;
 #pragma link C++ class KVReconRawDataAnalyser+;

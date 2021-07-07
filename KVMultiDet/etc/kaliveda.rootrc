@@ -408,10 +408,11 @@ KVBatchSystemGUI.RefreshInterval:    300
  
 # Plugins for event reconstruction
 Plugin.KVGroupReconstructor:   KVGroupReconstructor KVGroupReconstructor KVMultiDetexp_events "KVGroupReconstructor()"
++Plugin.KVGroupReconstructor:   Filter KVFilterGroupReconstructor KVMultiDetexp_events "KVFilterGroupReconstructor()"
 Plugin.KVGeoDNTrajectory: KVReconNucTrajectory KVReconNucTrajectory KVMultiDetexp_events "KVReconNucTrajectory(const KVGeoDNTrajectory*, const KVGeoDetectorNode*)"
 
 # Control whether KVEventReconstructor performs identification and/or calibration
-# Default is yes for both
+# Default is no for both
 # Dataset-dependent variables can be defined.
 EventReconstruction.DoIdentification: yes
 EventReconstruction.DoCalibration: yes
