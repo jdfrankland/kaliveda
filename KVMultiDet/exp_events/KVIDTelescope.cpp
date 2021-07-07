@@ -1018,179 +1018,179 @@ void KVIDTelescope::RemoveIdentificationParameters()
 
 //____________________________________________________________________________________
 
-void KVIDTelescope::CalculateParticleEnergy(KVReconstructedNucleus* nuc)
-{
-   // The energy of each particle is calculated as follows:
-   //
-   //      E = dE_1 + dE_2 + ... + dE_N
-   //
-   // dE_1, dE_2, ... = energy losses measured in each detector through which
-   //                          the particle has passed (or stopped, in the case of dE_N).
-   //                         These energy losses are corrected for (Z,A)-dependent effects
-   //                          such as pulse-heigth defect in silicon detectors, losses in
-   //                          windows of gas detectors, etc.
-   //
-   // Whenever possible, the energy loss for fired detectors which are uncalibrated
-   // or not functioning is calculated. In this case the status returned by GetCalibStatus()
-   // will be KVIDTelescope::kCalibStatus_Calculated.
-   // If none of the detectors is calibrated, the particle's energy cannot be calculated &
-   // the status will be KVIDTelescope::kCalibStatus_NoCalibrations.
-   // Otherwise, the status code will be KVIDTelescope::kCalibStatus_OK.
+//void KVIDTelescope::CalculateParticleEnergy(KVReconstructedNucleus* nuc)
+//{
+//   // The energy of each particle is calculated as follows:
+//   //
+//   //      E = dE_1 + dE_2 + ... + dE_N
+//   //
+//   // dE_1, dE_2, ... = energy losses measured in each detector through which
+//   //                          the particle has passed (or stopped, in the case of dE_N).
+//   //                         These energy losses are corrected for (Z,A)-dependent effects
+//   //                          such as pulse-heigth defect in silicon detectors, losses in
+//   //                          windows of gas detectors, etc.
+//   //
+//   // Whenever possible, the energy loss for fired detectors which are uncalibrated
+//   // or not functioning is calculated. In this case the status returned by GetCalibStatus()
+//   // will be KVIDTelescope::kCalibStatus_Calculated.
+//   // If none of the detectors is calibrated, the particle's energy cannot be calculated &
+//   // the status will be KVIDTelescope::kCalibStatus_NoCalibrations.
+//   // Otherwise, the status code will be KVIDTelescope::kCalibStatus_OK.
 
-   //status code
-   fCalibStatus = kCalibStatus_NoCalibrations;
+//   //status code
+//   fCalibStatus = kCalibStatus_NoCalibrations;
 
-   UInt_t z = nuc->GetZ();
-   //uncharged particles
-   if (z == 0) return;
+//   UInt_t z = nuc->GetZ();
+//   //uncharged particles
+//   if (z == 0) return;
 
-   KVDetector* d1 = GetDetector(1);
-   KVDetector* d2 = (GetSize() > 1 ? GetDetector(2) : 0);
-   Bool_t d1_cal = d1->IsCalibrated();
-   Bool_t d2_cal = (d2 ? d2->IsCalibrated() : kFALSE);
+//   KVDetector* d1 = GetDetector(1);
+//   KVDetector* d2 = (GetSize() > 1 ? GetDetector(2) : 0);
+//   Bool_t d1_cal = d1->IsCalibrated();
+//   Bool_t d2_cal = (d2 ? d2->IsCalibrated() : kFALSE);
 
-   //no calibrations
-   if (!d1_cal && !d2)
-      return;
-   if ((d1 && d2) && !d1_cal && !d2_cal)
-      return;
+//   //no calibrations
+//   if (!d1_cal && !d2)
+//      return;
+//   if ((d1 && d2) && !d1_cal && !d2_cal)
+//      return;
 
-   //status code
-   fCalibStatus = kCalibStatus_OK;
+//   //status code
+//   fCalibStatus = kCalibStatus_OK;
 
-   UInt_t a = nuc->GetA();
+//   UInt_t a = nuc->GetA();
 
-   // particles stopped in first member of telescope
-   if (nuc->GetStatus() == 3) {
-      if (d1_cal) {
-         nuc->SetEnergy(d1->GetCorrectedEnergy(nuc, -1, kFALSE));  //N.B.: transmission=kFALSE because particle stop in d1
-      }
-      return;
-   }
+//   // particles stopped in first member of telescope
+//   if (nuc->GetStatus() == 3) {
+//      if (d1_cal) {
+//         nuc->SetEnergy(d1->GetCorrectedEnergy(nuc, -1, kFALSE));  //N.B.: transmission=kFALSE because particle stop in d1
+//      }
+//      return;
+//   }
 
-   Double_t e1, e2, einc;
-   e1 = e2 = einc = 0.0;
+//   Double_t e1, e2, einc;
+//   e1 = e2 = einc = 0.0;
 
-   if (!d1_cal) {//1st detector not calibrated - calculate from residual energy in 2nd detector
+//   if (!d1_cal) {//1st detector not calibrated - calculate from residual energy in 2nd detector
 
-      //second detector must exist and have all acquisition parameters fired with above-pedestal value
-      if (d2 && d2->Fired("Pall")) e2 = d2->GetCorrectedEnergy(nuc, -1, kFALSE); //N.B.: transmission=kFALSE because particle stop in d2
-      if (e2 <= 0.0) {
-         // zero energy loss in 2nd detector ? can't do anything...
-         fCalibStatus = kCalibStatus_NoCalibrations;
-         return;
-      }
-      //calculate & set energy loss in dE detector
-      //N.B. using e2 for the residual energy after detector 1 means
-      //that we are assuming the particle stops in detector 2.
-      //if this is not true, we will underestimate the energy of the particle.
-      e1 = d1->GetDeltaEFromERes(z, a, e2);
-      if (e1 < 0.0) e1 = 0.0;
-      else {
-         d1->SetEnergyLoss(e1);
-         d1->SetEResAfterDetector(e2);
-         e1 = d1->GetCorrectedEnergy(nuc);
-         //status code
-         fCalibStatus = kCalibStatus_Calculated;
-      }
-   }
-   else {  //1st detector is calibrated too: get corrected energy loss
+//      //second detector must exist and have all acquisition parameters fired with above-pedestal value
+//      if (d2 && d2->Fired("Pall")) e2 = d2->GetCorrectedEnergy(nuc, -1, kFALSE); //N.B.: transmission=kFALSE because particle stop in d2
+//      if (e2 <= 0.0) {
+//         // zero energy loss in 2nd detector ? can't do anything...
+//         fCalibStatus = kCalibStatus_NoCalibrations;
+//         return;
+//      }
+//      //calculate & set energy loss in dE detector
+//      //N.B. using e2 for the residual energy after detector 1 means
+//      //that we are assuming the particle stops in detector 2.
+//      //if this is not true, we will underestimate the energy of the particle.
+//      e1 = d1->GetDeltaEFromERes(z, a, e2);
+//      if (e1 < 0.0) e1 = 0.0;
+//      else {
+//         d1->SetEnergyLoss(e1);
+//         d1->SetEResAfterDetector(e2);
+//         e1 = d1->GetCorrectedEnergy(nuc);
+//         //status code
+//         fCalibStatus = kCalibStatus_Calculated;
+//      }
+//   }
+//   else {  //1st detector is calibrated too: get corrected energy loss
 
-      e1 = d1->GetCorrectedEnergy(nuc);
+//      e1 = d1->GetCorrectedEnergy(nuc);
 
-   }
+//   }
 
-   if (d2 && !d2_cal) {//2nd detector not calibrated - calculate from energy loss in 1st detector
+//   if (d2 && !d2_cal) {//2nd detector not calibrated - calculate from energy loss in 1st detector
 
-      e1 = d1->GetCorrectedEnergy(nuc);
-      if (e1 <= 0.0) {
-         // zero energy loss in 1st detector ? can't do anything...
-         fCalibStatus = kCalibStatus_NoCalibrations;
-         return;
-      }
-      //calculate & set energy loss in 2nd detector
-      e2 = d1->GetEResFromDeltaE(z, a);
-      if (e2 < 0.0) e2 = 0.0;
-      else {
-         e2 = d2->GetDeltaE(z, a, e2);
-         d2->SetEnergyLoss(e2);
-         e2 = d2->GetCorrectedEnergy(nuc);
-         //status code
-         fCalibStatus = kCalibStatus_Calculated;
-      }
-   }
-   else if (d2) {   //2nd detector is calibrated too: get corrected energy loss
+//      e1 = d1->GetCorrectedEnergy(nuc);
+//      if (e1 <= 0.0) {
+//         // zero energy loss in 1st detector ? can't do anything...
+//         fCalibStatus = kCalibStatus_NoCalibrations;
+//         return;
+//      }
+//      //calculate & set energy loss in 2nd detector
+//      e2 = d1->GetEResFromDeltaE(z, a);
+//      if (e2 < 0.0) e2 = 0.0;
+//      else {
+//         e2 = d2->GetDeltaE(z, a, e2);
+//         d2->SetEnergyLoss(e2);
+//         e2 = d2->GetCorrectedEnergy(nuc);
+//         //status code
+//         fCalibStatus = kCalibStatus_Calculated;
+//      }
+//   }
+//   else if (d2) {   //2nd detector is calibrated too: get corrected energy loss
 
-      e2 = d2->GetCorrectedEnergy(nuc, -1, kFALSE);//N.B.: transmission=kFALSE because particle assumed to stop in d2
-      // recalculate corrected energy in first stage using info on Eres
-      d1->SetEResAfterDetector(e2);
-      e1 = d1->GetCorrectedEnergy(nuc);
-   }
+//      e2 = d2->GetCorrectedEnergy(nuc, -1, kFALSE);//N.B.: transmission=kFALSE because particle assumed to stop in d2
+//      // recalculate corrected energy in first stage using info on Eres
+//      d1->SetEResAfterDetector(e2);
+//      e1 = d1->GetCorrectedEnergy(nuc);
+//   }
 
-   //incident energy of particle (before 1st member of telescope)
-   einc = e1 + e2;
+//   //incident energy of particle (before 1st member of telescope)
+//   einc = e1 + e2;
 
-   Double_t coherence_tolerance = gEnv->GetValue("KVIDTelescope.CoherencyTolerance", 1.05);
-   if (coherence_tolerance < 1) coherence_tolerance += 1.00;
+//   Double_t coherence_tolerance = gEnv->GetValue("KVIDTelescope.CoherencyTolerance", 1.05);
+//   if (coherence_tolerance < 1) coherence_tolerance += 1.00;
 
-   //Now we have to work our way up the list of detectors from which the particle was
-   //reconstructed. For each fired & calibrated detector which is only associated with
-   //one particle in the events, we add the corrected measured energy loss
-   //to the particle. For uncalibrated, unfired detectors and detectors through which
-   //more than one particle has passed, we calculate the corrected energy loss and add it
-   //to the particle.
-   int ndets = nuc->GetNumDet();
-   if (ndets > (int)GetSize()) { //particle passed through other detectors before this idtelesocpe
-      //look at detectors not in this id telescope
-      int idet = GetSize();//next detector after delta-e member of IDTelescope (stopping detector = 0)
-      while (idet < ndets) {
+//   //Now we have to work our way up the list of detectors from which the particle was
+//   //reconstructed. For each fired & calibrated detector which is only associated with
+//   //one particle in the events, we add the corrected measured energy loss
+//   //to the particle. For uncalibrated, unfired detectors and detectors through which
+//   //more than one particle has passed, we calculate the corrected energy loss and add it
+//   //to the particle.
+//   int ndets = nuc->GetNumDet();
+//   if (ndets > (int)GetSize()) { //particle passed through other detectors before this idtelesocpe
+//      //look at detectors not in this id telescope
+//      int idet = GetSize();//next detector after delta-e member of IDTelescope (stopping detector = 0)
+//      while (idet < ndets) {
 
-         KVDetector* det = nuc->GetDetector(idet);
-         if (det->Fired() && det->IsCalibrated() && det->GetNHits() == 1) {
-            Double_t dE = det->GetEnergy();
-            //in order to check if particle was really the only one to
-            //hit each detector, we calculate the particle's energy loss
-            //from its residual energy. if the measured energy loss is
-            //significantly larger, there may be a second particle.
-            e1 = det->GetDeltaEFromERes(z, a, einc);
-            if (e1 < 0.0) e1 = 0.0;
-            det->SetEResAfterDetector(einc);
-            dE = det->GetCorrectedEnergy(nuc);
-            einc += dE;
-         }
-         else {
-            // Uncalibrated/unfired/multihit detector. Calculate energy loss.
-            //calculate energy of particle before detector from energy after detector
-            e1 = det->GetDeltaEFromERes(z, a, einc);
-            if (e1 < 0.0) e1 = 0.0;
-            if (det->GetNHits() > 1) {
-               //Info("CalculateParticleEnergy",
-               //    "Detector %s was hit by %d particles. Calculated energy loss for particle %f MeV",
-               //    det->GetName(), det->GetNHits(), e1);
-               if (!(det->Fired() && det->IsCalibrated())) {
-                  det->SetEnergyLoss(e1 + det->GetEnergy());// sum up calculated energy losses in uncalibrated detector
-               }
-               //status code
-               fCalibStatus = kCalibStatus_Multihit;
-            }
-            else if (!det->Fired() || !det->IsCalibrated()) {
-               //Info("CalculateParticleEnergy",
-               //    "Detector %s uncalibrated/not fired. Calculated energy loss for particle %f MeV",
-               //    det->GetName(), e1);
-               det->SetEnergyLoss(e1);
-               //status code
-               fCalibStatus = kCalibStatus_Calculated;
-            }
-            det->SetEResAfterDetector(einc);
-            e1 = det->GetCorrectedEnergy(nuc, e1);
-            einc += e1;
-         }
-         idet++;
-      }
-   }
-   //einc is now the energy of the particle before crossing the first detector
-   nuc->SetEnergy(einc);
-}
+//         KVDetector* det = nuc->GetDetector(idet);
+//         if (det->Fired() && det->IsCalibrated() && det->GetNHits() == 1) {
+//            Double_t dE = det->GetEnergy();
+//            //in order to check if particle was really the only one to
+//            //hit each detector, we calculate the particle's energy loss
+//            //from its residual energy. if the measured energy loss is
+//            //significantly larger, there may be a second particle.
+//            e1 = det->GetDeltaEFromERes(z, a, einc);
+//            if (e1 < 0.0) e1 = 0.0;
+//            det->SetEResAfterDetector(einc);
+//            dE = det->GetCorrectedEnergy(nuc);
+//            einc += dE;
+//         }
+//         else {
+//            // Uncalibrated/unfired/multihit detector. Calculate energy loss.
+//            //calculate energy of particle before detector from energy after detector
+//            e1 = det->GetDeltaEFromERes(z, a, einc);
+//            if (e1 < 0.0) e1 = 0.0;
+//            if (det->GetNHits() > 1) {
+//               //Info("CalculateParticleEnergy",
+//               //    "Detector %s was hit by %d particles. Calculated energy loss for particle %f MeV",
+//               //    det->GetName(), det->GetNHits(), e1);
+//               if (!(det->Fired() && det->IsCalibrated())) {
+//                  det->SetEnergyLoss(e1 + det->GetEnergy());// sum up calculated energy losses in uncalibrated detector
+//               }
+//               //status code
+//               fCalibStatus = kCalibStatus_Multihit;
+//            }
+//            else if (!det->Fired() || !det->IsCalibrated()) {
+//               //Info("CalculateParticleEnergy",
+//               //    "Detector %s uncalibrated/not fired. Calculated energy loss for particle %f MeV",
+//               //    det->GetName(), e1);
+//               det->SetEnergyLoss(e1);
+//               //status code
+//               fCalibStatus = kCalibStatus_Calculated;
+//            }
+//            det->SetEResAfterDetector(einc);
+//            e1 = det->GetCorrectedEnergy(nuc, e1);
+//            einc += e1;
+//         }
+//         idet++;
+//      }
+//   }
+//   //einc is now the energy of the particle before crossing the first detector
+//   nuc->SetEnergy(einc);
+//}
 
 //_____________________________________________________________________________________________________//
 
@@ -1407,14 +1407,16 @@ Bool_t KVIDTelescope::CheckTheoreticalIdentificationThreshold(KVNucleus* ION, Do
    return (ION->GetEnergy() > emin);
 }
 
-void KVIDTelescope::SetIdentificationStatus(KVReconstructedNucleus* n)
+void KVIDTelescope::SetIdentificationStatus(KVIdentificationResult* IDR, const KVNucleus* n)
 {
    // For filtering simulations
-   // Set the n->IsZMeasured() and n->IsAMeasured() status of the particle
+   //
+   // \param IDR identification result object for this telescope
+   // \param n the simulated particle currently being considered
+   //
+   // Set the IDR->Zident and IDR->Aident status of the identification of n.
    // In principle this depends on whether this telescope provides mass
    // identification or not, but this may depend on the particle's energy.
-   // If A was not measured, it will be replaced with a value calculated
-   // from whatever mass formula is used for the particle.
    //
    // In order to enable mass identification for certain telescopes without a dedicated
    // implementation (e.g. for simulating array response), put the following lines
@@ -1435,23 +1437,13 @@ void KVIDTelescope::SetIdentificationStatus(KVReconstructedNucleus* n)
    // Then this expression will be tested here in order to determine particle
    // identification status
 
-   n->SetZMeasured();
+   IDR->Zident = true;
    if (!HasMassID()) {
-      n->SetAMeasured(kFALSE);
-      // beware - changing particle's mass changes its KE (momentum is conserved)
-      double e = n->GetE();
-      n->SetZ(n->GetZ());// use mass formula for A
-      n->SetE(e);
+      IDR->Aident = false;
    }
    else {
-      if (fMassIDValidity) n->SetAMeasured(fMassIDValidity->Test(n)); // test expression for mass ID validity
-      else n->SetAMeasured();   // no expression set; all nuclei are identified in mass
-      if (!n->IsAMeasured()) {
-         // beware - changing particle's mass changes its KE (momentum is conserved)
-         double e = n->GetE();
-         n->SetZ(n->GetZ()); // use mass formula for A
-         n->SetE(e);
-      }
+      if (fMassIDValidity) IDR->Aident = fMassIDValidity->Test(n); // test expression for mass ID validity
+      else IDR->Aident = true; // no expression set; all nuclei are identified in mass
    }
 }
 

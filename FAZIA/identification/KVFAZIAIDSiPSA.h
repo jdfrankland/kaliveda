@@ -18,7 +18,7 @@ public:
    virtual void Initialize();
 
    Bool_t CheckTheoreticalIdentificationThreshold(KVNucleus* /*ION*/, Double_t /*EINC*/ = 0.0);
-   void SetIdentificationStatus(KVReconstructedNucleus*);
+   void SetIdentificationStatus(KVIdentificationResult* IDR, const KVNucleus*);
 
    ClassDef(KVFAZIAIDSiPSA, 1) //PSA identification in first silicon of FAZIA telescopes
 };

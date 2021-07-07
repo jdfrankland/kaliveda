@@ -93,7 +93,7 @@ void KVFAZIAIDTelescope::AddDetector(KVDetector* d)
 //   return newname.Data();
 //}
 
-void KVFAZIAIDTelescope::SetIdentificationStatus(KVReconstructedNucleus* n)
+void KVFAZIAIDTelescope::SetIdentificationStatus(KVIdentificationResult* IDR, const KVNucleus* n)
 {
    // For filtering simulations
    //
@@ -103,15 +103,13 @@ void KVFAZIAIDTelescope::SetIdentificationStatus(KVReconstructedNucleus* n)
 
    fMassIDProb->SetParameters(fMaxZ, fSigmaZ);
 
-//    Info("SetIdentificationStatus","%s : %lf %lf",ClassName(),fMassIDProb->GetParameter(0),fMassIDProb->GetParameter(1));
-
-   n->SetZMeasured();
-   Bool_t okmass = (gRandom->Uniform() < fMassIDProb->Eval(n->GetZ())) && CanIdentify(n->GetZ(), n->GetA());
+   IDR->Zident = true;
+   Bool_t okmass = (gRandom->Uniform() < fMassIDProb->Eval(IDR->Z));
 
    if (okmass) {
       //reset A to the original mass in case of multiple call of this method
       if (n->GetParameters()->HasParameter("OriginalMass")) n->SetA(n->GetParameters()->GetIntValue("OriginalMass"));
-      n->SetAMeasured(kTRUE);
+      IDR->Aident=true;
    }
    else {
       //save the original mass in the parameter list in case of multiple call of this method
@@ -119,6 +117,6 @@ void KVFAZIAIDTelescope::SetIdentificationStatus(KVReconstructedNucleus* n)
       double e = n->GetE();
       n->SetZ(n->GetZ());
       n->SetE(e);
-      n->SetAMeasured(kFALSE);
+      IDR->Aident=false;
    }
 }

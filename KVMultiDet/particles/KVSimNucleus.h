@@ -129,8 +129,6 @@ public:
    TVector3 GetEntrancePosition(const TString& detname) const;
    TVector3 GetExitPosition(const TString& detname) const;
 
-   void Print(Option_t* t = "") const;
-
    KVSimNucleus operator+(const KVSimNucleus& rhs) const;
    KVSimNucleus& operator+=(const KVSimNucleus& rhs);
    KVSimNucleus& operator=(const KVSimNucleus&);

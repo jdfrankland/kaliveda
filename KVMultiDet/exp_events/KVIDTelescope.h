@@ -172,7 +172,7 @@ public:
 
    virtual Bool_t Identify(KVIdentificationResult*, Double_t x = -1., Double_t y = -1.);
 
-   virtual void CalculateParticleEnergy(KVReconstructedNucleus* nuc);
+//   virtual void CalculateParticleEnergy(KVReconstructedNucleus* nuc);
    virtual Int_t GetCalibStatus() const
    {
       // When called just after CalculateParticleEnergy(KVReconstructedNucleus*)
@@ -275,7 +275,7 @@ public:
       // dE-E telescopes used to identify charged ions.
       return (Z > 0);
    }
-   virtual void SetIdentificationStatus(KVReconstructedNucleus*);
+   virtual void SetIdentificationStatus(KVIdentificationResult* IDR, const KVNucleus*);
    Bool_t IsIndependent() const
    {
       // Returns kTRUE is this identification can be made independently of any

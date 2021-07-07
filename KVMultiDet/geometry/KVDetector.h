@@ -386,9 +386,8 @@ public:
    }
    Bool_t IsCalibrated() const
    {
-      // A detector is considered to be calibrated if it has
-      // a signal "Energy" available
-      return (HasDetectorSignal("Energy") && IsOK());
+      // A detector is considered to be calibrated if it has a signal "Energy" available
+      return (IsSimMode() && IsDetecting()) ||  (HasDetectorSignal("Energy") && IsOK());
    }
    Bool_t IsCalibrated(const KVNameValueList& params) const;
 

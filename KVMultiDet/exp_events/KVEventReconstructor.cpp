@@ -8,7 +8,7 @@ using namespace std;
 
 ClassImp(KVEventReconstructor)
 
-KVEventReconstructor::KVEventReconstructor(KVMultiDetArray* a, KVReconstructedEvent* e, Bool_t)
+KVEventReconstructor::KVEventReconstructor(KVMultiDetArray* a, KVReconstructedEvent* e)
    : KVBase("KVEventReconstructor", Form("Reconstruction of events in array %s", a->GetName())),
      fArray(a), fEvent(e), fGroupReconstructor(a->GetNumberOfGroups(), 1)
 {
@@ -47,15 +47,15 @@ KVEventReconstructor::KVEventReconstructor(KVMultiDetArray* a, KVReconstructedEv
       }
    }
 
-   KVGroupReconstructor::SetDoIdentification(GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoIdentification", kTRUE));
-   KVGroupReconstructor::SetDoCalibration(GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoCalibration", kTRUE));
+   KVGroupReconstructor::SetDoIdentification(GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoIdentification", kFALSE));
+   KVGroupReconstructor::SetDoCalibration(GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoCalibration", kFALSE));
    Info("KVEventReconstructor", "Initialised for %u groups of multidetector %s", N, fArray->GetName());
-   if (GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoIdentification", kTRUE) || GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoCalibration", kTRUE)) {
-      if (GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoIdentification", kTRUE)) {
+   if (GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoIdentification", kFALSE) || GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoCalibration", kFALSE)) {
+      if (GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoIdentification", kFALSE)) {
          Info("KVEventReconstructor", " -- identification of events will be performed");
          fArray->PrintStatusOfIDTelescopes();
       }
-      if (GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoCalibration", kTRUE)) {
+      if (GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoCalibration", kFALSE)) {
          Info("KVEventReconstructor", " -- calibration of events will be performed");
          fArray->PrintCalibStatusOfDetectors();
       }
@@ -126,8 +126,9 @@ void KVEventReconstructor::MergeGroupEventFragments()
    TList to_merge;
 
    for (int k = 0; k < fNGrpRecon; ++k) {
-      int i = fHitGroups[k];
-      to_merge.Add(((KVGroupReconstructor*)fGroupReconstructor[i])->GetEventFragment());
+      auto grp_rcon = GetReconstructor(fHitGroups[k]);
+      to_merge.Add(grp_rcon->GetEventFragment());
+      grp_rcon->Clear();
    }
    GetEvent()->MergeEventFragments(&to_merge, "N");// "N" = no group reset
 }

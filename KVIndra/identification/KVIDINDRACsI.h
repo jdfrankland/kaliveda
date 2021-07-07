@@ -55,7 +55,7 @@ public:
       // For CsI detectors, identification is possible up to Z=5
       return (Z < 6);
    }
-   void SetIdentificationStatus(KVReconstructedNucleus* n);
+   void SetIdentificationStatus(KVIdentificationResult* IDR, const KVNucleus*);
 
    ClassDef(KVIDINDRACsI, 3)        //INDRA identification using CsI R-L matrices
 };

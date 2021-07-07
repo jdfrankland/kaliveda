@@ -12,11 +12,12 @@ KVDetectionSimulator::KVDetectionSimulator(KVMultiDetArray* a, Double_t e_cut_of
    fArray(a), fCalcTargELoss(kTRUE)
 {
    // Initialise a detection simulator
+   //
    // The detector array is put into simulation mode, and the minimum cut-off energy
-   // for propagation of particles is set
+   // for propagation of particles is set (1 keV is default)
    a->Clear();
    a->SetSimMode(kTRUE);
-   static_cast<KVRangeTableGeoNavigator*>(a->GetNavigator())->SetCutOffKEForPropagation(e_cut_off);
+   get_array_navigator()->SetCutOffKEForPropagation(e_cut_off);
 }
 
 void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_frame)
@@ -43,50 +44,68 @@ void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_f
    //   - DETECTED : cross at least one active layer of one detector
    //   - UNDETECTED : go through dead zone or stopped in target
    //We add also different sub group :
-   //   - For UNDETECTED particles : "DEAD ZONE", "STOPPED IN TARGET" and "THRESHOLD", the last one concerned particle
-   //go through the first detection stage of the multidetector array but stopped in an absorber (ie an inactive layer)
+   //   - For UNDETECTED particles : "NO HIT", "NEUTRON", "DEAD ZONE", "STOPPED IN TARGET" and "THRESHOLD", the last one concerns particles
+   //     which go through the first detection stage of the multidetector array but stopped in an absorber (ie an inactive layer)
    //   - For DETECTED particles :
-   //         "PUNCH THROUGH" corrresponds to particle which cross all the materials in front of it
-   //         (high energy particle punh through), or which miss some detectors due to a non perfect
-   //         overlap between defined telescope,
-   //         "INCOMPLETE"  corresponds to particles which stopped in the first detection stage of the multidetector
+   //       *  "PUNCH THROUGH" corrresponds to particle which cross all the materials in front of it
+   //         (high energy particle punch through)
+   //       *  "INCOMPLETE"  corresponds to particles which stopped in the first detection stage of the multidetector
    //         in a detector which can not give alone a clear identification,
    //
+
+   if (get_array_navigator()->IsTracking()) {
+      // clear any tracks created by last event
+      gGeoManager->ClearTracks();
+      get_array_navigator()->ResetTrackID();
+   }
 
    // Reset detectors in array hit by any previous events
    ClearHitGroups();
 
+   // iterate through the particles of the event
    for (auto& part : EventIterator(event)) {
-      // loop over particles
-
-      KVNucleus* _part = (KVNucleus*)part.GetFrame(detection_frame, kFALSE);
+      // reference to particle in requested detection frame
+      auto part_to_detect = (KVNucleus*)part.GetFrame(detection_frame, kFALSE);
 
       KVNameValueList det_stat, nvl;
       Double_t eLostInTarget = 0;
 
-      TVector3 initial_momentum = _part->GetMomentum();
+      // store initial energy of particle in detection frame
+      part_to_detect->SetE0();
+      part.SetParameter("SIM:ENERGY", part_to_detect->GetE());
+      part.SetParameter("SIM:Z", part.GetZ());
+      part.SetParameter("SIM:A", part.GetA());
 
-      if (part.GetZ() == 0) {
+      // neutral particles & those with less than the cut-off energy are not detected
+      if ((part.GetZ() == 0) && !get_array_navigator()->IsTracking()) {
+         // neutrons are included in tracking, if active
          det_stat.SetValue("UNDETECTED", "NEUTRON");
 
          part.AddGroup("UNDETECTED");
          part.AddGroup("NEUTRON");
       }
-      else if (_part->GetKE() < GetMinKECutOff()) {
-         det_stat.SetValue("UNDETECTED", "NO ENERGY");
+      else if (part.GetZ() && !get_array_navigator()->CheckIonForRangeTable(part.GetZ(), part.GetA())) {
+         // ignore charged particles which range table cannot handle
+         det_stat.SetValue("UNDETECTED", Form("Z=%d", part.GetZ()));
 
          part.AddGroup("UNDETECTED");
-         part.AddGroup("NO ENERGY");
+         part.AddGroup("SUPERHEAVY");
+      }
+      else if (!fGeoFilter && (part_to_detect->GetEnergy() < GetMinKECutOff())) {
+         det_stat.SetValue("UNDETECTED", "INSUFFICIENT ENERGY");
+
+         part.AddGroup("UNDETECTED");
+         part.AddGroup("INSUFFICIENT ENERGY");
       }
       else {
-         if (IncludeTargetEnergyLoss() && GetTarget()) {
-
+         if (IncludeTargetEnergyLoss() && GetTarget() && part.GetZ()) {
             GetTarget()->SetOutgoing(kTRUE);
             //simulate passage through target material
-            Double_t ebef = _part->GetKE();
-            GetTarget()->DetectParticle(_part);
-            eLostInTarget = ebef - _part->GetKE();
-            if (_part->GetKE() < GetMinKECutOff()) {
+            auto ebef = part_to_detect->GetE();
+            GetTarget()->DetectParticle(part_to_detect);
+            eLostInTarget = ebef - part_to_detect->GetE();
+            part.SetParameter("ENERGY LOSS IN TARGET", eLostInTarget);
+            if (part_to_detect->GetE() < GetMinKECutOff()) {
                det_stat.SetValue("UNDETECTED", "STOPPED IN TARGET");
 
                part.AddGroup("UNDETECTED");
@@ -95,17 +114,34 @@ void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_f
             GetTarget()->SetOutgoing(kFALSE);
          }
 
-         if (_part->GetKE() > GetMinKECutOff()) {
+         if (fGeoFilter || (part_to_detect->GetE() > GetMinKECutOff())) {
 
-            nvl = DetectParticle(_part);
+            nvl = PropagateParticle(part_to_detect);
 
             if (nvl.IsEmpty()) {
+               if (part.GetZ() == 0) {
+                  // tracking
+                  det_stat.SetValue("UNDETECTED", "NEUTRON");
 
-               det_stat.SetValue("UNDETECTED", "DEAD ZONE");
+                  part.AddGroup("UNDETECTED");
+                  part.AddGroup("NEUTRON");
+               }
+               else {
+                  if (part.GetParameters()->HasParameter("DEADZONE")) {
+                     // deadzone
+                     det_stat.SetValue("UNDETECTED", "DEAD ZONE");
 
-               part.AddGroup("UNDETECTED");
-               part.AddGroup("DEAD ZONE");
+                     part.AddGroup("UNDETECTED");
+                     part.AddGroup("DEAD ZONE");
+                  }
+                  else {
+                     // missed all detectors
+                     det_stat.SetValue("UNDETECTED", "NO HIT");
 
+                     part.AddGroup("UNDETECTED");
+                     part.AddGroup("NO HIT");
+                  }
+               }
             }
             else {
                part.AddGroup("DETECTED");
@@ -113,17 +149,7 @@ void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_f
          }
       }
 
-      if (IncludeTargetEnergyLoss() && GetTarget()) part.SetParameter("TARGET Out", eLostInTarget);
       if (!nvl.IsEmpty()) {
-         Int_t nbre_nvl = nvl.GetNpar();
-         KVString LastDet(nvl.GetNameAt(nbre_nvl - 1));
-         if (part.GetE() < GetMinKECutOff() || part.GetParameters()->HasParameter("DEADZONE")) {
-            part.SetParameter("STOPPING DETECTOR", LastDet.Data());
-            det_stat.SetValue("DETECTED", "OK");
-         }
-         else {
-            det_stat.SetValue("DETECTED", "PUNCHED THROUGH");
-         }
          for (Int_t ii = 0; ii < nvl.GetNpar(); ++ii) {
             part.SetParameter(nvl.GetNameAt(ii), nvl.GetDoubleValue(ii));
          }
@@ -132,15 +158,14 @@ void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_f
          part.SetParameter(det_stat.GetNameAt(ii), det_stat.GetStringValue(ii));
       }
 
-      _part->SetMomentum(initial_momentum);
-
+      part_to_detect->SetMomentum(part_to_detect->GetPInitial());
    }
 
 }
 
 //__________________________________________________________________________________
 
-KVNameValueList KVDetectionSimulator::DetectParticle(KVNucleus* part)
+KVNameValueList KVDetectionSimulator::PropagateParticle(KVNucleus* part)
 {
    // Simulate detection of a single particle
    //
@@ -152,10 +177,14 @@ KVNameValueList KVDetectionSimulator::DetectParticle(KVNucleus* part)
    // detector hit in array (list is empty if none i.e. particle
    // in beam pipe or dead zone of the multidetector)
 
-   fArray->GetNavigator()->PropagateParticle(part);
+   auto nparams = part->GetParameters()->GetNpar();
+
+   get_array_navigator()->PropagateParticle(part);
 
    // particle missed all detectors
-   if (part->GetParameters()->IsEmpty()) return KVNameValueList();
+   if (part->GetParameters()->GetNpar() == nparams ||
+         ((part->GetParameters()->GetNpar() - nparams) == 1 && part->GetParameters()->HasParameter("DEADZONE")))
+      return KVNameValueList();
 
    // list of energy losses in active layers of detectors
    KVNameValueList NVL;
@@ -183,33 +212,28 @@ KVNameValueList KVDetectionSimulator::DetectParticle(KVNucleus* part)
             else {
                Double_t de = param->GetDouble();
                NVL.SetValue(curDet->GetName(), de);
+               // add detector to name of trajectory followed by particle
+               TString traj;
+               if (part->GetParameters()->HasStringParameter("TRAJECTORY")) {
+                  traj = part->GetParameters()->GetStringValue("TRAJECTORY");
+                  traj.Prepend(Form("%s/", det_name.Data()));
+               }
+               else {
+                  traj = Form("%s/", det_name.Data());
+               }
+               part->SetParameter("TRAJECTORY", traj);
+               // set number of group where detected
+               part->SetParameter("GROUP", (int)curDet->GetGroupNumber());
             }
          }
       }
    }
-
    // add hit group to list if not already in it
-   if (last_detector) fHitGroups.AddGroup(last_detector->GetGroup());
+   if (last_detector) {
+      fHitGroups.AddGroup(last_detector->GetGroup());
+      part->SetParameter("STOPPING DETECTOR", last_detector->GetName());
+   }
 
    return NVL;
 }
 
-KVNameValueList KVDetectionSimulator::DetectParticleIn(const Char_t* detname, KVNucleus* kvp)
-{
-   // Given the name of a detector, simulate detection of a given particle
-   // by the complete corresponding group. The particle's theta and phi are set
-   // at random within the limits of detector entrance window
-   //
-   // Returns a list containing the name and energy loss of each
-   // detector hit in array
-
-   KVDetector* kvd = GetArray()->GetDetector(detname);
-   if (kvd) {
-      kvp->SetMomentum(kvp->GetEnergy(), kvd->GetRandomDirection("random"));
-      return DetectParticle(kvp);
-   }
-   else {
-      Error("DetectParticleIn", "Detector %s not found", detname);
-   }
-   return KVNameValueList();
-}

@@ -150,6 +150,11 @@ KVReconstructedNucleus* KVGroupReconstructor::ReconstructTrajectory(const KVGeoD
    return nullptr;
 }
 
+KVReconNucTrajectory* KVGroupReconstructor::get_recon_traj_for_particle(const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node)
+{
+   return (KVReconNucTrajectory*)GetGroup()->GetTrajectoryForReconstruction(traj, node);
+}
+
 void KVGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node)
 {
    // Reconstruction of a detected nucleus from the successive energy losses
@@ -163,7 +168,7 @@ void KVGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* part, con
    //
    // \sa KVReconNucTrajectory
 
-   const KVReconNucTrajectory* Rtraj = (const KVReconNucTrajectory*)GetGroup()->GetTrajectoryForReconstruction(traj, node);
+   auto Rtraj = get_recon_traj_for_particle(traj, node);
    part->SetReconstructionTrajectory(Rtraj);
    part->SetParameter("ARRAY", GetGroup()->GetArray()->GetName());
 
@@ -173,7 +178,6 @@ void KVGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* part, con
 
       KVDetector* d = n->GetDetector();
       d->AddHit(part);  // add particle to list of particles hitting detector
-
    }
 
 }
@@ -300,7 +304,7 @@ void KVGroupReconstructor::IdentifyParticle(KVReconstructedNucleus& PART)
             id_by_type[idt->GetType()] = IDR;// map contains only attempted identifications
             if (!IDR->IDattempted) { // the identification may already have been attempted, e.g. in gamma particle
                // rejection in CSI: see KVINDRAGroupReconstructor::ReconstructTrajectory
-               idt->Identify(IDR);
+               identify_particle(idt, IDR, PART);
             }
             if (IDR->IDOK) n_success_id++;
          }
@@ -352,7 +356,6 @@ void KVGroupReconstructor::IdentifyParticle(KVReconstructedNucleus& PART)
 
    }
 
-}
 
 //_________________________________________________________________________________
 
@@ -385,8 +388,7 @@ void KVGroupReconstructor::Identify()
    // have their Z estimated from the energy loss in the detector (if calibrated):
    // in this case the Z is a minimum value.
 
-   for (KVReconstructedEvent::Iterator it = GetEventFragment()->begin(); it != GetEventFragment()->end(); ++it) {
-      KVReconstructedNucleus& d = it.get_reference();
+   for (auto& d : ReconEventIterator(GetEventFragment())) {
       if (!d.IsIdentified()) {
          if (d.GetStatus() == KVReconstructedNucleus::kStatusOK) {
             // identifiable particles

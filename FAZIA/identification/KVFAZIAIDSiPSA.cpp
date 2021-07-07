@@ -81,7 +81,7 @@ Bool_t KVFAZIAIDSiPSA::CheckTheoreticalIdentificationThreshold(KVNucleus* ION, D
    return (ION->GetEnergy() >= seuil);
 }
 
-void KVFAZIAIDSiPSA::SetIdentificationStatus(KVReconstructedNucleus* n)
+void KVFAZIAIDSiPSA::SetIdentificationStatus(KVIdentificationResult* IDR, const KVNucleus* n)
 {
    // For filtering simulations
    // If n->GetEnergy() is above threshold for mass identification, we set
@@ -95,16 +95,12 @@ void KVFAZIAIDSiPSA::SetIdentificationStatus(KVReconstructedNucleus* n)
    //
    // If A is not measured, we make sure the KE of the particle corresponds to the simulated one
 
-   n->SetZMeasured();
+   IDR->Zident = true;
    fMassIDProb->SetParameters(fMaxZ, fSigmaZ);
-   Bool_t okmass = (n->GetZ() < 17) || (n->GetZ() < 22 && gRandom->Uniform() < fMassIDProb->Eval(n->GetZ()));
+   Bool_t okmass = (n->GetZ() < 17) || (n->GetZ() < 22 && gRandom->Uniform() < fMassIDProb->Eval(IDR->Z));
    okmass = okmass && (n->GetEnergy() >= fAThreshold->Eval(n->GetZ()));
-
-//   Info("SetIdentificationStatus","%s : %lf %lf",ClassName(),fMassIDProb->GetParameter(0),fMassIDProb->GetParameter(1));
-
    if (okmass) {
-      if (n->GetParameters()->HasParameter("OriginalMass")) n->SetA(n->GetParameters()->GetIntValue("OriginalMass"));
-      n->SetAMeasured();
+      IDR->Aident=true;
    }
    else {
       n->GetParameters()->SetValue("OriginalMass", n->GetA());

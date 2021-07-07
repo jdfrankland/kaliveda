@@ -559,35 +559,8 @@ void KVReconstructedNucleus::GetAnglesFromReconstructionTrajectory(Option_t* opt
 
 void KVReconstructedNucleus::Calibrate()
 {
-   //Calculate and set the energy of a (previously identified) reconstructed particle,
-   //including an estimate of the energy loss in the target.
-   //
-   //Starting from the detector in which the particle stopped, we add up the
-   //'corrected' energy losses in all of the detectors through which it passed.
-   //Whenever possible, for detectors which are not calibrated or not working,
-   //we calculate the energy loss. Measured & calculated energy losses are also
-   //compared for each detector, and may lead to new particles being seeded for
-   //subsequent identification. This is done by KVIDTelescope::CalculateParticleEnergy().
-   //
-   //For particles whose energy before hitting the first detector in their path has been
-   //calculated after this step we then add the calculated energy loss in the target,
-   //using gMultiDetArray->GetTargetEnergyLossCorrection().
 
-   KVIDTelescope* idt = GetIdentifyingTelescope();
-   idt->CalculateParticleEnergy(this);
-   if (idt->GetCalibStatus() != KVIDTelescope::kCalibStatus_NoCalibrations) {
-      SetIsCalibrated();
-      //add correction for target energy loss - moving charged particles only!
-      Double_t E_targ = 0.;
-      if (GetZ() && GetEnergy() > 0) {
-         E_targ = gMultiDetArray->GetTargetEnergyLossCorrection(this);
-         SetTargetEnergyLoss(E_targ);
-      }
-      Double_t E_tot = GetEnergy() + E_targ;
-      SetEnergy(E_tot);
-      // set particle momentum from telescope dimensions (random)
-      GetAnglesFromReconstructionTrajectory();
-   }
+   Obsolete("Calibrate", "1.11", "1.13");
 }
 
 void KVReconstructedNucleus::MakeDetectorList()

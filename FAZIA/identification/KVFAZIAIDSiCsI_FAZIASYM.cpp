@@ -131,7 +131,7 @@ void KVFAZIAIDSiCsI_FAZIASYM::Initialize()
    }
 }
 
-void KVFAZIAIDSiCsI_FAZIASYM::SetIdentificationStatus(KVReconstructedNucleus* n)
+void KVFAZIAIDSiCsI_FAZIASYM::SetIdentificationStatus(KVIdentificationResult* IDR, const KVNucleus*)
 {
    // For filtering simulations
    //
@@ -139,12 +139,8 @@ void KVFAZIAIDSiCsI_FAZIASYM::SetIdentificationStatus(KVReconstructedNucleus* n)
    //    all ok if Z<=14, decreasing probability for 15<=Z<=18
    //    no A identification for Z>18
 
-   n->SetZMeasured();
+   IDR->Zident = true;
    fMassIDProb->SetParameters(16.5, .4);
-   Bool_t okmass = (n->GetZ() <= 14) || (n->GetZ() < 19 && gRandom->Uniform() < fMassIDProb->Eval(n->GetZ()));
-   if (okmass) {
-      n->SetAMeasured();
-   }
-   else
-      n->SetZ(n->GetZ());
+   Bool_t okmass = (IDR->Z <= 14) || (IDR->Z < 19 && gRandom->Uniform() < fMassIDProb->Eval(IDR->Z));
+   IDR->Aident = okmass;
 }

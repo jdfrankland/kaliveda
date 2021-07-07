@@ -17,7 +17,6 @@ protected:
 public:
    KVFAZIAIDTelescope();
    virtual void AddDetector(KVDetector* d);
-//   static const Char_t* GetNewName(KVString oldname);
    virtual void SetIdentificationStatus(KVReconstructedNucleus* n);
 
    ClassDef(KVFAZIAIDTelescope, 1) //Identification for FAZIA array

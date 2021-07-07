@@ -138,6 +138,8 @@ Bool_t KVEventFiltering::Analysis()
          }
       }
       else {
+         // default kinematics is lab frame. make sure name is set.
+         to_be_detected->SetFrameName("lab");
          if (fRotate) {
             RandomRotation(to_be_detected);
             gMultiDetArray->DetectEvent(to_be_detected, fReconEvent, "rotated_frame");

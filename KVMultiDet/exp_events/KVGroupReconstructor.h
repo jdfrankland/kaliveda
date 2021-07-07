@@ -4,11 +4,7 @@
 #include "KVBase.h"
 #include "KVGroup.h"
 #include "KVReconstructedEvent.h"
-#ifdef WITH_CPP11
 #include <unordered_map>
-#else
-#include <map>
-#endif
 #include <string>
 
 /**
@@ -81,6 +77,12 @@ protected:
    std::vector<particle_to_add_from_coherency_analysis> coherency_particles;
    virtual void AddCoherencyParticles() {};
 
+   virtual KVReconNucTrajectory* get_recon_traj_for_particle(const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
+   virtual void identify_particle(KVIDTelescope* idt, KVIdentificationResult* IDR, KVReconstructedNucleus&)
+   {
+      idt->Identify(IDR);
+   }
+
 public:
    KVGroupReconstructor();
    virtual ~KVGroupReconstructor();
@@ -135,6 +137,10 @@ public:
    {
       // Enable/Disable calibration step in KVGroupReconstructor::Process
       fDoCalibration = on;
+   }
+   void Clear(Option_t* = "")
+   {
+      // Reset before treating a new event
    }
 
    ClassDef(KVGroupReconstructor, 0) //Base class for handling event reconstruction in detector groups

@@ -150,11 +150,3 @@ TVector3 KVSimNucleus::GetExitPosition(const TString& detname) const
    return TVector3(0, 0, 0);
 }
 
-void KVSimNucleus::Print(Option_t* t) const
-{
-   KVNucleus::Print(t);
-   std::cout << "KVSimNucleus: Position : ";
-   position.Print();
-   std::cout << "KVSimNucleus: Ang. Mom. : ";
-   angmom.Print();
-}

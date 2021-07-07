@@ -44,26 +44,37 @@ protected:
    {
       return fArray;
    }
+   void MergeGroupEventFragments();
+   TObjArray* GetReconstructors()
+   {
+      return &fGroupReconstructor;
+   }
+   Int_t get_number_reconstructors_current_event() const
+   {
+      return fNGrpRecon;
+   }
+   Int_t get_group_index_for_current_event_reconstructor(Int_t i) const
+   {
+      return fHitGroups[i];
+   }
 
 public:
-   KVEventReconstructor(KVMultiDetArray*, KVReconstructedEvent*, Bool_t = kFALSE);
+   KVEventReconstructor(KVMultiDetArray*, KVReconstructedEvent*);
    virtual ~KVEventReconstructor() {}
 
    void Copy(TObject& obj) const;
 
-   void ReconstructEvent(const TSeqCollection* = nullptr);
-   void MergeGroupEventFragments();
+   virtual void ReconstructEvent(const TSeqCollection* = nullptr);
 
    KVReconstructedEvent* GetEvent()
    {
       return fEvent;
    }
-   void* GetEventReference()
-   {
-      // for KVEvent::MakeEventBranch
-      return &fEvent;
-   }
 
+   KVGroupReconstructor* GetReconstructor(int group_number)
+   {
+      return (KVGroupReconstructor*)fGroupReconstructor[group_number];
+   }
    ClassDef(KVEventReconstructor, 0) //Base class for handling event reconstruction
 };
 
