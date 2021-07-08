@@ -67,6 +67,10 @@ Double_t KVCsI::GetCorrectedEnergy(KVNucleus* nuc, Double_t lum, Bool_t)
 {
    // Calculate calibrated energy loss for a nucleus (Z,A) giving total light output "lum".
    // By default we use the current value of the detector's `TotLight` signal.
+   //
+   // If we are in simulation (filter) mode, this just returns the energy lost in the detector.
+
+   if (IsSimMode()) return GetEnergy();
 
    if (!(GetDetectorSignalValue("TotLight") > 0)) return -1;
 
