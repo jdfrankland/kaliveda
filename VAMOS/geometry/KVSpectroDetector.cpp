@@ -111,7 +111,7 @@ void KVSpectroDetector::AddAbsorber(const Char_t* material, TGeoShape* shape, TG
 
    TString vol_name;
    vol_name.Form("%s_%d_%s", GetName(), fNumVol++, material);
-   TGeoVolume* vol = GetGeoVolume(vol_name.Data(), material, shape);
+   TGeoVolume* vol = ConstructGeoVolume(vol_name.Data(), material, shape);
    if (!vol) {
       Error("AddAbsorber", "Impossible to build the volume");
       return;
@@ -495,7 +495,7 @@ TGeoMedium* KVSpectroDetector::GetGeoMedium(const Char_t* mat_name)
 }
 //________________________________________________________________
 
-TGeoVolume* KVSpectroDetector::GetGeoVolume(const Char_t* name, const Char_t* material, TGeoShape* shape)
+TGeoVolume* KVSpectroDetector::ConstructGeoVolume(const Char_t* name, const Char_t* material, TGeoShape* shape)
 {
    // Construct a TGeoVolume shape which can be used to represent
    // a detector in the current geometry managed by gGeoManager.
@@ -516,7 +516,7 @@ TGeoVolume* KVSpectroDetector::GetGeoVolume(const Char_t* name, const Char_t* ma
 }
 //________________________________________________________________
 
-TGeoVolume* KVSpectroDetector::GetGeoVolume(const Char_t* name, const Char_t* material, const Char_t* shape_name, const Char_t* params)
+TGeoVolume* KVSpectroDetector::ConstructGeoVolume(const Char_t* name, const Char_t* material, const Char_t* shape_name, const Char_t* params)
 {
    // Construct a TGeoVolume shape which can be used to represent
    // a detector in the current geometry managed by gGeoManager.
@@ -548,7 +548,7 @@ TGeoVolume* KVSpectroDetector::GetGeoVolume(const Char_t* name, const Char_t* ma
 }
 //________________________________________________________________
 
-TGeoVolume* KVSpectroDetector::GetGeoVolume()
+TGeoVolume* KVSpectroDetector::ConstructGeoVolume()
 {
    // Returns the TGeoVolume built when a volume is added by
    // the method AddAbsorber;

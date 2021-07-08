@@ -43,16 +43,3 @@ KVINDRADetector* KVINDRADetector::FindChIo()
       fChIo = 0;
    return fChIo;
 }
-
-void KVINDRADetector::SetThickness(Double_t thick)
-{
-   // Overrides KVDetector::SetThickness
-   // If using ROOT geometry, print warning that any change in detector thickness will not
-   // be taken into account in the geometry.
-   // All thicknesses have to be set before the ROOT geometry is generated.
-
-   if (ROOTGeo()) {
-      Warning("SetThickness", "Using ROOT geometry. Changes to detector thickness will not be taken into account in geometry.");
-   }
-   KVMaterial::SetThickness(thick);
-}

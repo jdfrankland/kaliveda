@@ -85,8 +85,6 @@ public:
       return (fChIo ? fChIo : const_cast<KVINDRADetector*>(this)->FindChIo());
    }
 
-   void SetThickness(Double_t thick);
-
    ClassDef(KVINDRADetector, 2) //Detectors of INDRA array
 };
 

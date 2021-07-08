@@ -199,7 +199,7 @@ TGeoVolume* KVTelescope::GetGeoVolume()
    int no_of_dets = GetDetectors()->GetEntries();
    if (no_of_dets == 1) {
       // single detector "telescope": just return detector volume
-      return GetDetector(1)->GetGeoVolume();
+      return GetDetector(1)->ConstructGeoVolume();
    }
    TGeoVolume* mother_vol = gGeoManager->MakeVolumeAssembly(Form("%s_TEL", GetName()));
    // total length of telescope = depth of last detector + thickness of last detector
@@ -208,7 +208,7 @@ TGeoVolume* KVTelescope::GetGeoVolume()
    TIter next(GetDetectors());
    KVDetector* det;
    while ((det = (KVDetector*)next())) {
-      TGeoVolume* det_vol = det->GetGeoVolume();
+      TGeoVolume* det_vol = det->ConstructGeoVolume();
       // position detector in telescope
       Double_t dist = -tot_len_tel / 2. + det->GetDepthInTelescope() + det->GetTotalThicknessInCM() / 2.;
       TGeoTranslation* tran = new TGeoTranslation(0., 0., dist);

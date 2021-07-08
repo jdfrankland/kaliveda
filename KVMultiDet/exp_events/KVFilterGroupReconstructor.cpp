@@ -156,7 +156,7 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
       //add correction for target energy loss - moving charged particles only!
       Double_t E_targ = 0.;
       if (PART->GetZ() && PART->GetEnergy() > 0) {
-         //E_targ = GetTargetEnergyLossCorrection(PART);
+         E_targ = GetTargetEnergyLossCorrection(PART);
          PART->SetTargetEnergyLoss(E_targ);
       }
       Double_t E_tot = PART->GetEnergy() + E_targ;

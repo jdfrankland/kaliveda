@@ -910,10 +910,13 @@ void KVDetector::GetVerticesInOwnFrame(TVector3* corners, Double_t depth, Double
 
 //____________________________________________________________________________________
 
-TGeoVolume* KVDetector::GetGeoVolume()
+TGeoVolume* KVDetector::ConstructGeoVolume()
 {
    // Construct a TGeoVolume shape to represent this detector in the current
    // geometry managed by gGeoManager.
+   //
+   // **NOTE** this is not the way to access the actual volume representing this detector in
+   // an existing ROOT geometry. Returns nullptr in this case.
    //
    // Making the volume requires:
    //    - to construct a 'mother' volume (TGeoArb8) defined by the (theta-min/max, phi-min/max)
@@ -926,7 +929,9 @@ TGeoVolume* KVDetector::GetGeoVolume()
    //
    // gGeoManager must point to current instance of geometry manager.
 
-   if (!gGeoManager) return NULL;
+   if (ROOTGeo()) return nullptr;
+
+   if (!gGeoManager) return nullptr;
 
    if (fTotThickness == 0) GetTotalThicknessInCM(); // calculate sum of absorber thicknesses in centimetres
    // get from telescope info on relative depth of detector i.e. depth inside telescope
@@ -1006,7 +1011,7 @@ void KVDetector::AddToGeometry()
    if (!gGeoManager) return;
 
    // get volume for detector
-   TGeoVolume* vol = GetGeoVolume();
+   TGeoVolume* vol = ConstructGeoVolume();
 
    // rotate detector to orientation corresponding to (theta,phi)
    Double_t theta = GetTheta();
@@ -1528,7 +1533,10 @@ void KVDetector::SetThickness(Double_t thick)
    // If ROOT geometry is defined, we modify the DZ thickness of the volume representing
    // this detector in accordance with the new thickness.
    //
-   // This is only implemented for single-layer detectors with a simple shape.
+   // This is only implemented for single-layer detectors with the following shapes:
+   //  - TGeoBBox (rectangular box)
+   //  - TGeoTube (tube)
+   //  - TGeoArb8 (arbitrary trapezoid with less than 8 vertices standing on two parallel planes perpendicular to Z axis)
 
    if (ROOTGeo() && fSingleLayer) {
       TGeoPhysicalNode* pn = (TGeoPhysicalNode*)gGeoManager->GetListOfPhysicalNodes()->FindObject(GetNode()->GetFullPathToNode());
@@ -1542,6 +1550,11 @@ void KVDetector::SetThickness(Double_t thick)
       else if (shape->IsA() == TGeoTube::Class()) {
          TGeoTube* oldtube = static_cast<TGeoTube*>(shape);
          newshape = new TGeoTube(oldtube->GetRmin(), oldtube->GetRmax(), 0.5 * thick);
+      }
+      else if (shape->IsA() == TGeoArb8::Class()) {
+         TGeoArb8* oldtube = static_cast<TGeoArb8*>(shape);
+         auto vert = oldtube->GetVertices();
+         newshape = new TGeoArb8(0.5 * thick, vert);
       }
       else {
          Error("SetThickness", "No implementation for %s (%s)", shape->IsA()->GetName(), GetName());

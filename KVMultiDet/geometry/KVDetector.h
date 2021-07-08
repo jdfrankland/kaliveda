@@ -575,7 +575,7 @@ public:
 
    static KVDetector* MakeDetector(const Char_t* name, Float_t thick);
 
-   virtual TGeoVolume* GetGeoVolume();
+   virtual TGeoVolume* ConstructGeoVolume();
    virtual void AddToGeometry();
    virtual void GetVerticesInOwnFrame(TVector3* /*corners[8]*/, Double_t /*depth*/, Double_t /*layer_thickness*/);
    virtual Double_t GetEntranceWindowSurfaceArea();
