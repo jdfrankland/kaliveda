@@ -79,7 +79,7 @@ void KVFilterGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* par
       // energy_loss will contain the sum of energy losses (dE) measured in the *active* layer of each detector
       // the contribution to the energy of each particle may be greater than this after correcting for
       // dead layers etc.
-      energy_loss[Nd->GetName()] += Nd->GetDetector()->GetEnergyLoss();
+      energy_loss[Nd->GetName()] = Nd->GetDetector()->GetEnergyLoss();
       ++number_uncalibrated[Nd->GetName()];
    }
 }
@@ -141,12 +141,8 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
       }
       else {
          dE = det->GetEnergyLoss();
-         if (Einc > 0) {
-            det->SetEResAfterDetector(Einc);
-            edet = det->GetCorrectedEnergy(PART, -1., true);
-         }
-         else
-            edet = dE; // cannot use GetCorrectedEnergy for CsI!!
+         det->SetEResAfterDetector(Einc);
+         edet = det->GetCorrectedEnergy(PART, -1., (Einc > 0));
          Info("Calib", "Simple normal dE=%f edet=%f", dE, edet);
          PART->SetParameter(Form("%s.E%s", GetGroup()->GetArray()->GetName(), node->GetDetector()->GetLabel()), edet);
       }
@@ -160,7 +156,7 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
       //add correction for target energy loss - moving charged particles only!
       Double_t E_targ = 0.;
       if (PART->GetZ() && PART->GetEnergy() > 0) {
-         E_targ = GetTargetEnergyLossCorrection(PART);
+         //E_targ = GetTargetEnergyLossCorrection(PART);
          PART->SetTargetEnergyLoss(E_targ);
       }
       Double_t E_tot = PART->GetEnergy() + E_targ;

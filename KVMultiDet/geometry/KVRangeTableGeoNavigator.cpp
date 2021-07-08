@@ -47,6 +47,7 @@ void KVRangeTableGeoNavigator::ParticleEntersNewVolume(KVNucleus* part)
    TGeoMaterial* material = GetCurrentVolume()->GetMaterial();
    KVIonRangeTableMaterial* irmat = 0;
    if ((irmat = fRangeTable->GetMaterial(material))) {
+      Info("PartEntNewVol", "mat=%s thickness=%f", material->GetName(), GetStepSize());
       de = irmat->GetLinearDeltaEOfIon(
               part->GetZ(), part->GetA(), e, GetStepSize(), 0.,
               material->GetTemperature(),
