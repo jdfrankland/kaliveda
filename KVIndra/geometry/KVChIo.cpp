@@ -50,20 +50,12 @@ KVChIo::~KVChIo()
 //____________________________________________________________________________________________
 void KVChIo::SetMylarThicknesses(Float_t thickF, Float_t thickB)
 {
+   if (ROOTGeo()) {
+      Warning("SetThickness", "Using ROOT geometry. Changes to mylar thickness will not be taken into account in geometry.");
+   }
    if (thickF > 0.)((KVMaterial*)fAbsorbers->At(0))->SetThickness(thickF * KVUnits::um);
    if (thickF > 0.)((KVMaterial*)fAbsorbers->At(2))->SetThickness(thickB * KVUnits::um);
 }
-
-//void KVChIo::SetACQParams()
-//{
-//   //Setup acquistion parameters for this ChIo.
-//   //Do not call before ChIo name has been set.
-
-//   AddACQParamType("GG");
-//   AddACQParamType("PG");
-//   AddACQParamType("T");
-
-//}
 
 //__________________________________________________________________________________________________________________________
 
@@ -90,18 +82,6 @@ Double_t KVChIo::GetELossMylar(UInt_t z, UInt_t a, Double_t egas, Bool_t stopped
    Double_t emylar = GetCorrectedEnergy(&tmp, egas, !stopped) - egas;
    return emylar;
 }
-
-//______________________________________________________________________________
-
-//Short_t KVChIo::GetCalcACQParam(KVACQParam*, Double_t) const
-//{
-//   // Calculates & returns value of given acquisition parameter corresponding to
-//   // given calculated energy loss in the detector
-//   // Returns -1 if detector is not calibrated
-
-//   AbstractMethod("GetCalcACQParam");
-//   return -1;
-//}
 
 //______________________________________________________________________________
 

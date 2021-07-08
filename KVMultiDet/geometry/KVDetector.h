@@ -805,6 +805,9 @@ public:
       return 0;
    }
 
+   void SetPressure(Double_t P);
+   void SetTemperature(Double_t T);
+
    ClassDef(KVDetector, 10)      //Base class for the description of detectors in multidetector arrays
 };
 

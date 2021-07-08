@@ -892,6 +892,10 @@ TGeoMedium* KVMaterial::GetGeoMedium(const Char_t* med_name)
    // The name of the TGeoMedium (and associated TGeoMaterial) is the name of the KVMaterial.
    //
    // \note For detectors, the material in question is that of the active layer (see KVDetector).
+   //
+   // \note for gaseous materials, the TGeoMedium/Material name is of the form gasname_pressure_temperature
+   // e.g. C3F8_37.5_20.0 for C3F8 gas at 37.5 torr 20 degrees Celsius.
+   // Each gas with different pressure/temperature has to have a separate TGeoMaterial/Medium (with different density).
 
    if (!gGeoManager) return nullptr;
 
@@ -917,7 +921,7 @@ TGeoMedium* KVMaterial::GetGeoMedium(const Char_t* med_name)
    // e.g. C3F8_37.5 for C3F8 gas at 37.5 torr
    // each gas with different pressure has to have a separate TGeoMaterial/Medium
    TString medName;
-   if (IsGas()) medName.Form("%s_%f", GetName(), GetPressure());
+   if (IsGas()) medName.Form("%s_%f_%f", GetName(), GetPressure(), GetTemperature());
    else medName = GetName();
 
    TGeoMedium* gmed = gGeoManager->GetMedium(medName);

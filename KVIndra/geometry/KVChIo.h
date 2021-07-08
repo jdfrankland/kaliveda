@@ -40,15 +40,15 @@ public:
 
    Double_t GetELossMylar(UInt_t z, UInt_t a, Double_t egas = -1.0, Bool_t stopped = kFALSE);
 
-   virtual void SetPressure(Double_t P /* mbar */)
+   void SetPressure(Double_t P /* mbar */)
    {
       // Set pressure of gas in mbar
-      GetActiveLayer()->SetPressure(P * KVUnits::mbar);
+      KVINDRADetector::SetPressure(P * KVUnits::mbar);
    }
-   virtual Double_t GetPressure() const /* mbar */
+   Double_t GetPressure() const /* mbar */
    {
       // Give pressure of gas in mbar
-      return GetActiveLayer()->GetPressure() / KVUnits::mbar;
+      return KVINDRADetector::GetPressure() / KVUnits::mbar;
    }
 
    void SetMylarThicknesses(Float_t thickF, Float_t thickB);

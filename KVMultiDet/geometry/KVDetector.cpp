@@ -1593,3 +1593,43 @@ Bool_t KVDetector::AddDetectorSignalExpression(const KVString& type, const KVStr
       AddDetectorSignal(ds);
    return (ds != nullptr);
 }
+
+void KVDetector::SetPressure(Double_t P)
+{
+   // \param[in] P pressure in [Torr]
+   //
+   // For a gaseous detector, set/change the pressure of the active gas layer.
+   //
+   // For ROOT geometries, we change the medium/material of the corresponding node in the geometry
+   // in order to reflect the change in pressure (gases are represented by different media/materials
+   // for each pressure/temperature) so that it will be taken into account for example when filtering simulated data.
+
+   KVMaterial::SetPressure(P);
+   if (ROOTGeo()) {
+      // find node in geometry
+      TGeoPhysicalNode* pn = (TGeoPhysicalNode*)gGeoManager->GetListOfPhysicalNodes()->FindObject(GetNode()->GetFullPathToNode());
+      if (!pn) pn = gGeoManager->MakePhysicalNode(GetNode()->GetFullPathToNode());
+      // use new medium reflecting change in pressure
+      pn->GetVolume()->SetMedium(GetActiveLayer()->GetGeoMedium());
+   }
+}
+
+void KVDetector::SetTemperature(Double_t T)
+{
+   // \param[in] T pressure in [deg. C]
+   //
+   // For a gaseous detector, set/change the temperature of the active gas layer.
+   //
+   // For ROOT geometries, we change the medium/material of the corresponding node in the geometry
+   // in order to reflect the change in temperature (gases are represented by different media/materials
+   // for each pressure/temperature) so that it will be taken into account for example when filtering simulated data.
+
+   KVMaterial::SetTemperature(T);
+   if (ROOTGeo()) {
+      // find node in geometry
+      TGeoPhysicalNode* pn = (TGeoPhysicalNode*)gGeoManager->GetListOfPhysicalNodes()->FindObject(GetNode()->GetFullPathToNode());
+      if (!pn) pn = gGeoManager->MakePhysicalNode(GetNode()->GetFullPathToNode());
+      // use new medium reflecting change in pressure
+      pn->GetVolume()->SetMedium(GetActiveLayer()->GetGeoMedium());
+   }
+}
