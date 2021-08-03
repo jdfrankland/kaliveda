@@ -108,15 +108,7 @@ public:
    {
       // Override KVDetectorSignal method. Althought this class does not derive from KVCalibratedSignal,
       // it should not be considered as a raw parameter - it is calculated from pedestal-corrected
-      // fast & slow components of CsI light output.
-      return kFALSE;
-   }
-
-   Bool_t IsRaw() const
-   {
-      // Override KVDetectorSignal method. Althought this class does not derive from KVCalibratedSignal,
-      // it should not be considered as a raw parameter - it is calculated from pedestal-corrected
-      // fast & slow components of CsI light output.
+      // fast & slow components of CsI light output and should not be used to decide if detector 'fired' or not.
       return kFALSE;
    }
 

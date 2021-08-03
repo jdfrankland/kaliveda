@@ -3468,7 +3468,7 @@ Bool_t KVMultiDetArray::handle_raw_data_event_mfmframe(const MFMCommonFrame& mfm
    return kFALSE;
 }
 
-Bool_t KVMultiDetArray::handle_raw_data_event_mfmframe_ebyedat(const MFMEbyedatFrame& ebyframe)
+Bool_t KVMultiDetArray::handle_raw_data_event_mfmframe_ebyedat(const MFMEbyedatFrame&)
 {
    // Read a raw data event from a EBYEDAT MFM Frame.
 
@@ -3480,55 +3480,11 @@ Bool_t KVMultiDetArray::handle_raw_data_event_mfmframe_ebyedat(const MFMEbyedatF
 Bool_t KVMultiDetArray::handle_raw_data_event_mfmframe_mesytec_mdpp(const MFMMesytecMDPPFrame&)
 {
    // Read a raw data event from a Mesytec MFM Frame.
-   //
-   // All data is transferred to KVDetectorSignal objects, either associated to detectors of the
-   // array (if they can be identified), either associated more globally with the array/event
-   // itself. The latter are created as needed and go into the fExtraRawDataSignals list.
 
-#ifdef WITH_MESYTEC
-   auto mfmfilereader = dynamic_cast<KVMFMDataFileReader*>(fRawDataReader);
-   mfmfilereader->GetMesytecBufferReader().read_event_in_buffer(
-      (const uint8_t*)f.GetPointUserData(), f.GetBlobSize(),
-   [&](const mesytec::mdpp::event & evt) {
-      auto& setup = mfmfilereader->GetMesytecBufferReader().get_setup();
-      // loop over module data in event, set data in detectors when possible
-      for (auto& mdat : evt.modules) {
-         auto mod_id = mdat.module_id;
-         for (auto& voie : mdat.data) {
-            auto detname = setup.get_detector(mod_id, voie.channel);
-            auto detector = GetDetector(detname.c_str());
-            if (detector) {
-               auto det_signal = detector->GetDetectorSignal(voie.data_type);
-               if (!det_signal) {
-                  det_signal = new KVDetectorSignal(voie.data_type.c_str(), detector);
-                  detector->AddDetectorSignal(det_signal);
-               }
-               det_signal->SetValue(voie.data);
-               det_signal->SetFired();
-               fFiredSignals.Add(det_signal);
-               fFiredDetectors.Add(detector);
-            }
-            else {
-               // raw data not associated with a detector
-               TString sig_name = Form("%s.%s", detname.c_str(), voie.data_type.c_str());
-               auto det_signal = fExtraRawDataSignals.get_object<KVDetectorSignal>(sig_name);
-               if (!det_signal) {
-                  det_signal = new KVDetectorSignal(sig_name);
-                  fExtraRawDataSignals.Add(det_signal);
-               }
-               det_signal->SetValue(voie.data);
-               det_signal->SetFired();
-               fFiredSignals.Add(det_signal);
-            }
-         }
-      }
-   }
-   );
-   return kTRUE;
-#else
-   return false;
-#endif
+   AbstractMethod("handle_raw_data_event_mfmframe_mesytec_mdpp");
+   return kFALSE;
 }
+#endif
 #endif
 
 #ifdef WITH_PROTOBUF
