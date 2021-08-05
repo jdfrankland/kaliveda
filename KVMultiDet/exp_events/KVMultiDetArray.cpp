@@ -3053,7 +3053,7 @@ void KVMultiDetArray::PerformClosedROOTGeometryOperations()
 void KVMultiDetArray::SetReconParametersInEvent(KVReconstructedEvent* e) const
 {
    // Copy any parameters in fReconParameters in to the reconstructed event parameter list
-   *(e->GetParameters()) += fReconParameters;
+   e->GetParameters()->Concatenate(fReconParameters);
 }
 
 void KVMultiDetArray::copy_fired_parameters_to_recon_param_list()

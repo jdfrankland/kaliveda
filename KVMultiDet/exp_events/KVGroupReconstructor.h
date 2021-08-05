@@ -30,6 +30,7 @@ class KVGroupReconstructor : public KVBase {
    KVGroup*              fGroup;//!        the group where we are reconstructing
    KVReconstructedEvent* fGrpEvent;//!     event containing particles reconstructed in this group
    TString               fPartSeedCond;//! condition for seeding reconstructed particles
+   Bool_t                fSecondaryAnalysis;//! set to true during secondary analysis
 protected:
    mutable int nfireddets;//! number of fired detectors in group for current event
    KVIdentificationResult partID;//! identification to be applied to current particle

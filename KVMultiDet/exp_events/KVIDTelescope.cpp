@@ -1437,6 +1437,13 @@ void KVIDTelescope::SetIdentificationStatus(KVIdentificationResult* IDR, const K
    // Then this expression will be tested here in order to determine particle
    // identification status
 
+   KVNucleus test(IDR->Z, IDR->A);
+   if (!test.IsKnown()) { // reject weird identifications as pile-up (in between lines)
+      IDR->Zident = false;
+      IDR->IDquality = 4;
+      IDR->IDOK = false;
+      return;
+   }
    IDR->Zident = true;
    if (!HasMassID()) {
       IDR->Aident = false;

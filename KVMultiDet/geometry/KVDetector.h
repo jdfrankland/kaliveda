@@ -407,7 +407,6 @@ public:
          fParticles->SetCleanup();
       }
       fParticles->Add(part);
-      SetAnalysed();
    }
 
    void RemoveHit(KVNucleus* part)

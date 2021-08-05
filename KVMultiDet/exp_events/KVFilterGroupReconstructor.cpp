@@ -19,37 +19,54 @@ KVReconNucTrajectory* KVFilterGroupReconstructor::get_recon_traj_for_particle(co
          }
       }
    }
+   if (!Rtraj) {
+      Info("reocn", "noRtraj for this: %s %s", node->GetName(), traj->GetPathString().Data());
+   }
    return Rtraj;
 }
 
 void KVFilterGroupReconstructor::identify_particle(KVIDTelescope* idt, KVIdentificationResult* IDR, KVReconstructedNucleus& nuc)
 {
    // check associated simulated particle passes identification threshold
+   //
+   // if more than one simulated particle stopped in the same detector, we add the Z, A and E of each particle together
+   // and merge the lists of parameters into one.
 
-   if (part_correspond[&nuc].GetEntries() > 1) {
-      Warning("identify_particle", "This reconstructed particle is associated to >1 simulated particles:");
+   int multihit;
+   if ((multihit = part_correspond[&nuc].GetEntries()) > 1) {
+      KVNucleus sum_part;
       TIter next(&part_correspond[&nuc]);
       KVNucleus* N;
-      while ((N = (KVNucleus*)next())) N->Print();
-
-      IDR->IDOK = false;
+      KVNameValueList q;
+      // the parameter lists are added to q because the KVNucleus operator+ does
+      // not retain any parameters from either of its arguments
+      while ((N = (KVNucleus*)next())) {
+         sum_part += *N;
+         q.Merge(*N->GetParameters());
+      }
+      sum_part.GetParameters()->Merge(q);
+      auto sim_part = (KVNucleus*)part_correspond[&nuc].First();
+      // replace properties of first nucleus in list with summed properties
+      part_correspond[&nuc].Clear();
+      sum_part.Copy(*sim_part);
+      part_correspond[&nuc].Add(sim_part);
+      sim_part->SetParameter("PILEUP", Form("%d particles in %s", multihit, nuc.GetStoppingDetector()->GetName()));
+      nuc.GetParameters()->Concatenate(*sim_part->GetParameters());
+   }
+   auto sim_part = (KVNucleus*)part_correspond[&nuc].First();
+   if (idt->IsReadyForID()
+         && idt->CanIdentify(sim_part->GetZ(), sim_part->GetA())
+         && idt->CheckTheoreticalIdentificationThreshold((KVNucleus*)sim_part)) {
+      IDR->IDOK = true;
+      IDR->Z = sim_part->GetZ();
+      IDR->A = sim_part->GetA();
+      IDR->IDcode = idt->GetIDCode();
+      IDR->IDquality = 0;
+      // set mass identification status depending on telescope, Z, A & energy of simulated particle
+      idt->SetIdentificationStatus(IDR, sim_part);
    }
    else {
-      auto sim_part = (KVNucleus*)part_correspond[&nuc].First();
-      if (idt->IsReadyForID()
-            && idt->CanIdentify(sim_part->GetZ(), sim_part->GetA())
-            && idt->CheckTheoreticalIdentificationThreshold((KVNucleus*)sim_part)) {
-         IDR->IDOK = true;
-         IDR->Z = sim_part->GetZ();
-         IDR->A = sim_part->GetA();
-         IDR->IDcode = idt->GetIDCode();
-         IDR->IDquality = 0;
-         // set mass identification status depending on telescope, Z, A & energy of simulated particle
-         idt->SetIdentificationStatus(IDR, sim_part);
-      }
-      else {
-         IDR->IDOK = false;
-      }
+      IDR->IDOK = false;
    }
 }
 
@@ -58,12 +75,18 @@ void KVFilterGroupReconstructor::PerformSecondaryAnalysis()
    // After first round of identification in group, try to identify remaining particles
 
    int num_ident_0, num_ident;
+   int num_unident_0, num_unident;
    do {
       AnalyseParticles();
-      num_ident_0 = GetNIdentifiedInGroup();
-      Identify();
-      num_ident = GetNIdentifiedInGroup();
-      if (num_ident > num_ident_0) Calibrate();
+      num_ident = num_ident_0 = GetNIdentifiedInGroup();
+      num_unident_0 = GetNUnidentifiedInGroup();
+      Reconstruct();
+      num_unident = GetNUnidentifiedInGroup();
+      if (num_unident > num_unident_0) {
+         Identify();
+         num_ident = GetNIdentifiedInGroup();
+         if (num_ident > num_ident_0) Calibrate();
+      }
    }
    while (num_ident > num_ident_0); // continue until no more new identifications occur
 }
@@ -84,6 +107,19 @@ void KVFilterGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* par
    }
 }
 
+void KVFilterGroupReconstructor::IdentifyParticle(KVReconstructedNucleus& PART)
+{
+   KVGroupReconstructor::IdentifyParticle(PART);
+
+   if (PART.IsIdentified()) {
+      PART.GetReconstructionTrajectory()->IterateFrom();
+      KVGeoDetectorNode* node;
+      while ((node = PART.GetReconstructionTrajectory()->GetNextNode())) {
+         --number_unidentified[node->GetName()];
+      }
+   }
+}
+
 void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
 {
    // Calculate and set the energy of a (previously identified) reconstructed particle,
@@ -99,7 +135,7 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
       Info("Calib", "det=%s", det->GetName());
       Info("Calib", "number_uncalibrated=%d, energy_loss=%f", number_uncalibrated[det->GetName()], energy_loss[det->GetName()]);
       // deal with pileup in detectors
-      if (number_uncalibrated[det->GetName()] > 1) {
+      if (number_uncalibrated[det->GetName()] > 1 || det != PART->GetStoppingDetector() && number_unidentified[det->GetName()] > 0) {
          Info("Calib", "number_uncalib[%s]=%d, Einc=%f", det->GetName(), number_uncalibrated[det->GetName()], Einc);
          // there are other uncalibrated particles which hit this detector
          // the contribution for this particle must be calculated from the residual energy (Einc)
@@ -149,7 +185,9 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
       Einc += edet;
       --number_uncalibrated[det->GetName()];
       energy_loss[det->GetName()] -= dE;
+      det->SetEnergyLoss(energy_loss[det->GetName()]);
       Info("Calib", "After: number_uncalibrated=%d, energy_loss=%f", number_uncalibrated[det->GetName()], energy_loss[det->GetName()]);
+      Info("Calib", "After: number_unidentified=%d", number_unidentified[det->GetName()]);
    }
    if (PART->GetECode() > 0) {
       PART->SetEnergy(Einc);

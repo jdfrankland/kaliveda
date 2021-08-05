@@ -452,7 +452,7 @@ public:
       fList.Sort(order);
    }
 
-   KVNameValueList operator += (const KVNameValueList& nvl);
+   void Concatenate(const KVNameValueList& nvl);
 
    void WriteClass(const Char_t* classname, const Char_t* classdesc, const Char_t* base_class = "");
 

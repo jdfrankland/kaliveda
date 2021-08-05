@@ -113,7 +113,6 @@ void KVNamedParameter::Add(const KVNamedParameter& p)
    // Numerical values: Add the numerical value of "p" to this parameter
    // Strings: add string to comma-separated list of values
    // If parameters are not same type, print warning and do nothing
-
    if (GetType() != p.GetType()) {
       Warning("Add", "Parameters are not same type: this->name=%s (type=%d) other->name=%s (type=%d)",
               GetName(), GetType(), p.GetName(), p.GetType());

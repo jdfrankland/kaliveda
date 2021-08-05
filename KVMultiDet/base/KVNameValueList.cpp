@@ -332,7 +332,6 @@ void KVNameValueList::AddValue(const KVNamedParameter& p)
    // add numerical value of p to value of parameter in list,
    // or for strings we add to a comma-separated list of strings.
    // otherwise, add a copy of p to list
-
    KVNamedParameter* par = FindParameter(p.GetName());
    par ? par->Add(p) : fList.Add(new KVNamedParameter(p));
 }
@@ -512,12 +511,15 @@ void KVNameValueList::WriteEnvFile(const Char_t* filename)
 }
 
 
-KVNameValueList KVNameValueList::operator += (const KVNameValueList& nvl)
+void KVNameValueList::Concatenate(const KVNameValueList& nvl)
 {
+   // Concatenate this list with nvl.
+   //
+   // \note Any parameters with the same name in nvl will **replace** the corresponding parameters in this one
+
    TIter it(nvl.GetList());
    KVNamedParameter* par = 0;
    while ((par = (KVNamedParameter*)it())) SetValue(*par);
-   return *this;
 }
 
 void KVNameValueList::WriteClass(const Char_t* classname, const Char_t* classdesc, const Char_t* base_class)
@@ -553,8 +555,10 @@ void KVNameValueList::WriteToEnv(TEnv* tenv, const TString& prefix)
 void KVNameValueList::Merge(const KVNameValueList& other)
 {
    // Merge other list into this one.
-   // Any parameters in 'other' which do not exist in this one are added.
-   // Any parameters which exist in both have their values summed.
+   //
+   // Any parameters in 'other' which do not exist in this one are added to this list.
+   //
+   // Any parameters which exist in both have their values summed (see KVNamedParameter::Add()).
 
    for (int i = 0; i < other.GetNpar(); ++i) {
       KVNamedParameter* np_other = other.GetParameter(i);
