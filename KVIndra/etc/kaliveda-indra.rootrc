@@ -300,7 +300,7 @@ INDRADB.CalibrationFiles:     INDRA.CalibrationFiles.dat
 # [dataset name].ActiveIdentifications:    [type1]  [type2] ...
 
 #================================ Plugins for detectors
-+Plugin.KVDetector:     INDRA      KVINDRADetector      KVIndrageometry      "KVINDRADetector()"
+Plugin.KVDetector:     INDRA      KVINDRADetector      KVIndrageometry      "KVINDRADetector()"
 +Plugin.KVDetector:      PHOS      KVPhoswich      KVIndrageometry      "KVPhoswich(Float_t)"
 +Plugin.KVDetector:      ^SI$      KVSilicon      KVIndrageometry      "KVSilicon(Float_t)"
 +Plugin.KVDetector:      ^SILI$      KVSiLi      KVIndrageometry      "KVSiLi(Float_t)"
