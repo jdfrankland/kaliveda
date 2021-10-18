@@ -135,7 +135,7 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
       Info("Calib", "det=%s", det->GetName());
       Info("Calib", "number_uncalibrated=%d, energy_loss=%f", number_uncalibrated[det->GetName()], energy_loss[det->GetName()]);
       // deal with pileup in detectors
-      if (number_uncalibrated[det->GetName()] > 1 || det != PART->GetStoppingDetector() && number_unidentified[det->GetName()] > 0) {
+      if (number_uncalibrated[det->GetName()] > 1 || (det != PART->GetStoppingDetector() && number_unidentified[det->GetName()] > 0)) {
          Info("Calib", "number_uncalib[%s]=%d, Einc=%f", det->GetName(), number_uncalibrated[det->GetName()], Einc);
          // there are other uncalibrated particles which hit this detector
          // the contribution for this particle must be calculated from the residual energy (Einc)

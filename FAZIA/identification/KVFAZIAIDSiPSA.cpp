@@ -85,8 +85,8 @@ void KVFAZIAIDSiPSA::SetIdentificationStatus(KVIdentificationResult* IDR, const 
 {
    // For filtering simulations
    // If n->GetEnergy() is above threshold for mass identification, we set
-   // n->IsAMeasured(kTRUE) (and n->IsZMeasured(kTRUE)).
-   // Otherwise, we just set n->IsZMeasured(kTRUE) and use the A given by
+   // IDR->IsAMeasured(kTRUE) (and IDR->IsZMeasured(kTRUE)).
+   // Otherwise, we just set IDR->IsZMeasured(kTRUE) and use the A given by
    // the mass formula for the particle
    //
    // Z-dependence of A identification:
@@ -100,12 +100,15 @@ void KVFAZIAIDSiPSA::SetIdentificationStatus(KVIdentificationResult* IDR, const 
    Bool_t okmass = (n->GetZ() < 17) || (n->GetZ() < 22 && gRandom->Uniform() < fMassIDProb->Eval(IDR->Z));
    okmass = okmass && (n->GetEnergy() >= fAThreshold->Eval(n->GetZ()));
    if (okmass) {
-      IDR->Aident=true;
+      IDR->Aident = true;
    }
    else {
       n->GetParameters()->SetValue("OriginalMass", n->GetA());
-      double e = n->GetE();
-      n->SetZ(n->GetZ());
-      n->SetE(e);
+      // double e = n->GetE();
+      //  n->GetZ();
+      // n->SetE(e); ???
+      // give to IDR the mass corresponding to mass formula for particle?
+      IDR->A = n->GetA();
+      IDR->Aident = false;
    }
 }

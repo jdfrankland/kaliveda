@@ -108,15 +108,16 @@ void KVFAZIAIDTelescope::SetIdentificationStatus(KVIdentificationResult* IDR, co
 
    if (okmass) {
       //reset A to the original mass in case of multiple call of this method
-      if (n->GetParameters()->HasParameter("OriginalMass")) n->SetA(n->GetParameters()->GetIntValue("OriginalMass"));
-      IDR->Aident=true;
+      if (n->GetParameters()->HasParameter("OriginalMass")) IDR->A = n->GetParameters()->GetIntValue("OriginalMass");
+      IDR->Aident = true;
    }
    else {
       //save the original mass in the parameter list in case of multiple call of this method
       n->GetParameters()->SetValue("OriginalMass", n->GetA());
-      double e = n->GetE();
-      n->SetZ(n->GetZ());
-      n->SetE(e);
-      IDR->Aident=false;
+      // double e = n->GetE();
+      // give to IDR the mass corresponding to mass formula for particle?
+      IDR->A = n->GetA();
+      // n->SetE(e); ???
+      IDR->Aident = false;
    }
 }
