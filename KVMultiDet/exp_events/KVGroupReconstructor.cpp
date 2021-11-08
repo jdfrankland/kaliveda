@@ -138,7 +138,9 @@ KVReconstructedNucleus* KVGroupReconstructor::ReconstructTrajectory(const KVGeoD
 
    KVDetector* d = node->GetDetector();
    nfireddets += d->Fired();
-   // if d has fired and is either independent (only one trajectory passes through it)
+   // if d has fired, has not been used to seed a reconstructed particle (IsAnalysed),
+   // is not on the trajectory of a reconstructed particle (GetHits()->GetEntries()),
+   // and is either independent (at most only one trajectory goes forward from it : 0 if it is the first detector of a stack)
    // or, if several trajectories pass through it,
    // only if the detector directly in front of it on this trajectory fired also
    if (!d->IsAnalysed() && d->Fired(fPartSeedCond)
@@ -172,6 +174,9 @@ void KVGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* part, con
    // \sa KVReconNucTrajectory
 
    auto Rtraj = get_recon_traj_for_particle(traj, node);
+   if (!Rtraj)
+      throw std::runtime_error(Form("<KVGroupReconstructor::ReconstructParticle>: Failed to obtain reconstruction trajectory for node %s on trajectory %s",
+                                    node->GetName(), traj->GetPathString().Data()));
    part->SetReconstructionTrajectory(Rtraj);
    part->SetParameter("ARRAY", GetGroup()->GetArray()->GetName());
    // only the stopping detector is set 'analysed' (to stop any new particles

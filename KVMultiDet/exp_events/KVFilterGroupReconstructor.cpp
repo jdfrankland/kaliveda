@@ -7,10 +7,13 @@ KVReconNucTrajectory* KVFilterGroupReconstructor::get_recon_traj_for_particle(co
 
    KVReconNucTrajectory* Rtraj{nullptr};
 
+   Info("get_recon_traj", "node=%s traj=%s", node->GetName(), traj->GetPathString().Data());
    for (auto& n : EventIterator(fSimEvent.get())) {
       TString stop = n.GetParameters()->GetTStringValue("STOPPING DETECTOR");
+      std::cout << stop << std::endl;
       if (stop == node->GetName()) {
          Rtraj = (KVReconNucTrajectory*)GetGroup()->GetTrajectoryForReconstruction(traj, node);
+         if (Rtraj) std::cout << n.GetParameters()->GetTStringValue("TRAJECTORY") << " : " << Rtraj->GetPathString() << std::endl;
          if (Rtraj && n.GetParameters()->GetTStringValue("TRAJECTORY") == Rtraj->GetPathString()) {
             // correspondence recon <-> simu
             part_correspond[current_nuc_recon].Add(&n);
@@ -20,7 +23,7 @@ KVReconNucTrajectory* KVFilterGroupReconstructor::get_recon_traj_for_particle(co
       }
    }
    if (!Rtraj) {
-      Info("reocn", "noRtraj for this: %s %s", node->GetName(), traj->GetPathString().Data());
+      Info("get_recon_traj_for_particle", "noRtraj for this: %s %s", node->GetName(), traj->GetPathString().Data());
    }
    return Rtraj;
 }
