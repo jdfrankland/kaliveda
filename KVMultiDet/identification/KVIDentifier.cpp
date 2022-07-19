@@ -30,8 +30,9 @@ void KVIDentifier::init()
    // this way a small circle is drawn at each point.
    // Also SetEditable(kFALSE) is used to stop it being modified using the mouse.
 
-   SetMarkerStyle(kCircle);
-   SetMarkerSize(0.8);
+//   SetMarkerStyle(kCircle);
+   SetMarkerStyle(20);
+   SetMarkerSize(1);
    SetLineWidth(2);
    SetEditable(kFALSE);
    fParent = 0;
