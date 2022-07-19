@@ -427,6 +427,8 @@ void KVIDGraph::UpdateLastSavedVersion()
       SetAutoAdd(); // re-enable auto add
    }
    Copy(*fLastSavedVersion);
+   fLastSavedVersion->GetIdentifiers()->Execute("SetLineColor", "kBlack");
+   fLastSavedVersion->GetIdentifiers()->Execute("SetMarkerColor", "kBlack");
 }
 
 void KVIDGraph::RevertToLastSavedVersion()
