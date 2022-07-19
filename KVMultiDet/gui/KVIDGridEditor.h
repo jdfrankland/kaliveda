@@ -219,6 +219,8 @@ public:
    void ForceUpdate();                 //rafraichit toute l'interface de force
    void SaveCurrentGrid();             //'More' -> SaveCurrentGrid ouvre une boite de dialogue pour sauver la grille
 
+   void AutoFit();            //'More' -> AutoFit try to autofit the selected lines
+
    void   SetPointStyle(int pstyle);
    int    GetPointStyle()
    {

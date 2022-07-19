@@ -59,6 +59,7 @@ KVIDGridEditor::KVIDGridEditor()
    fListOfMethods = "";
    fDefaultMethod = "";
 
+   AddMethod("AutoFit");
    AddMethod("SaveCurrentGrid");
    AddMethod("SpiderIdentification");
    AddMethod("ChangeMasses");
@@ -1742,15 +1743,14 @@ void KVIDGridEditor::SaveCurrentGrid()
    new TGMsgBox(
       gClient->GetRoot(),
       gClient->GetDefaultRoot(),
-      "KVIDGridEditor::SaveCurrentGrid", Form("Do you wat to save the grid here : %s/%s", currentdir.Data(), fn.Data()),
+      "KVIDGridEditor::SaveCurrentGrid", Form("Do you wat to save the grid here : %s", currentdir.Data(), fn.Data()),
       kMBIconExclamation, kMBYes | kMBNo, &ret_code
    );
 
    if (ret_code == kMBYes) {
-      TheGrid->WriteAsciiFile(Form("%s/%s", currentdir.Data(), fn.Data()));
+      TheGrid->WriteAsciiFile(Form("%s", currentdir.Data(), fn.Data()));
       return;
    }
-
 
    static TString dir(gSystem->ExpandPathName("."));
    const char* filetypes[] = {
@@ -1772,6 +1772,50 @@ void KVIDGridEditor::SaveCurrentGrid()
    }
    dir = fi.fIniDir;
    gSystem->cd(currentdir.Data());
+}
+
+void KVIDGridEditor::AutoFit()
+{
+   TheGrid->UpdateLastSavedVersion();
+   int nbin = 2;
+   int threshold = 10;
+   TSpectrum spec;
+   KVIDentifier* id = 0;
+   TIter it(ListOfLines);
+   while ((id = (KVIDentifier*)it())) {
+      KVIDentifier* ref = TheGrid->GetIdentifier(id->GetZ(), id->GetA() + 1);
+      if (!ref) ref = TheGrid->GetIdentifier(id->GetZ(), id->GetA() - 1);
+      for (int ii = 0; ii < id->GetN(); ii++) {
+         double xx = id->GetX()[ii];
+         double yy = id->GetY()[ii];
+         double dyref = .5;
+         if (ref) dyref = abs(yy - ref->Eval(xx)) / 2;
+         int xbin = TheHisto->GetXaxis()->FindBin(xx);
+         TH1* hh = TheHisto->ProjectionY("toto", xbin - nbin, xbin + nbin, "goff");
+         if (dyref > 0) hh->GetXaxis()->SetRangeUser(yy - dyref * 2, yy + dyref * 2);
+         int nfound = spec.Search(hh, dyref, "goff", 0.05);
+         Double_t* xpeaks = spec.GetPositionX();
+         Double_t* ypeaks = spec.GetPositionY();
+         TList markers;
+         markers.SetOwner(kTRUE);
+         double dy = 1e20;
+         double ygood = -1.;
+         for (int ip = 0; ip < nfound; ip++) {
+            KVIdentificationResult idr;
+            TheGrid->Identify(xx, xpeaks[ip], &idr);
+
+            if (ypeaks[ip] > threshold && (idr.Z == id->GetZ() && idr.A == id->GetA())) {}
+            else continue;
+
+            if (abs(xpeaks[ip] - yy) < dy) {
+               dy = abs(xpeaks[ip] - yy);
+               ygood = xpeaks[ip];
+            }
+         }
+         if (ygood > 0) id->GetY()[ii] = ygood;
+         delete hh;
+      }
+   }
 }
 
 //________________________________________________________________
