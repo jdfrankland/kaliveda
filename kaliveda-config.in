@@ -17,14 +17,16 @@ get_lib_list()
    # $1 = KVMultiDet etc.
    # $2 = /usr/lib etc.
    tmp3=""
+   libextent=".so"
+   if [ @APPLE@ ] ; then libextent=".dylib" ; fi
    unset lib_list
-   tmp=`find $2 -name 'lib'$1'*.so'`
+   tmp=`find $2 -name 'lib'$1'*'${libextent} -type l ! -name '*[0-9]*'`
    #echo $tmp
    for file in $tmp
    do
    	#echo $file
       if [ -e "$file" ]; then
-   	   tmp2=`basename $file .so`
+           tmp2=`basename $file ${libextent}`
          #echo $tmp2
    	   tmp3="$tmp2 $tmp3"
    	fi
@@ -160,7 +162,9 @@ while test $# -gt 0; do
       ;;
     --linklibs)
       ### output all flags for linking
-      out="$out -L$libdir $libs $root_libs"
+      out="$out -L$libdir $libs"
+      if [ @APPLE@ ] ; then out="$out -Wl,-rpath,$libdir" ; fi
+      out="$out $root_libs"
       ;;
     --help)
       ### Print a help message

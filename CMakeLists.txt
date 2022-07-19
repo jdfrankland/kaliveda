@@ -12,6 +12,7 @@ project(KaliVeda)
 #-- Fixing warning on Mac OSX due to CMake version
 if(CMAKE_MAJOR_VERSION GREATER 2)
    set(CMAKE_MACOSX_RPATH 1)
+   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 endif()
 
 #- set path to our cmake modules
