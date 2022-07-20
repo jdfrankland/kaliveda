@@ -1,5 +1,6 @@
 #include "KVFilterEventReconstructor.h"
 #include "KVFilterGroupReconstructor.h"
+#include "KVNucleusEvent.h"
 
 KVFilterEventReconstructor::KVFilterEventReconstructor(KVMultiDetArray* arg1, KVReconstructedEvent* arg2, KVEvent* E, const TString& det_frame)
    : KVEventReconstructor(arg1, arg2), fSimEvent(E), fDetectionFrame(det_frame)

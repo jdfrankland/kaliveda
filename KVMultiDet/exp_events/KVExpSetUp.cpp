@@ -177,7 +177,7 @@ Bool_t KVExpSetUp::HandleRawDataEvent(KVRawDataReader* rawdata)
       while ((mda = (KVMultiDetArray*)next_array())) {
          fFiredDetectors.AddAll(&mda->fFiredDetectors);
          fFiredSignals.AddAll(&mda->fFiredSignals);
-         fReconParameters += mda->GetReconParameters();
+         fReconParameters.Concatenate(mda->GetReconParameters());
       }
       return true;
    }

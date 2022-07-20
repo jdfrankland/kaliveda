@@ -45,7 +45,7 @@ public:
       // Increment hit count in each detector on particle's trajectory
 
       KVNucleus* nuc;
-      n->Copy(*(nuc = fSimEvent->AddParticle()));
+      n->Copy(*(nuc = fSimEvent->AddNucleus()));
       auto traj = GetGroup()->FindReconTraj(n->GetParameters()->GetStringValue("TRAJECTORY"));
       traj->IterateFrom();
       while (auto node = traj->GetNextNode()) {

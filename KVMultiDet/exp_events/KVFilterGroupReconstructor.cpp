@@ -1,4 +1,5 @@
 #include "KVFilterGroupReconstructor.h"
+#include "KVNucleusEvent.h"
 
 KVReconNucTrajectory* KVFilterGroupReconstructor::get_recon_traj_for_particle(const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node)
 {
