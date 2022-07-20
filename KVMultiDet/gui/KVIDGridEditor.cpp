@@ -1743,12 +1743,12 @@ void KVIDGridEditor::SaveCurrentGrid()
    new TGMsgBox(
       gClient->GetRoot(),
       gClient->GetDefaultRoot(),
-      "KVIDGridEditor::SaveCurrentGrid", Form("Do you wat to save the grid here : %s", currentdir.Data(), fn.Data()),
+      "KVIDGridEditor::SaveCurrentGrid", Form("Do you wat to save the grid here : %s", fn.Data()),
       kMBIconExclamation, kMBYes | kMBNo, &ret_code
    );
 
    if (ret_code == kMBYes) {
-      TheGrid->WriteAsciiFile(Form("%s", currentdir.Data(), fn.Data()));
+      TheGrid->WriteAsciiFile(Form("%s", fn.Data()));
       return;
    }
 
