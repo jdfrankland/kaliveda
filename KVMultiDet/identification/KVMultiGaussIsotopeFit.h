@@ -154,6 +154,7 @@ public:
    double GetMeanA(double PID) const;
    std::map<int, double> GetADistribution(double PID) const;
    int GetA(double PID, double& P) const;
+   double GetProbability(int A, double PID) const;
    double GetInterpolatedA(double PID) const
    {
       // calculate interpolated A from PID using the quadratic fit parameters

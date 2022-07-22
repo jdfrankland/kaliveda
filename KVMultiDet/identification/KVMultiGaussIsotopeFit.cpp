@@ -218,6 +218,21 @@ int KVMultiGaussIsotopeFit::GetA(double PID, double& P) const
    return 0; // background noise
 }
 
+double KVMultiGaussIsotopeFit::GetProbability(int A, double PID) const
+{
+   // \param[in] A isotope mass number
+   // \param[in] PID value of PID associated with A
+   // \return the probability that A is the correct mass number for a given PID value
+   // \return zero if A is not associated with a Gaussian in the fit
+
+   auto it = std::find(std::begin(Alist), std::end(Alist), A);
+   if (it != std::end(Alist)) {
+      int ig = std::distance(std::begin(Alist), it);
+      return evaluate_gaussian(ig, PID) / Eval(PID);
+   }
+   return 0;
+}
+
 
 
 void KVMultiGaussIsotopeFit::SetFitRange(double min, double max)
