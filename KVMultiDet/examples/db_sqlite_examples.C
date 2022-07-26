@@ -15,7 +15,7 @@ void sqlite_example()
       // define and add a table to database
       KVSQLite::table cars("Cars");
       cars.add_primary_key("Id");
-      cars.add_column("Name", "TEXT");
+      cars.add_column("Model", "TEXT");
       cars.add_column("Price", "INTEGER");
       db.add_table(cars);
       // This is equivalent to
@@ -27,14 +27,14 @@ void sqlite_example()
       db.prepare_data_insertion("Cars");
       int row = 0;
       while (names[row] != "-") {
-         db["Cars"]["Name"].set_data(names[row]); // N.B. do not use the 'cars' variable
+         db["Cars"]["Model"].set_data(names[row]); // N.B. do not use the 'cars' variable
          db["Cars"]["Price"] = prices[row]; // use 'set_data' or simply '=' to fill columns in row
          db.insert_data_row();
          ++row;
       }
       db.end_data_insertion();
       // Now our table looks like this:
-      //      Id          Name        Price
+      //      Id          Model        Price
       //      ----------  ----------  ----------
       //      1           Audi        52642
       //      2           Mercedes    57127
@@ -68,6 +68,24 @@ void sqlite_example()
          ++row;
       }
       db.end_data_insertion();
+
+      // add table with foreign key to demonstrate their use to link table informations
+      KVSQLite::table tt("CarOwners");
+      tt.add_primary_key("ownerid");
+      tt.add_column("Owner", KVSQLite::column_type::TEXT);
+      tt.add_foreign_key("Cars", "Id");
+      db.add_table(tt);
+
+      int car_id[] = {2, 8, 1, 6, 7, 3, 5, 4};
+      TString owner[] = {"Jeremy", "Hamster", "Jeremy", "James", "James", "Hamster", "Jeremy", "Jeremy"};
+      db.prepare_data_insertion("CarOwners");
+      int N = 8;
+      while (N--) {
+         db["CarOwners"]["Owner"].set_data(owner[N]);
+         db["CarOwners"]["Id"].set_data(car_id[N]);
+         db.insert_data_row();
+      }
+      db.end_data_insertion();
    }
 
    // Retrieving and selecting data
@@ -81,7 +99,7 @@ void sqlite_example()
    db.select_data("Cars"); //  ====>  SELECT * FROM Cars
    while (db.get_next_result()) {
       std::cout << db["Cars"]["Id"].get_data<int>()
-                << "\t\t\t" << db["Cars"]["Name"].get_data<TString>()
+                << "\t\t\t" << db["Cars"]["Model"].get_data<TString>()
                 << "\t\t\t" << db["Cars"]["Price"].get_data<int>()
                 << std::endl;
    }
@@ -94,17 +112,17 @@ void sqlite_example()
    KVSQLite::table& Cars = db["Cars"];
    while (db.get_next_result()) {
       std::cout << Cars["Id"].get_data<int>()
-                << "\t\t\t" << Cars["Name"].get_data<TString>()
+                << "\t\t\t" << Cars["Model"].get_data<TString>()
                 << "\t\t\t" << Cars["Price"].get_data<int>()
                 << std::endl;
    }
    std::cout << std::endl << std::endl;
 
    // 3. Unique column values
-   std::cout << "SELECT DISTINCT Name FROM Cars\n" << std::endl;
-   db.select_data("Cars", "Name", "", true); //  ====>  SELECT DISTINCT Name FROM Cars
+   std::cout << "SELECT DISTINCT Model FROM Cars\n" << std::endl;
+   db.select_data("Cars", "Model", "", true); //  ====>  SELECT DISTINCT Name FROM Cars
    while (db.get_next_result()) {
-      std::cout << Cars["Name"].get_data<TString>() << ", ";
+      std::cout << Cars["Model"].get_data<TString>() << ", ";
    }
    std::cout << std::endl << std::endl;
 
@@ -148,6 +166,19 @@ void sqlite_example()
    std::cout << "The number of rows with no Worker name in table Tasks is " <<
              db.count("Tasks", "*", "Worker IS NULL")
              << std::endl;  // prints 0 (all NULL values were replaced)
+
+   // 7. Example of using a foreign key to link table informations
+   std::cout << "Owner"
+             << "\t\t\t" << "Model"
+             << "\t\t\t" << "Price"
+             << std::endl;
+   db.select_data("Cars,CarOwners", "Owner,Model,Price", "", false, "ORDER BY Owner");
+   while (db.get_next_result()) {
+      std::cout << db["CarOwners"]["Owner"].get_data<TString>()
+                << "\t\t\t" << db["Cars"]["Model"].get_data<TString>()
+                << "\t\t\t" << db["Cars"]["Price"].get_data<int>()
+                << std::endl;
+   }
 
 }
 #endif

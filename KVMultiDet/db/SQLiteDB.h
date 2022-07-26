@@ -10,9 +10,8 @@
 #include "KVConfig.h"
 #include <utility>
 #include <iostream>
-#ifdef WITH_CPP11
 #include <unordered_map>
-#endif
+#include <list>
 #include <map>
 #include <KVNameValueList.h>
 #include <KVNumberList.h>
@@ -118,14 +117,15 @@ namespace KVSQLite {
       TString fConstraint;//column constraint
       int fIndex;//index of column
       static std::map<KVSQLite::column_type::types, TString> inv_type_map;
-      KVNamedParameter fData; // data item in column
-      void* fBlob;//! binary data
-      Long_t fBlobSize;// size of blob
+      mutable KVNamedParameter fData; // data item in column
+      mutable void* fBlob;//! binary data
+      mutable Long_t fBlobSize;// size of blob
       bool fPrimaryKey;
       bool fForeignKey;
       TString fFKtable;//table for foreign key
       TString fFKcolumn;//column for foreign key
       mutable bool fIsNull;//for inserting NULL values
+      TString fTable;// name of parent table
 
       void init_type_map();
       const char* _type();
@@ -158,7 +158,16 @@ namespace KVSQLite {
          return const_cast<column*>(this)->_type();
       }
       const char* get_declaration() const;
-
+      const char* get_table() const
+      {
+         // return name of parent table
+         return fTable;
+      }
+      void set_table(const TString& name)
+      {
+         // set parent table name
+         fTable = name;
+      }
       int index() const
       {
          return fIndex;
@@ -207,7 +216,7 @@ namespace KVSQLite {
       }
 
       void set_data_in_statement(TSQLStatement*, int idx = -1) const;
-      void set_data_from_statement(TSQLStatement* s, int idx = -1);
+      void set_data_from_statement(TSQLStatement* s, int idx = -1) const;
       void set_constraint(const TString& c)
       {
          // set constraint for column, one of:
@@ -254,11 +263,7 @@ namespace KVSQLite {
       TString fName;//name of table
       KVSQLite_insert_mode fInsert;//insert mode
       mutable std::vector<KVSQLite::column> fColumns;//list of columns
-#ifdef WITH_CPP11
       mutable std::unordered_map<std::string, int> fColMap; //map name of column to index
-#else
-      mutable std::map<std::string, int> fColMap; //map name of column to index
-#endif
       static std::map<TString, KVSQLite::column_type::types> type_map;
       bool fTemp;//temporary table?
 
@@ -274,6 +279,7 @@ namespace KVSQLite {
          : fName(Name), fInsert(KVSQLite::insert_mode::DEFAULT), fColumns(cols), fColMap(), fTemp(false)
       {
          if (!type_map.size()) init_type_map();
+         for (auto& c : fColumns) c.set_table(Name);
       }
       virtual ~table() {}
 
@@ -324,9 +330,17 @@ namespace KVSQLite {
       }
       column& add_column(const TString& name, const TString& type);
       const column& add_primary_key(const TString& name);
-      const column& add_foreign_key(const TString& name, const TString& other_table, const TString& other_column);
-      const column& add_foreign_key(const TString& name, const table& other_table, const column& other_column);
+      const column& add_foreign_key(const TString& other_table, const TString& other_column);
+      const column& add_foreign_key(const table& other_table, const column& other_column);
+      const KVSQLite::column& operator[](int i) const
+      {
+         return fColumns[i];
+      }
       KVSQLite::column& operator[](int i)
+      {
+         return fColumns[i];
+      }
+      KVSQLite::column& get_column(int i)
       {
          return fColumns[i];
       }
@@ -338,17 +352,16 @@ namespace KVSQLite {
 
       KVSQLite::column& operator[](const TString& n)
       {
-         if (!has_column(n)) {
-            std::cout << "Error in <KVSQLite::table::operator[const TString&]> : "
-                      << n << " is not a column of table " << name() << std::endl;
-            return fColumns[0];
-         }
-         return fColumns[fColMap[n.Data()]];
+         return get_column(n);
       }
       const KVSQLite::column& operator[](const TString& n) const
       {
+         return const_cast<table*>(this)->get_column(n);
+      }
+      KVSQLite::column& get_column(const TString& n)
+      {
          if (!has_column(n)) {
-            std::cout << "Error in <KVSQLite::table::operator[const TString&]> : "
+            std::cout << "Error in <KVSQLite::table::get_column(const TString&)> : "
                       << n << " is not a column of table " << name() << std::endl;
             return fColumns[0];
          }
@@ -373,13 +386,10 @@ namespace KVSQLite {
 
    class database {
       std::unique_ptr<TSQLiteServer> fDBserv;       //connection to database
-#ifdef WITH_CPP11
       mutable std::unordered_map<std::string, KVSQLite::table> fTables; //map of tables in database
-#else
-      mutable std::map<std::string, KVSQLite::table> fTables; //map of tables in database
-#endif
       mutable std::unique_ptr<TSQLStatement> fSQLstmt;     //used for bulk operations
-      mutable KVSQLite::table* fBulkTable;            //pointer to table currently used with fSQLstmt
+      mutable std::list<const column*> fSQLstmtCols; // columns used in SQL statement
+      mutable table* fBulkTable;            //pointer to table currently used with fSQLstmt
       mutable bool fInserting;
       mutable bool fSelecting;
       mutable bool fEmptyResultSet;
@@ -419,7 +429,10 @@ namespace KVSQLite {
       {
          return fTables.size();
       }
-      virtual ~database() {}
+      virtual ~database()
+      {
+         close();
+      }
       bool is_inserting() const
       {
          // \return true if data insertion is in progress (i.e. after call to
@@ -446,7 +459,7 @@ namespace KVSQLite {
 
       void Dump() const;
 
-      void add_table(KVSQLite::table&);
+      void add_table(const table&);
       bool has_table(const TString& table)
       {
          // \returns true if "table" exists in database
@@ -455,17 +468,16 @@ namespace KVSQLite {
 
       KVSQLite::table& operator[](const TString& name)
       {
-         if (!fTables.count(name.Data())) {
-            std::cout << "Error in <KVSQLite::database::operator[const TString&]> : "
-                      << name << " is not a table of database" << std::endl;
-            return fTables.begin()->second;
-         }
-         return fTables[name.Data()];
+         return get_table(name);
       }
       const KVSQLite::table& operator[](const TString& name) const
       {
+         return const_cast<database*>(this)->get_table(name);
+      }
+      KVSQLite::table& get_table(const TString& name)
+      {
          if (!fTables.count(name.Data())) {
-            std::cout << "Error in <KVSQLite::database::operator[const TString&]> : "
+            std::cout << "Error in <KVSQLite::database::get_table(const TString&)> : "
                       << name << " is not a table of database" << std::endl;
             return fTables.begin()->second;
          }
@@ -476,7 +488,7 @@ namespace KVSQLite {
       void insert_data_row();
       void end_data_insertion();
 
-      bool select_data(const TString& table, const TString& columns = "*", const TString& selection = "",
+      bool select_data(const TString& tables, const TString& columns = "*", const TString& selection = "",
                        bool distinct = false, const TString& anything_else = "") const;
       bool get_next_result() const;
       KVNumberList get_integer_list(const TString& table, const TString& column,
@@ -498,6 +510,7 @@ namespace KVSQLite {
 
       void copy_table_data(const TString& source, const TString& destination, const TString& columns = "*", const TString& selection = "");
       void print_selection(const TString& table, const TString& columns, const TString& condition, int column_width = 20) const;
+      void print_selected_data(const TString& tables, const TString& columns = "*", const TString& selection = "", bool distinct = false, const TString& anything_else = "");
 
       ClassDef(database, 0) //Interface to ROOT SQLite database backend
    };

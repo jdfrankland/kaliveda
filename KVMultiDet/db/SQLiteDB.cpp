@@ -11,6 +11,7 @@
 #include <iostream>
 #include "KVError.h"
 #include <iomanip>
+#include "TSystem.h"
 
 ClassImp(KVSQLite::database)
 ClassImp(KVSQLite::table)
@@ -46,12 +47,18 @@ namespace KVSQLite {
 
          table t(o->GetName());
 
-         std::unique_ptr<TSQLTableInfo> ti(fDBserv->GetTableInfo(o->GetName()));
-
-         TIter it_col(ti->GetColumns());
-         TSQLColumnInfo* colin;
-         while ((colin = (TSQLColumnInfo*)it_col())) t.add_column(colin->GetName(), colin->GetTypeName());
-
+         std::unique_ptr<TSQLResult> columnRes(fDBserv->GetColumns("", o->GetName()));
+         if (!columnRes.get()) {
+            Error("read_table_infos", "Cannot get information on columns for table %s", o->GetName());
+            return;
+         }
+         std::unique_ptr<TSQLRow> columnRow(columnRes->Next());
+         while ((columnRow.get()) != nullptr) {
+            column& col = t.add_column(columnRow->GetField(1), columnRow->GetField(2));
+            TString primary_key(columnRow->GetField(5));
+            if (primary_key.Atoi() == 1) col.set_constraint("PRIMARY KEY");
+            columnRow.reset(columnRes->Next());
+         }
          fTables.insert(std::pair<std::string, KVSQLite::table>(o->GetName(), t));
       }
 
@@ -74,8 +81,21 @@ namespace KVSQLite {
    void database::open(const TString& dbfile)
    {
       // Open/create sqlite db file given path
-      // \param[in] dbfile full path to file
-      TString uri = "sqlite://" + dbfile;
+      //
+      // Any special characters/environment variables are first expanded, so
+      // you can use:
+      //~~~~
+      // ~/mydata.db
+      // $(SOME_PATH)/toto.db
+      //~~~~
+
+      TString exp_path = dbfile;
+      if (gSystem->ExpandPathName(exp_path)) {
+         Error("open", "problem with SQLite database filename: %s", dbfile.Data());
+         fIsValid = false;
+         return;
+      }
+      TString uri = "sqlite://" + exp_path;
       fDBserv.reset(static_cast<TSQLiteServer*>(TSQLServer::Connect(uri, 0, 0)));
       // check for valid database file
       if (!fDBserv->Exec("pragma schema_version")) {
@@ -135,7 +155,7 @@ namespace KVSQLite {
       std::cout << std::endl;
    }
 
-   void database::add_table(table& t)
+   void database::add_table(const table& t)
    {
       // add table to database (if it does not exist already)
       //
@@ -257,6 +277,8 @@ namespace KVSQLite {
       static TString decl;
       decl.Form("\"%s\" %s", name(), type_name());
       if (fForeignKey) {
+         decl += ", FOREIGN KEY";
+         decl += Form("(\"%s\")", name());
          decl += " REFERENCES ";
          decl += Form("\"%s\"(\"%s\")", fFKtable.Data(), fFKcolumn.Data());
       }
@@ -321,15 +343,34 @@ namespace KVSQLite {
       fDBserv->Commit();
       fInserting = false;
    }
-
-   bool database::select_data(const TString& table, const TString& columns, const TString& selection, bool distinct, const TString& anything_else) const
+   void database::print_selected_data(const TString& tables, const TString& columns, const TString& selection, bool distinct, const TString& anything_else)
    {
-      // Select data in database from given table according to
+      // Print out results of a call to select_data().
+
+      if (select_data(tables, columns, selection, distinct, anything_else)) {
+         for (auto col : fSQLstmtCols) {
+            std::cout << col->get_table() << "::" << col->name() << "\t\t\t";
+         }
+         std::cout << std::endl;
+         while (get_next_result()) {
+            for (auto col : fSQLstmtCols) {
+               std::cout << col->data().GetString() << "\t\t\t";
+            }
+            std::cout << std::endl;
+         }
+      }
+   }
+   bool database::select_data(const TString& tables, const TString& columns, const TString& selection, bool distinct, const TString& anything_else) const
+   {
+      // Select data in database from given table(s) according to
       //~~~~
-      //    SELECT [columns] FROM [table] WHERE [selection] [anything_else]
+      //    SELECT [columns] FROM [tables] WHERE [selection] [anything_else]
       //~~~~
       // In order to retrieve results, call get_next_result() until it returns false.
       //
+      // \param tables if more than 1 table is given, separate table names with commas.
+      //           if 1 table has a foreign key referencing the other, this allows to JOIN data
+      //           in both tables together. [columns] can then refer to columns in either table.
       // \param columns ="*" by default, i.e. data from all columns is retrieved.
       //            If specific column data is to be selected, give a comma-separated list of
       //            column names. These will be quoted correctly in case they contain spaces.
@@ -345,34 +386,48 @@ namespace KVSQLite {
                "data retrieval already in progress; call get_next_result() until it returns false before making new selection");
          return false;
       }
-      // set up SQL statement for data retrieval
-      fBulkTable = &fTables[table.Data()];
+      fSQLstmtCols.clear();
+      std::list<const table*> table_list;
+      KVString table_selection(""), _tables(tables);
+      _tables.Begin(",");
+      // put quoted table names in table_selection
+      int i(0);
+      while (!_tables.End()) {
+         TString tabnam = _tables.Next();
+         table_list.push_back(& operator[](tabnam));
+         if (i) table_selection += " NATURAL JOIN ";
+         table_selection += Form("\"%s\"", tabnam.Data());
+         ++i;
+      }
 
       KVString column_selection(""), _columns(columns);
       if (columns == "*") {
          column_selection = "*";
          distinct = false; // don't allow 'SELECT DISTINCT * FROM ....' (?)
-         fSelectedColumns = "*";
+         // find right column in right table for each item
+         // loop over all columns in each table
+         for (auto tabs : table_list) {
+            for (int i = 0; i < tabs->number_of_columns(); ++i) {
+               fSQLstmtCols.push_back(&(*tabs)[i]);
+            }
+         }
       }
       else {
          if (distinct) column_selection = "DISTINCT ";
-         fSelectedColumns = "";
-         // put quoted column names in column_selection, add plain column names to fSelectedColumns
+         // put quoted column names in column_selection
          _columns.Begin(",");
          int i(0);
          while (!_columns.End()) {
-            KVString colnam = _columns.Next();
-            if (i) {
-               column_selection += ", ";
-               fSelectedColumns += ", ";
-            }
+            TString colnam = _columns.Next();
+            if (i) column_selection += ", ";
             column_selection += Form("\"%s\"", colnam.Data());
-            fSelectedColumns += colnam.Data();
             ++i;
+            // find right column in right table for this item
+            for (auto tabs : table_list) if (tabs->has_column(colnam)) fSQLstmtCols.push_back(&(*tabs)[colnam]);
          }
       }
 
-      TString cond = Form("SELECT %s FROM \"%s\"", column_selection.Data(), table.Data());
+      TString cond = Form("SELECT %s FROM %s", column_selection.Data(), table_selection.Data());
       if (selection != "") cond += Form(" WHERE %s", selection.Data());
       if (anything_else != "") cond += Form(" %s", anything_else.Data());
       fSQLstmt.reset(fDBserv->Statement(cond));
@@ -418,20 +473,10 @@ namespace KVSQLite {
       }
       if (!fEmptyResultSet && fSQLstmt->NextResultRow()) {
          // set column data
-         if (fSelectedColumns == "*") {
-            for (int i = 0; i < fBulkTable->number_of_columns(); ++i) {
-               (*fBulkTable)[i].set_data_from_statement(fSQLstmt.get());
-            }
-         }
-         else {
-            // only read data for selected columns
-            int idx = 0;
-            for (int i = 0; i < fBulkTable->number_of_columns(); ++i) {
-               if (fSelectedColumns.Contains((*fBulkTable)[i].name())) {
-                  (*fBulkTable)[i].set_data_from_statement(fSQLstmt.get(), idx);
-                  ++idx;
-               }
-            }
+         int idx = 0;
+         for (auto col : fSQLstmtCols) {
+            col->set_data_from_statement(fSQLstmt.get(), idx);
+            ++idx;
          }
          return kTRUE;
       }
@@ -708,7 +753,7 @@ namespace KVSQLite {
             break;
       }
    }
-   void column::set_data_from_statement(TSQLStatement* s, int idx)
+   void column::set_data_from_statement(TSQLStatement* s, int idx) const
    {
       // set value of column according to value of parameter in statement
       //
@@ -792,6 +837,7 @@ namespace KVSQLite {
       // \note cannot be used for existing table in database: see database::add_column()
       fColumns.push_back(c);
       fColMap[c.name()] = c.index();
+      fColumns.back().set_table(name());
       return fColumns.back();
    }
 
@@ -818,24 +864,30 @@ namespace KVSQLite {
       return c;
    }
 
-   const column& table::add_foreign_key(const TString& name, const TString& other_table, const TString& other_column)
+   const column& table::add_foreign_key(const TString& other_table, const TString& other_column)
    {
       // add a foreign key to the table, which is an INTEGER reference to
-      // another column in another table.
+      // another column in another table
       // \returns reference to key (cannot be modified)
+      //
+      // \note as foreign keys are only really useful if they have the same name in the child and parent tables,
+      // we set the name of the foreign key by default to that of the other_column
 
-      column& c = add_column(name, KVSQLite::column_type::INTEGER);
+      column& c = add_column(other_column, KVSQLite::column_type::INTEGER);
       c.set_foreign_key(other_table, other_column);
       return c;
    }
 
-   const column& table::add_foreign_key(const TString& name, const table& other_table, const column& other_column)
+   const column& table::add_foreign_key(const table& other_table, const column& other_column)
    {
       // add a foreign key to the table, which is an INTEGER reference to
       // another column in another table.
       // \returns reference to key (cannot be modified)
+      //
+      // \note as foreign keys are only really useful if they have the same name in the child and parent tables,
+      // we set the name of the foreign key by default to that of the other_column
 
-      column& c = add_column(name, KVSQLite::column_type::INTEGER);
+      column& c = add_column(other_column.name(), KVSQLite::column_type::INTEGER);
       c.set_foreign_key(other_table, other_column);
       return c;
    }
