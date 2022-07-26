@@ -63,4 +63,14 @@
 #pragma link C++ class KVValueRange<Int_t>+;
 #pragma link C++ class KVValueRange<Double_t>+;
 #pragma link C++ class KVUserAnalysisOptionList+;
+#ifdef WITH_RSQLITE
+#pragma link C++ namespace KVSQLite;
+#pragma link C++ namespace KVSQLite::column_type;
+#pragma link C++ enum KVSQLite::column_type::types;
+#pragma link C++ namespace KVSQLite::insert_mode;
+#pragma link C++ enum KVSQLite::insert_mode::types;
+#pragma link C++ class KVSQLite::column+;
+#pragma link C++ class KVSQLite::table+;
+#pragma link C++ class KVSQLite::database+;
+#endif
 #endif

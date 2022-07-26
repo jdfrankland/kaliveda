@@ -1,5 +1,11 @@
 set(extra_libs ${ROOT_Gui_LIBRARY} ${ROOT_Geom_LIBRARY} ${GRU_LIB})
-set(lib_exclude)
+#---Need ROOT with SQLite support for SQLiteDB
+if(WITH_RSQLITE)
+   set(extra_libs ${extra_libs} ${ROOT_RSQLite_LIBRARY})
+   set(lib_exclude)
+else()
+   set(lib_exclude SQLiteDB)
+endif()
 set(dict_exclude KVError.h)
 
 BUILD_KALIVEDA_MODULE(base

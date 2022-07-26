@@ -32,6 +32,9 @@ $Id: KVBase.cpp,v 1.57 2009/04/22 09:38:39 franklan Exp $
 #ifdef WITH_GIT_INFOS
 #include "KVGitInfo.h"
 #endif
+#ifdef WITH_RSQLITE
+#include "SQLiteDB.h"
+#endif
 #include "TROOT.h"
 #include "TDatime.h"
 #include "THashList.h"
@@ -461,6 +464,32 @@ Bool_t KVBase::SearchAndOpenKVFile(const Char_t* name, ifstream& file, const Cha
    }
    return kFALSE;
 }
+
+#ifdef WITH_RSQLITE
+Bool_t KVBase::SearchAndOpenKVFile(const Char_t* name, KVSQLite::database& dbfile, const Char_t* kvsubdir)
+{
+   //Search and open for reading/writing a sqlite database file:
+   //
+   //search for file (and open it, if found) in the following order:
+   //  if 'name' = absolute path the function returns kTRUE if the file exists
+   //  if name != absolute path:
+   //      1. a. if 'kvsubdir'="" (default) look for file in $(pkdatadir) directory
+   //      1. b. if 'kvsubdir'!="" look for file in $(pkdatadir)/'kvsubdir'
+   //      2. look for file with this name in user's home directory
+   //      3. look for file with this name in working directory
+   //if the file is not found, kFALSE is returned.
+
+   TString fullpath;
+   if (SearchKVFile(name, fullpath, kvsubdir)) {
+      dbfile.open(fullpath);
+      if (dbfile.good()) {
+         //cout << "Opened file : " << fullpath.Data() << endl;
+         return kTRUE;
+      }
+   }
+   return kFALSE;
+}
+#endif
 //________________________________________________________________________________//
 
 Bool_t KVBase::SearchAndOpenKVFile(const Char_t* name, ofstream& file, const Char_t* kvsubdir, KVLockfile* locks)

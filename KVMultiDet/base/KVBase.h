@@ -23,6 +23,11 @@ $Id: KVBase.h,v 1.42 2009/03/12 13:59:40 franklan Exp $
 #include "TFile.h"
 #include "TF1.h"
 class KVString;
+#ifdef WITH_RSQLITE
+namespace KVSQLite {
+   class database;
+}
+#endif
 
 /**
   \class KVBase
@@ -228,6 +233,10 @@ public:
 
    static Bool_t SearchKVFile(const Char_t* name, TString& fullpath,
                               const Char_t* kvsubdir = "");
+#ifdef WITH_RSQLITE
+   static Bool_t SearchAndOpenKVFile(const Char_t* name, KVSQLite::database& dbfile,
+                                     const Char_t* kvsubdir = "");
+#endif
    static Bool_t SearchAndOpenKVFile(const Char_t* name, std::ifstream& file,
                                      const Char_t* kvsubdir = "", KVLockfile* locks = 0);
    static Bool_t SearchAndOpenKVFile(const Char_t* name, std::ofstream& file,
