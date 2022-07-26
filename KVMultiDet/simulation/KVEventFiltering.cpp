@@ -230,11 +230,18 @@ void KVEventFiltering::InitAnalysis()
       }
    }
 
+   fIdCalMode = gEnv->GetValue(Form("%s.HasCalibIdentInfos", dataset.Data()), "no");
+
+   TString filt = GetOpt("Filter").Data();
+   if (filt == "GeoThresh") {
+      // in geo+thresholds mode, we ignore any calibration/identification parameters for the dataset,
+      // i.e. all detectors and all identification ntelescopes are supposed to work
+      gEnv->SetValue(Form("%s.HasCalibIdentInfos", dataset.Data()), "no");
+   }
+
    KVMultiDetArray::MakeMultiDetector(dataset, run);
    if (run == -1) gMultiDetArray->InitializeIDTelescopes();
    gMultiDetArray->SetSimMode();
-
-   fIdCalMode = gEnv->GetValue(Form("%s.HasCalibIdentInfos", dataset.Data()), "no");
 
    TString geo = GetOpt("Geometry").Data();
    if (geo == "ROOT") {
@@ -247,13 +254,11 @@ void KVEventFiltering::InitAnalysis()
       Info("InitAnalysis", "Filtering with KaliVeda geometry");
    }
 
-   TString filt = GetOpt("Filter").Data();
    if (filt == "Geo") {
       gMultiDetArray->SetFilterType(KVMultiDetArray::kFilterType_Geo);
       Info("InitAnalysis", "Geometric filter");
    }
    else if (filt == "GeoThresh") {
-      gEnv->SetValue(Form("%s.HasCalibIdentInfos", dataset.Data()), "no");
       gMultiDetArray->SetFilterType(KVMultiDetArray::kFilterType_GeoThresh);
       Info("InitAnalysis", "Geometry + thresholds filter");
    }
@@ -317,14 +322,12 @@ void KVEventFiltering::InitAnalysis()
    gMultiDetArray->PrintStatusOfIDTelescopes();
 
    OpenOutputFile(sys, run);
-   if (sys) fTree = new TTree("ReconstructedEvents", Form("%s filtered with %s (%s)", GetOpt("SimTitle").Data(), gMultiDetArray->GetTitle(), sys->GetName()));
-   else fTree = new TTree("ReconstructedEvents", Form("%s filtered with %s", GetOpt("SimTitle").Data(), gMultiDetArray->GetTitle()));
+   if (sys) fTree = AddTree("ReconstructedEvents", Form("%s filtered with %s (%s)", GetOpt("SimTitle").Data(), gMultiDetArray->GetTitle(), sys->GetName()));
+   else fTree = AddTree("ReconstructedEvents", Form("%s filtered with %s", GetOpt("SimTitle").Data(), gMultiDetArray->GetTitle()));
 
    TString reconevclass = gDataSet->GetReconstructedEventClassName();
    fReconEvent = (KVReconstructedEvent*)TClass::GetClass(reconevclass)->New();
    KVEvent::MakeEventBranch(fTree, "ReconEvent", fReconEvent);
-
-   AddTree(fTree);
 }
 
 void KVEventFiltering::InitRun()

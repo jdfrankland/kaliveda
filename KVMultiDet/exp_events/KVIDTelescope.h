@@ -101,22 +101,13 @@ protected:
    Int_t fCalibStatus;//!temporary variable holding status code for last call to Calibrate(KVReconstructedNucleus*)
 
    void SetLabelFromURI(const Char_t* uri);
-   KVParticleCondition* fMassIDValidity;//! may be used to limit mass identification to certain Z and/or A range
+   std::unique_ptr<KVParticleCondition> fMassIDValidity;//! may be used to limit mass identification to certain Z and/or A range
    KVDetectorSignal* GetSignalFromGridVar(const KVString& var, const KVString& axe);
-#if defined(USING_ROOT5) && defined(__MAKECINT__)
-   // struct GraphCoords; hidden from rootcint with ROOT5
-   // std::map/unordered_map<KVIDGraph*,GraphCoords> also hidden
-#else
    struct GraphCoords {
       KVDetectorSignal* fVarX;//!
       KVDetectorSignal* fVarY;//!
    };
-#ifdef WITH_CPP11
    mutable std::unordered_map<KVIDGraph*, GraphCoords> fGraphCoords;//! X/Y coordinates from detector signals for ID maps
-#else
-   mutable std::map<KVIDGraph*, GraphCoords> fGraphCoords;//! X/Y coordinates from detector signals for ID maps
-#endif
-#endif
 
    KVIDGrid* newGrid(bool onlyZ);
    void addLineToGrid(KVIDGrid* gg, int zz, int aa, int npoints);
@@ -133,7 +124,6 @@ public:
    };
 
    KVIDTelescope();
-   virtual ~ KVIDTelescope();
    void init();
    virtual void AddDetector(KVDetector* d);
    const KVList* GetDetectors() const

@@ -56,7 +56,6 @@ void KVIDTelescope::init()
    //default init
    fDetectors.SetCleanup(kTRUE);
    fIDGrids.SetCleanup(kTRUE);
-   fMassIDValidity = nullptr;
 }
 
 void KVIDTelescope::Initialize(void)
@@ -94,56 +93,60 @@ void KVIDTelescope::Initialize(void)
 
    ResetBit(kReadyForID);
 
-   // looping over detectors to check they are working
-   // if one of them is not -> set kReadyForID to false
-   TIter it(GetDetectors());
-   KVDetector* det = 0;
-   while ((det = (KVDetector*)it())) if (!det->IsOK()) {
-         ResetBit(kReadyForID);
-         return;
-      }
-
-   if (GetIDGrid()) {
-      KVIDGraph* gr;
-      TIter it(GetListOfIDGrids());
-      bool ok = kTRUE;
-      KVUniqueNameList tmp_list;// for re-ordering grids
-      bool mass_id = false;
-      while ((gr = (KVIDGraph*)it())) {
-         tmp_list.Add(gr);
-         if (gr->HasMassIDCapability()) mass_id = true;
-         gr->Initialize();
-         // make sure both x & y axes' signals are well set up
-         if (!fGraphCoords[gr].fVarX || !fGraphCoords[gr].fVarY) {
-            ok = kFALSE;
-            Warning("Initialize",
-                    "ID tel. %s: grid %s has undefined VarX(%s:%p) or VarY(%s:%p) - WILL NOT USE",
-                    GetName(), gr->GetName(), gr->GetVarX(), fGraphCoords[gr].fVarX, gr->GetVarY(), fGraphCoords[gr].fVarY);
-         }
-      }
-      // set to true if at least one grid can provide mass identification
-      SetHasMassID(mass_id);
-      // if more than one grid, need to re-order them according to [Dataset].[telescope label].GridOrder
-      if (GetListOfIDGrids()->GetEntries() > 1 && gDataSet) {
-         KVString grid_list = gDataSet->GetDataSetEnv(Form("%s.GridOrder", GetLabel()));
-         ok = kFALSE;
-         if (grid_list == "")
-            Warning("Initialize", "ID telescope %s has %d grids but no %s variable defined",
-                    GetName(), GetListOfIDGrids()->GetEntries(), Form("%s.GridOrder", GetLabel()));
-         else if (grid_list.GetNValues(",") != GetListOfIDGrids()->GetEntries())
-            Warning("Initialize", "ID telescope %s has %d grids but %d grids appear in variable %s",
-                    GetName(), GetListOfIDGrids()->GetEntries(), grid_list.GetNValues(","), Form("%s.GridOrder", GetLabel()));
-         else {
-            fIDGrids.Clear();
-            grid_list.Begin(",");
-            while (!grid_list.End()) fIDGrids.Add(tmp_list.FindObject(grid_list.Next()));
-            ok = kTRUE;
-         }
-      }
-      if (ok) SetBit(kReadyForID);
+   // for datasets with no calib/ident infos, all id telescopes work
+   if (gDataSet && !gDataSet->HasCalibIdentInfos()) {
+      SetBit(kReadyForID);
    }
-   else if (gDataSet && !gDataSet->HasCalibIdentInfos()) SetBit(kReadyForID);
-   else ResetBit(kReadyForID);
+   else { // for datasets with calib/ident infos, we need a grid & all detectors working
+      // looping over detectors to check they are working
+      // if one of them is not -> set kReadyForID to false
+      TIter it(GetDetectors());
+      KVDetector* det = 0;
+      while ((det = (KVDetector*)it())) if (!det->IsOK()) {
+            ResetBit(kReadyForID);
+            return;
+         }
+
+      if (GetIDGrid()) {
+         KVIDGraph* gr;
+         TIter it(GetListOfIDGrids());
+         bool ok = kTRUE;
+         KVUniqueNameList tmp_list;// for re-ordering grids
+         bool mass_id = false;
+         while ((gr = (KVIDGraph*)it())) {
+            tmp_list.Add(gr);
+            if (gr->HasMassIDCapability()) mass_id = true;
+            gr->Initialize();
+            // make sure both x & y axes' signals are well set up
+            if (!fGraphCoords[gr].fVarX || !fGraphCoords[gr].fVarY) {
+               ok = kFALSE;
+               Warning("Initialize",
+                       "ID tel. %s: grid %s has undefined VarX(%s:%p) or VarY(%s:%p) - WILL NOT USE",
+                       GetName(), gr->GetName(), gr->GetVarX(), fGraphCoords[gr].fVarX, gr->GetVarY(), fGraphCoords[gr].fVarY);
+            }
+         }
+         // set to true if at least one grid can provide mass identification
+         SetHasMassID(mass_id);
+         // if more than one grid, need to re-order them according to [Dataset].[telescope label].GridOrder
+         if (GetListOfIDGrids()->GetEntries() > 1 && gDataSet) {
+            KVString grid_list = gDataSet->GetDataSetEnv(Form("%s.GridOrder", GetLabel()));
+            ok = kFALSE;
+            if (grid_list == "")
+               Warning("Initialize", "ID telescope %s has %d grids but no %s variable defined",
+                       GetName(), GetListOfIDGrids()->GetEntries(), Form("%s.GridOrder", GetLabel()));
+            else if (grid_list.GetNValues(",") != GetListOfIDGrids()->GetEntries())
+               Warning("Initialize", "ID telescope %s has %d grids but %d grids appear in variable %s",
+                       GetName(), GetListOfIDGrids()->GetEntries(), grid_list.GetNValues(","), Form("%s.GridOrder", GetLabel()));
+            else {
+               fIDGrids.Clear();
+               grid_list.Begin(",");
+               while (!grid_list.End()) fIDGrids.Add(tmp_list.FindObject(grid_list.Next()));
+               ok = kTRUE;
+            }
+         }
+         if (ok) SetBit(kReadyForID);
+      }
+   }
 
    if (gDataSet) {
       SetHasMassID(gDataSet->GetDataSetEnv(Form("%s.MassID", GetLabel()), kFALSE));
@@ -151,16 +154,9 @@ void KVIDTelescope::Initialize(void)
       if ((valid = gDataSet->GetDataSetEnv(Form("%s.MassID.Validity", GetLabel()), "")) != "") {
          valid.ReplaceAll("Z", "_NUC_->GetZ()");
          valid.ReplaceAll("A", "_NUC_->GetA()");
-         SafeDelete(fMassIDValidity);
-         fMassIDValidity = new KVParticleCondition(valid);
+         fMassIDValidity.reset(new KVParticleCondition(valid));
       }
    }
-}
-
-KVIDTelescope::~KVIDTelescope()
-{
-   //delete this ID telescope
-   SafeDelete(fMassIDValidity);
 }
 
 //___________________________________________________________________________________________

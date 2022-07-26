@@ -932,8 +932,11 @@ void KVMultiDetArray::DetectEvent(KVEvent* event, KVReconstructedEvent* rec_even
                   ntouche++;
             }
             if (ntouche < ndet) continue;
+            //Info("DetectEvent","about to check id in %s", theIDT->GetName());
+            //Info("DetectEvent","ready=%d can identify(%d,%d)=%d", theIDT->IsReadyForID(),part->GetZ(),part->GetA(),theIDT->CanIdentify(part->GetZ(),part->GetA()));
             if (fFilterType == kFilterType_Geo ||
                   (theIDT->IsReadyForID() && theIDT->CanIdentify(part->GetZ(), part->GetA()))) {
+               //Info("DetectEvent","IDENTIFYING TELESCOPE = %s", theIDT->GetName());
                part->GetParameters()->SetValue("IDENTIFYING TELESCOPE", theIDT->GetName());
                break;
             }
