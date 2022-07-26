@@ -19,11 +19,11 @@ FAZIAPRE.Reconstruction.DataAnalysisTask.UserClass.Base:     FAZIARawDataRecon/T
 FAZIAPRE.ReconAnalysis.DataAnalysisTask.Analyser:     FAZIAReconData
 FAZIAPRE.ReconAnalysis.DataAnalysisTask.UserClass.Base:     FAZIASelector/KVEventSelector
 
-FAZIAPRE.IdentificationParameterFile.Si-Si:    ID_SI1_SI2_FAZIAPRE_pietro.dat
-FAZIAPRE.IdentificationParameterFile.CsI:      ID_CSI_FAZIAPRE.dat
-FAZIAPRE.IdentificationParameterFile.Si:       ID_SI1_FAZIAPRE_pietro.dat
-FAZIAPRE.IdentificationParameterFile.Si-CsI:   ID_SI2_CSI_FAZIAPRE_pietro.dat
-FAZIAPRE.ActiveIdentifications:                CsI Si-CsI Si-Si Si
+FAZIAPRE.IdentificationParameterFile.FAZIA.Si-Si:    ID_SI1_SI2_FAZIAPRE_pietro.dat
+FAZIAPRE.IdentificationParameterFile.FAZIA.CsI:      ID_CSI_FAZIAPRE.dat
+FAZIAPRE.IdentificationParameterFile.FAZIA.Si:       ID_SI1_FAZIAPRE_pietro.dat
+FAZIAPRE.IdentificationParameterFile.FAZIA.Si-CsI:   ID_SI2_CSI_FAZIAPRE_pietro.dat
+FAZIAPRE.ActiveIdentifications:                FAZIA.CsI FAZIA.Si-CsI FAZIA.Si-Si FAZIA.Si
 
 FAZIAPRE.FAZIADB.CalibrationFiles:    CalibrationFiles.dat
 #FAZIAPRE.FAZIADB.Comments:            Comment.txt
