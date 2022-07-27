@@ -119,7 +119,7 @@ protected:
 
       fOptimal = (KVTemplateParticleCondition*)fgOptimized.FindObject(GetName());
       if (fOptimal) {  /* check that the same condition has not already been optimized */
-         Info("Optimize", "Using existing optimized condition %p", fOptimal);
+         //Info("Optimize", "Using existing optimized condition %p", fOptimal);
          fOptimal->fNUsing++;
          fOptOK = kTRUE;
          return;
@@ -377,7 +377,7 @@ public:
       //passed to Test() will be used to cast the base (KVNucleus) pointer up to the
       //required pointer type at execution.
 
-      Deprecate("Prefer to use lambda functions to define KVParticleCondition objects.");
+      //Deprecate("Prefer to use lambda functions to define KVParticleCondition objects.");
 
       fCondition = cond;
       Ssiz_t ind = fCondition.Index(";");
