@@ -322,7 +322,7 @@ public:
    void SetTree(TTree* t);
    void OpenGUI();
    void GUIClosed();
-   TH1* MakeHisto(const Char_t* expr, const Char_t* selection, Int_t nX, Int_t nY = 0, const Char_t* weight = "");
+   TH1* MakeHisto(const Char_t* expr, const Char_t* selection, Int_t nX, Int_t nY = 0, const Char_t* weight = "", Double_t xmin = -1, Double_t xmax = -1, Double_t ymin = -1, Double_t ymax = -1);
    TH1* RemakeHisto(TH1* h, const Char_t* expr, const Char_t* weight = "");
    TH1* MakeIntHisto(const Char_t* expr, const Char_t* selection, Int_t Xmin, Int_t Xmax, const Char_t* weight = "");
    const KVList* GetHistoList() const

@@ -197,7 +197,7 @@ void KVTreeAnalyzer::GenerateHistoTitle(TString& title, const Char_t* expr, cons
    }
 }
 
-TH1* KVTreeAnalyzer::MakeHisto(const Char_t* expr, const Char_t* selection, Int_t nX, Int_t nY, const Char_t* weight)
+TH1* KVTreeAnalyzer::MakeHisto(const Char_t* expr, const Char_t* selection, Int_t nX, Int_t nY, const Char_t* weight, Double_t xmin, Double_t xmax, Double_t ymin, Double_t ymax)
 {
    // Create and fill a new histogram with the desired expression (expr="expr1[:expr2]" etc.)
    // with the given selection (selection="" if no selection required).
@@ -208,7 +208,7 @@ TH1* KVTreeAnalyzer::MakeHisto(const Char_t* expr, const Char_t* selection, Int_
    // Histograms are automatically named 'h1', 'h2', etc. in order of creation.
    // Histogram title is generated with method GenerateHistoTitle.
    // Number of bins on X (and Y for a 2-D spectrum) are given. Axis limits are
-   // automatically adjusted to data.
+   // automatically adjusted to data unless given.
    //
    // For 2-D spectra the initial drawing option is set to "COL"
    //
@@ -235,12 +235,12 @@ TH1* KVTreeAnalyzer::MakeHisto(const Char_t* expr, const Char_t* selection, Int_
    }
    else
       Selection = selection;
-   if (nY) histo.Form(">>%s(%d,0.,0.,%d,0.,0.)", name.Data(), nX, nY);
-   else histo.Form(">>%s(%d,%lf,%lf)", name.Data(), (fUserBinning ? fNxF : nX), (fUserBinning ? fXminF : 0.), (fUserBinning ?  fXmaxF : 0));
+   if (nY) histo.Form(">>%s(%d,%f,%f,%d,%f,%f)", name.Data(), nX, xmin, xmax, nY, ymin, ymax);
+   else histo.Form(">>%s(%d,%lf,%lf)", name.Data(), (fUserBinning ? fNxF : nX), (fUserBinning ? fXminF : xmin), (fUserBinning ?  fXmaxF : xmax));
 
-   if (!fProfileHisto) drawexp += histo;
+   /*if (!fProfileHisto)*/ drawexp += histo;
    Long64_t drawResult;
-   if (fProfileHisto) drawResult = fTree->Draw(Form("%s>>%s", drawexp.Data(), name.Data()), Selection, "prof,goff");
+   if (fProfileHisto) drawResult = fTree->Draw(drawexp, Selection, "prof,goff");// fTree->Draw(Form("%s>>%s", drawexp.Data(), name.Data()), Selection, "prof,goff");
    else drawResult = fTree->Draw(drawexp, Selection, "goff");
    if (drawResult < 0) {
       // Error with Draw: probably a bad expression
@@ -1326,7 +1326,7 @@ TH1* KVTreeAnalyzer::RemakeHisto(TH1* h, const Char_t* expr, const Char_t* weigh
 {
    // Remake an existing histogram of data 'expr' using the current active selection
    // If such a histogram already exists, we just return its address.
-   // We try to have the same binning in the new as in the original histogram.
+   // We must have the same binning in the new as in the original histogram.
 
    TString htit;
    GenerateHistoTitle(htit, expr, "", weight);
@@ -1344,17 +1344,24 @@ TH1* KVTreeAnalyzer::RemakeHisto(TH1* h, const Char_t* expr, const Char_t* weigh
       return h;
    }
    nx = h->GetNbinsX();
-   if (h->InheritsFrom("TH2")) ny = h->GetNbinsY();
+   auto xmin = h->GetXaxis()->GetXmin();
+   auto xmax = h->GetXaxis()->GetXmin();
+   double ymin(-1), ymax(-1);
+   if (h->InheritsFrom("TH2")) {
+      ny = h->GetNbinsY();
+      ymin = h->GetYaxis()->GetXmin();
+      ymax = h->GetYaxis()->GetXmin();
+   }
    //cout << "Remake histo with nx = " << nx << "  ny = " << ny << endl;
    if (h->InheritsFrom("TProfile")) {
       // make a new profile histogram
       Bool_t oldProfileState = fProfileHisto;
       fProfileHisto = kTRUE;
-      h = MakeHisto(expr, "", nx, ny, weight);
+      h = MakeHisto(expr, "", nx, ny, weight, xmin, xmax);
       fProfileHisto = oldProfileState;
    }
    else
-      h = MakeHisto(expr, "", nx, ny, weight);
+      h = MakeHisto(expr, "", nx, ny, weight, xmin, xmax, ymin, ymax);
    return h;
 }
 
@@ -2720,7 +2727,7 @@ void KVTreeAnalyzer::GenerateAllSelections(TCollection* list)
 
 void KVTreeAnalyzer::GenerateAllHistograms(TCollection* list)
 {
-   // For every histogram in the list, we generate histograms for
+   // For every histogram in the list, we generate histograms with the same binning for
    // the same expression, selection and weight if they don't already exist
 
    TIter nextHist(list);
