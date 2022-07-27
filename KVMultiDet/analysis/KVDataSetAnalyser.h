@@ -155,7 +155,6 @@ public:
    {
       return fRun;
    }
-   virtual void SetTree(TTree*) {}
 
    ClassDef(KVDataSetAnalyser, 1) //Analysis of data in datasets
 };

@@ -86,6 +86,10 @@ public:
    {
       fFilterSystem = f;
    }
+   TTree* GetTree() const
+   {
+      return fAnalysisChain;
+   }
 
    ClassDef(KVSimDirAnalyser, 1) //Analysis of trees containing simulated events
 };

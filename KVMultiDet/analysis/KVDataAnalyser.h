@@ -378,9 +378,19 @@ public:
    {
       return nullptr;
    }
-#ifdef USING_ROOT6
    virtual void SetTriggerConditionsForRun(int) {}
-#endif
+
+   virtual void SetTree(TTree*) {}
+   virtual TTree* GetTree() const
+   {
+      // If data being analysed is contained in a ROOT TTree, return its address
+      //
+      // \note what is actually returned is the address of a TChain. Use GetTree()->GetTree() to
+      // access the currently analysed TTree.
+
+      return nullptr;
+   }
+
    ClassDef(KVDataAnalyser, 0)  //For submitting & performing data analysis tasks
 };
 
