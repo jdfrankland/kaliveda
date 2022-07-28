@@ -177,26 +177,21 @@ protected :
    Long64_t fEventsReadInterval;//interval at which to print number of events read
    Long64_t fTreeEntry;//current tree entry number
 
-   KVHashList* lhisto;           //->!
-   KVHashList* ltree;            //->!
+   KVHashList lhisto; //! list of histograms added with AddHisto
+   KVHashList ltree;  //! list of trees added with AddTree
 
    Bool_t fNotifyCalled; // avoid multiple calls to Notify/InitRun
-   KVString fCombinedOutputFile;// optional name for single results file with trees and histos
+   KVString fCombinedOutputFile;// name for ROOT file containing histos and/or trees produced by analysis
 
    //parsed list of options given to TTree::Process
    KVUserAnalysisOptionList fOptionList;
 
    Bool_t fDisableCreateTreeFile;//used with PROOF
+   TFile* writeFile = nullptr;  //! output file for trees and histos
+   TProofOutputFile* mergeFile = nullptr; //! for merging with PROOF
 
    void add_histo(TH1* histo);
-   void add_tree(TTree* tree)
-   {
-      // Declare a TTree to be used in analysis.
-      // This method must be called when using PROOF.
-
-      if (fDisableCreateTreeFile) return;
-      ltree->Add(tree);
-   }
+   void add_tree(TTree* tree);
    void FillTH1(TH1* h1, Double_t one, Double_t two);
    void FillTProfile(TProfile* h1, Double_t one, Double_t two, Double_t three);
    void FillTH2(TH2* h2, Double_t one, Double_t two, Double_t three);
@@ -221,10 +216,13 @@ protected :
       // Note that if this method is not called/the option is not given,
       // histograms and TTrees will be written in separate files.
       fCombinedOutputFile = filename;
+
+      // try to initialise output file
+      create_output_file();
    }
+   void create_output_file();
+
 public:
-   TFile* writeFile;//!
-   TProofOutputFile* mergeFile;//! for merging with PROOF
    Bool_t CreateTreeFile(const Char_t* filename = "");
 
    virtual void ParseOptions();
@@ -232,17 +230,9 @@ public:
    KVEventSelector(TTree* /*tree*/ = 0) : fChain(0), fAuxChain(0), fBranchName("data"), fFirstEvent(kTRUE),
       fEventsRead(0), fEventsReadInterval(100), fNotifyCalled(kFALSE), fDisableCreateTreeFile(kFALSE)
    {
-      lhisto = new KVHashList();
-      ltree = new KVHashList();
    }
    virtual ~KVEventSelector()
    {
-      lhisto->Clear();
-      delete lhisto;
-      lhisto = 0;
-      ltree->Clear();
-      delete ltree;
-      ltree = 0;
    }
    void SetEventsReadInterval(Long64_t N)
    {
@@ -422,7 +412,7 @@ public:
                      tree->GetName(), tree->GetTitle()));
       add_tree(tree);
    }
-   TTree* AddTree(const TString& name, const TString& title = "", Int_t splitLevel = 99, TDirectory* = gDirectory);
+   TTree* AddTree(const TString& name, const TString& title = "");
 
    void FillHisto(const Char_t* sname, Double_t one, Double_t two = 1, Double_t three = 1, Double_t four = 1);
    void FillHisto(const Char_t* sname, const Char_t* label, Double_t weight = 1);
@@ -434,7 +424,10 @@ public:
    TH1* GetHisto(const Char_t* name) const;
    TTree* GetTree(const Char_t* name) const;
 
-   virtual void SaveHistos(const Char_t* filename = "", Option_t* option = "recreate", Bool_t onlyfilled = kFALSE);
+   virtual void SaveHistos(const Char_t* = "", Option_t* = "recreate", Bool_t = kFALSE)
+   {
+      Error("SaveHistos", "Method no longer implemented. Does nothing.");
+   }
 
    void SetOpt(const Char_t* option, const Char_t* value)
    {
@@ -461,26 +454,18 @@ public:
 
    void SetJobOutputFileName(const TString& filename)
    {
-      // Call in InitAnalysis() to set the name of the single output file
-      // containing all histograms and TTrees produced by analysis.
+      // Call in InitAnalysis() to set the name of the output file containing all histograms and TTrees produced by analysis.
       //
-      // For interactive jobs or jos using PROOF, filename will be used for
-      // the ROOT file. For jobs using a batch system to execute many
-      // jobs in parallel, we use the job name with the '.root' extension.
+      // For interactive jobs or jos using PROOF, filename will be used for the ROOT file.
+      //
+      // For jobs using a batch system to execute many jobs in parallel, we use the job name with the '.root' extension.
 
-#ifdef WITH_CPP11
       if (KVDataAnalyser::IsRunningBatchAnalysis() && (gDataAnalyser->GetProofMode() == KVDataAnalyser::EProofMode::None))
-#else
-      if (KVDataAnalyser::IsRunningBatchAnalysis() && (gDataAnalyser->GetProofMode() == KVDataAnalyser::None))
-#endif
          SetCombinedOutputFile(Form("%s.root", gDataAnalyser->GetBatchSystem()->GetJobName()));
-
       else
          SetCombinedOutputFile(filename);
    }
-#ifdef USING_ROOT6
    void SetTriggerConditionsForRun(int);
-#endif
    ClassDef(KVEventSelector, 0)//General purpose analysis class for TTrees containing KVEvent objects
 };
 

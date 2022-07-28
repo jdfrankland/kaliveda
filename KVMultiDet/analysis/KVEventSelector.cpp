@@ -115,14 +115,6 @@ void KVEventSelector::SlaveBegin(TTree* /*tree*/)
    InitAnalysis();              //user initialisations for analysis
    if (gDataAnalyser) gDataAnalyser->postInitAnalysis();
 
-   if (ltree->GetEntries() > 0) {
-      for (Int_t ii = 0; ii < ltree->GetEntries(); ii += 1) {
-         TTree* tt = (TTree*)ltree->At(ii);
-         tt->SetDirectory(writeFile);
-         tt->AutoSave();
-      }
-   }
-
    if (IsOptGiven("AuxFiles")) {
       // auxiliary files with PROOF
       if (GetInputList()) {
@@ -132,36 +124,6 @@ void KVEventSelector::SlaveBegin(TTree* /*tree*/)
    }
    Info("SlaveBegin", "fOutput->ls()");
    GetOutputList()->ls();
-}
-Bool_t KVEventSelector::CreateTreeFile(const Char_t* filename)
-{
-   // For PROOF:
-   // This method must be called before creating any user TTree in InitAnalysis().
-   // If no filename is given, default name="TreeFileFrom[name of selector class].root"
-
-   if (fDisableCreateTreeFile) return kTRUE;
-
-   TString tree_file_name;
-   if (!strcmp(filename, ""))
-      tree_file_name.Form("TreeFileFrom%s.root", ClassName());
-   else
-      tree_file_name = filename;
-
-   mergeFile = new TProofOutputFile(tree_file_name.Data(), "M");
-   mergeFile->SetOutputFileName(tree_file_name.Data());
-
-   TDirectory* savedir = gDirectory;
-   writeFile = mergeFile->OpenFile("RECREATE");
-   if (writeFile && writeFile->IsZombie()) SafeDelete(writeFile);
-   savedir->cd();
-
-   // Cannot continue
-   if (!writeFile) {
-      Info("CreateTreeFile", "could not create '%s': instance is invalid!", filename);
-      return kFALSE;
-   }
-   return kTRUE;
-
 }
 
 Bool_t KVEventSelector::Process(Long64_t entry)
@@ -246,35 +208,25 @@ void KVEventSelector::SlaveTerminate()
    // The SlaveTerminate() function is called after all entries or objects
    // have been processed. When running with PROOF SlaveTerminate() is called
    // on each slave server.
-   // if tree have been defined in the CreateTrees method
-   // manage the merge of them in ProofLite session
-   //
 
-   if (ltree->GetEntries() > 0) {
+   if (writeFile) {
+      auto sav_dir = gDirectory;//save current working directory
 
-      if (writeFile) {
-         TDirectory* savedir = gDirectory;
-         TTree* tt = 0;
-         for (Int_t ii = 0; ii < ltree->GetEntries(); ii += 1) {
-            tt = (TTree*)ltree->At(ii);
-            writeFile->cd();
-            tt->Write();
-         }
-         mergeFile->Print();
+      writeFile->cd();
+      // loop over all histos and trees, writing them in the output file
+      if (lhisto.GetEntries()) {
+         lhisto.R__FOR_EACH(TH1, Write)();
+      }
+      if (ltree.GetEntries()) {
+         ltree.R__FOR_EACH(TTree, Write)(0, TObject::kOverwrite);
+      }
+      writeFile->Close();
+      if (gDataAnalyser->GetProofMode() != KVDataAnalyser::EProofMode::None) {
          fOutput->Add(mergeFile);
-
-         for (Int_t ii = 0; ii < ltree->GetEntries(); ii += 1) {
-            tt = (TTree*)ltree->At(ii);
-            tt->SetDirectory(0);
-         }
-
-         gDirectory = savedir;
-         writeFile->Close();
       }
 
+      sav_dir->cd();
    }
-
-   fOutput->ls();
 }
 
 void KVEventSelector::Terminate()
@@ -289,33 +241,6 @@ void KVEventSelector::Terminate()
 
    TDatime now;
    Info("Terminate", "Analysis ends at %s", now.AsString());
-
-   if (fCombinedOutputFile != "") {
-      Info("Terminate", "combine = %s", fCombinedOutputFile.Data());
-      // combine histograms and trees from analysis into one file
-      TString file1, file2;
-      file1.Form("HistoFileFrom%s.root", ClassName());
-      file2.Form("TreeFileFrom%s.root", ClassName());
-      GetOutputList()->ls();
-      if (GetOutputList()->FindObject("ThereAreHistos")) {
-         if (GetOutputList()->FindObject(file2)) {
-            Info("Terminate", "both");
-            SaveHistos();
-            KVBase::CombineFiles(file1, file2, fCombinedOutputFile, kFALSE);
-         }
-         else {
-            // no trees - just rename histo file
-            Info("Terminate", "histo");
-            SaveHistos(fCombinedOutputFile);
-         }
-      }
-      else if (GetOutputList()->FindObject(file2)) {
-         // no histos - just rename tree file
-         Info("Terminate", "tree");
-         gSystem->Rename(file2, fCombinedOutputFile);
-      }
-      else  Info("Terminate", "none");
-   }
 
    if (gDataAnalyser) gDataAnalyser->preEndAnalysis();
    EndAnalysis();               //user end of analysis routine
@@ -406,7 +331,7 @@ const KVHashList* KVEventSelector::GetHistoList() const
 {
 
    //return the list of created trees
-   return lhisto;
+   return &lhisto;
 
 }
 
@@ -415,7 +340,7 @@ const KVHashList* KVEventSelector::GetHistoList() const
 TH1* KVEventSelector::GetHisto(const Char_t* histo_name) const
 {
 
-   return lhisto->get_object<TH1>(histo_name);
+   return lhisto.get_object<TH1>(histo_name);
 
 }
 
@@ -427,17 +352,76 @@ void KVEventSelector::add_histo(TH1* histo)
    // This method must be called when using PROOF.
 
    if (fDisableCreateTreeFile) return;
-   histo->SetDirectory(nullptr);
-   lhisto->Add(histo);
-   fOutput->Add(histo);
-   if (!fOutput->FindObject("ThereAreHistos")) fOutput->Add(new TNamed("ThereAreHistos", "...so save them!"));
+
+   lhisto.Add(histo);
+
+   if (writeFile) histo->SetDirectory(writeFile); // if output file is initialized, associate histo with it
+   else create_output_file();// try to initialize output file
 }
 
-TTree* KVEventSelector::AddTree(const TString& name, const TString& title, Int_t splitLevel, TDirectory* dir)
+void KVEventSelector::add_tree(TTree* tree)
+{
+   // Declare a TTree to be used in analysis.
+   // This method must be called when using PROOF.
+
+   if (fDisableCreateTreeFile) return;
+
+   tree->SetAutoSave();
+   ltree.Add(tree);
+
+   if (writeFile) tree->SetDirectory(writeFile); // if output file is initialized, associate tree with it
+   else create_output_file();// try to initialize output file
+}
+
+void KVEventSelector::create_output_file()
+{
+   // Create the file for saving histos and/or trees created during analysis.
+   //
+   // The name of the file must first be set using SetJobOutputFileName()
+
+   if (fCombinedOutputFile == "") return;
+
+   auto sav_dir = gDirectory;//save current working directory
+   if (gDataAnalyser->GetProofMode() == KVDataAnalyser::EProofMode::None) {
+      // Analysis running in 'normal' (non-PROOF) mode
+      writeFile = TFile::Open(fCombinedOutputFile, "RECREATE");
+   }
+   else {
+      // Analysis running with PROOF(Lite)
+      mergeFile = new TProofOutputFile(fCombinedOutputFile, "M");
+      mergeFile->SetOutputFileName(fCombinedOutputFile);
+      writeFile = mergeFile->OpenFile("RECREATE");
+      if (writeFile && writeFile->IsZombie()) SafeDelete(writeFile);
+   }
+   sav_dir->cd();//return to previous working directory
+
+   if (!writeFile) {
+      TString amsg = TString::Format("%s::create_output_file: could not create output ROOT file '%s'!",
+                                     ClassName(), fCombinedOutputFile.Data());
+      Abort(amsg, kAbortProcess);
+   }
+
+   // any previously declared histograms or trees must now be associated with the output file
+   if (lhisto.GetEntries()) {
+      lhisto.R__FOR_EACH(TH1, SetDirectory)(writeFile);
+   }
+   if (ltree.GetEntries()) {
+      ltree.R__FOR_EACH(TTree, SetDirectory)(writeFile);
+   }
+}
+
+Bool_t KVEventSelector::CreateTreeFile(const Char_t*)
+{
+   Deprecate("Calling this method is no longer required, and any filename given will be ignored."
+             " Call SetJobOutputFileName() to define the output filename.");
+   return kTRUE;
+}
+
+TTree* KVEventSelector::AddTree(const TString& name, const TString& title)
 {
    // Add TTree with given name and title to list of TTree to be filled by user's analysis
 
-   auto t = new TTree(name, title, splitLevel, dir);
+   auto t = new TTree(name, title);
    add_tree(t);
    return t;
 }
@@ -464,7 +448,7 @@ void KVEventSelector::FillHisto(const Char_t* histo_name, Double_t one, Double_t
       else if (h1->InheritsFrom("TH1"))
          FillTH1(h1, one, two);
       else
-         Warning("FillHisto", "%s -> Classe non prevue ...", lhisto->FindObject(histo_name)->ClassName());
+         Warning("FillHisto", "%s -> Classe non prevue ...", lhisto.FindObject(histo_name)->ClassName());
    }
    else {
       Warning("FillHisto", "%s introuvable", histo_name);
@@ -557,66 +541,10 @@ void KVEventSelector::SetUpAuxEventChain()
 
 //____________________________________________________________________________
 
-void KVEventSelector::SaveHistos(const Char_t* filename, Option_t* option, Bool_t onlyfilled)
-{
-   // Write in file all histograms declared with AddHisto(TH1*)
-   // This method works with PROOF.
-   //
-   // If no filename is specified, set default name : HistoFileFrom[KVEvenSelector::GetName()].root
-   //
-   // If a filename is specified, search in gROOT->GetListOfFiles() if
-   // this file has been already opened
-   //  - if yes write in it
-   //  - if not, create it with the corresponding option, write in it
-   // and close it just after
-   //
-   // onlyfilled flag allow to write all (onlyfilled=kFALSE, default)
-   // or only histograms (onlyfilled=kTRUE) those have been filled
-
-   TString histo_file_name = "";
-   if (!strcmp(filename, ""))
-      histo_file_name.Form("HistoFileFrom%s.root", GetName());
-   else
-      histo_file_name = filename;
-
-   Bool_t justopened = kFALSE;
-
-   TFile* file = 0;
-   TDirectory* pwd = gDirectory;
-   //if filename correspond to an already opened file, write in it
-   //if not open/create it, depending on the option ("recreate" by default)
-   //and write in it
-   if (!(file = (TFile*)gROOT->GetListOfFiles()->FindObject(histo_file_name.Data()))) {
-      file = new TFile(histo_file_name.Data(), option);
-      justopened = kTRUE;
-   }
-   file->cd();
-   TIter next(GetOutputList());
-   TObject* obj = 0;
-   while ((obj = next())) {
-      if (obj->InheritsFrom("TH1")) {
-         if (onlyfilled) {
-            if (((TH1*)obj)->GetEntries() > 0) {
-               obj->Write();
-            }
-         }
-         else {
-            obj->Write();
-         }
-      }
-   }
-   if (justopened)
-      file->Close();
-   pwd->cd();
-
-}
-
-//____________________________________________________________________________
-
 const KVHashList* KVEventSelector::GetTreeList() const
 {
    //return the list of created trees
-   return ltree;
+   return &ltree;
 
 }
 
@@ -625,7 +553,7 @@ const KVHashList* KVEventSelector::GetTreeList() const
 TTree* KVEventSelector::GetTree(const Char_t* tree_name) const
 {
    //return the tree named tree_name
-   TTree* t = ltree->get_object<TTree>(tree_name);
+   TTree* t = ltree.get_object<TTree>(tree_name);
    if (!t) Fatal("GetTree", "Tree %s not found: is this the right name?", tree_name);
    return t;
 }
@@ -640,7 +568,7 @@ void KVEventSelector::FillTree(const Char_t* tree_name)
    //if no sname="", all trees in the list is filled
    //
    if (!strcmp(tree_name, "")) {
-      ltree->Execute("Fill", "");
+      ltree.R__FOR_EACH(TTree, Fill)();
    }
    else {
       TTree* tt = 0;
@@ -654,14 +582,13 @@ void KVEventSelector::FillTree(const Char_t* tree_name)
 
 }
 
-#ifdef USING_ROOT6
 void KVEventSelector::SetTriggerConditionsForRun(int run)
 {
    // Call this method in your InitRun() method with the current run number in order to
    // automatically reject events which are not consistent with the acquisition trigger.
    gDataAnalyser->SetTriggerConditionsForRun(run);
 }
-#endif
+
 void KVEventSelector::ParseOptions()
 {
    // Analyse comma-separated list of options given to TTree::Process
