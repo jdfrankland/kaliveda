@@ -15,6 +15,40 @@
 \class KVNameValueListGUI
 \brief GUI for setting KVNameValueList parameters
 \ingroup GUI
+
+This is a lightweight transient dialog box which can be used to set an arbitrary list of parameters.
+The parameters are contained in a KVNameValueList. To use, do:
+
+~~~~{.cpp}
+KVNameValueList params{{"FixLimits?",false}, {"Min",0.0}, {"Max",100.0}};
+bool cancel_pressed{false};
+
+auto param_gui = new KVNameValueListGUI(nullptr, &params, &cancel_pressed);
+param_gui->DisplayDialog();
+
+if(!cancel_pressed)
+{
+   // values in param list now reflect user input
+   params.Print();
+}
+~~~~
+
+[Note that this example is for stand-alone use of the GUI. The first argument to the constructor
+is usually the TGMainFrame of your GUI application]
+
+If the user presses 'Cancel', the original values of the parameters are restored.
+
+Boolean parameters can be used to 'enable' other parameters in the GUI, i.e. with the
+previous example, if you do:
+
+~~~~{.cpp}
+param_gui->EnableDependingOnBool("Min","FixLimits?");
+param_gui->EnableDependingOnBool("Max","FixLimits?");
+param_gui->DisplayDialog();
+~~~~
+
+then the "Min" and "Max" input widgets in the GUI will only be enabled when the "FixLimits?" parameter
+is `true`, and will be en/disabled when the check box for this parameter is checked/unchecked.
 */
 
 class KVNameValueListGUI {

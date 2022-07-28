@@ -121,6 +121,7 @@
 #include "TEntryList.h"
 #include "KVUniqueNameList.h"
 #include "TBrowser.h"
+#include <KVUnownedList.h>
 
 class KVHistogram;
 
@@ -183,10 +184,14 @@ private:
    Double_t fXminF, fXmaxF; //
 
    Int_t fNxD, fNyD;//
-   Int_t fOrderedDalitz;//
+   bool fOrderedDalitz;//
 
    /* histos */
    TGMainFrame* fMain_histolist;//! GUI for handling histograms
+   const TGMainFrame* GetMainWindow() const
+   {
+      return fMain_histolist;
+   }
    TGPopupMenu* fMenuFile;//!
    TGPopupMenu* fMenuSelections;//!
    TGPopupMenu* fSelCombMenu;//!
@@ -307,6 +312,11 @@ private:
    void SetAnalysisModifiedSinceLastSave(Bool_t);
 
    void SetEntryList(TEntryList*);
+
+   bool DefineWeight();
+   bool DefineUserBinning();
+   bool DefineUserBinning1F();
+   bool DefineUserBinningD();
 
 public:
    KVTreeAnalyzer(Bool_t nogui = kTRUE);
@@ -535,11 +545,6 @@ public:
       return fWeight;
    }
 
-   void DefineUserBinning(Int_t Nx, Int_t Ny, Double_t Xmin, Double_t Xmax, Double_t Ymin, Double_t Ymax);// *MENU* *ARGS={Nx=>fNx,Ny=>fNy,Xmin=>fXmin,Xmax=>fXmax,Ymin=>fYmin,Ymax=>fYmax}
-   void DefineUserBinning1F(Int_t NxF, Double_t XminF, Double_t XmaxF);// *MENU* *ARGS={NxF=>fNxF,XminF=>fXminF,XmaxF=>fXmaxF}
-   void DefineUserBinningD(Int_t NxD, Int_t NyD, Int_t ordered);// *MENU* *ARGS={NxD=>fNxD,NyD=>fNyD,ordered=>fOrderedDalitz}
-   void DefineWeight(const Char_t* Weight);// *MENU* *ARGS={Weight=>fWeight}
-
    void SetUpHistoAutoSave();
 
    void HandleHistoFileMenu(Int_t);
@@ -577,6 +582,7 @@ public:
    {
       return fChain;
    }
+   void GetHistosFromFile(TFile* file, const KVUnownedList& keys);
 };
 //................  global variable
 R__EXTERN  KVTreeAnalyzer* gTreeAnalyzer;

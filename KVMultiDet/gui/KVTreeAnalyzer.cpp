@@ -21,10 +21,10 @@
 #include "TEnv.h"
 #include "TColor.h"
 #include <KVHistogram.h>
-#include <KVList.h>
 #include <TChain.h>
 #include "TFriendElement.h"
 #include <TTree.h>
+#include "KVNameValueListGUI.h"
 #include "TProof.h"
 
 using namespace std;
@@ -87,7 +87,7 @@ void KVTreeAnalyzer::init()
    fXminF = fXmaxF = -1.;
 
    fNxD = fNyD = 120;
-   fOrderedDalitz = 0;
+   fOrderedDalitz = false;
 }
 
 KVTreeAnalyzer::KVTreeAnalyzer(Bool_t nogui)
@@ -221,11 +221,7 @@ TH1* KVTreeAnalyzer::MakeHisto(const Char_t* expr, const Char_t* selection, Int_
    if (strcmp(weight, "")) GenerateHistoTitle(histotitle, expr, selection, weight);
    else GenerateHistoTitle(histotitle, expr, selection);
    if ((!nY) && (fUserBinning)) {
-      ResetMethodCalled();
-      Bool_t ok = KVBase::OpenContextMenu("DefineUserBinning1F", this, "DefineUserBinning");
-      if (!ok) return 0;
-      // cancel was pressed ?
-      if (MethodNotCalled()) return 0;
+      if (!DefineUserBinning1F()) return nullptr;
    }
 
    TString Selection;
@@ -284,11 +280,7 @@ TH1* KVTreeAnalyzer::MakeIntHisto(const Char_t* expr, const Char_t* selection, I
    else GenerateHistoTitle(histotitle, expr, selection);
 
    if (fUserBinning) {
-      ResetMethodCalled();
-      Bool_t ok = KVBase::OpenContextMenu("DefineUserBinning1F", this, "DefineUserBinning");
-      if (!ok) return 0;
-      // cancel was pressed ?
-      if (MethodNotCalled()) return 0;
+      if (!DefineUserBinning1F()) return nullptr;
    }
 
    histo.Form(">>%s(%d,%f,%f)", name.Data(), (fUserBinning ? fNxF : (Xmax - Xmin) + 1),
@@ -1570,37 +1562,47 @@ void KVTreeAnalyzer::LeafChanged()
    G_leaf_expr->Resize();
 }
 
-void KVTreeAnalyzer::DefineUserBinning(Int_t Nx, Int_t Ny, Double_t Xmin, Double_t Xmax, Double_t Ymin, Double_t Ymax)
+bool KVTreeAnalyzer::DefineUserBinning()
 {
-   fMethodCalled = kTRUE;
-   fNx = Nx;
-   fNy = Ny;
-   fXmin = Xmin;
-   fXmax = Xmax;
-   fYmin = Ymin;
-   fYmax = Ymax;
+   KVNameValueList p{{"Xbins", fNx}, {"Xmin", fXmin}, {"Xmax", fXmax},
+      {"Ybins", fNy}, {"Ymin", fYmin}, {"Ymax", fYmax}};
+   bool cancel{false};
+   auto g = new KVNameValueListGUI(GetMainWindow(), &p, &cancel);
+   g->DisplayDialog();
+   if (cancel) return false;
+   fNx = p.GetIntValue("Xbins");
+   fXmin = p.GetDoubleValue("Xmin");
+   fXmax = p.GetDoubleValue("Xmax");
+   fNy = p.GetIntValue("Ybins");
+   fYmin = p.GetDoubleValue("Ymin");
+   fYmax = p.GetDoubleValue("Ymax");
+   return true;
 }
 
-void KVTreeAnalyzer::DefineUserBinning1F(Int_t Nx, Double_t Xmin, Double_t Xmax)
+bool KVTreeAnalyzer::DefineUserBinning1F()
 {
-   fMethodCalled = kTRUE;
-   fNxF = Nx;
-   fXminF = Xmin;
-   fXmaxF = Xmax;
+   KVNameValueList p{{"bins", fNxF}, {"min", fXminF}, {"max", fXmaxF}};
+   bool cancel{false};
+   auto g = new KVNameValueListGUI(GetMainWindow(), &p, &cancel);
+   g->DisplayDialog();
+   if (cancel) return false;
+   fNxF = p.GetIntValue("bins");
+   fXminF = p.GetDoubleValue("min");
+   fXmaxF = p.GetDoubleValue("max");
+   return true;
 }
 
-void KVTreeAnalyzer::DefineUserBinningD(Int_t Nx, Int_t Ny, Int_t ordered)
+bool KVTreeAnalyzer::DefineUserBinningD()
 {
-   fMethodCalled = kTRUE;
-   fNxD = Nx;
-   fNyD = Ny;
-   fOrderedDalitz = ordered;
-}
-
-void KVTreeAnalyzer::DefineWeight(const Char_t* Weight)
-{
-   fMethodCalled = kTRUE;
-   fWeight = Weight;
+   KVNameValueList p{{"Xbins", fNxD}, {"Ybins", fNyD}, {"ordered?", fOrderedDalitz}};
+   bool cancel{false};
+   auto g = new KVNameValueListGUI(GetMainWindow(), &p, &cancel);
+   g->DisplayDialog();
+   if (cancel) return false;
+   fNxD = p.GetIntValue("Xbins");
+   fNyD = p.GetIntValue("Ybins");
+   fOrderedDalitz = p.GetBoolValue("ordered?");
+   return true;
 }
 
 const Char_t* KVTreeAnalyzer::get_leaf_type_name(const TNamed* l)
@@ -1626,11 +1628,7 @@ void KVTreeAnalyzer::DrawLeafExpr()
    }
 
    if (fUserWeight) {
-      ResetMethodCalled();
-      Bool_t ok = KVBase::OpenContextMenu("DefineWeight", this);
-      if (!ok) return;
-      // cancel was pressed ?
-      if (MethodNotCalled()) return;
+      if (!DefineWeight()) return;
    }
 
    int nx = 500, ny = 500;
@@ -1670,11 +1668,7 @@ void KVTreeAnalyzer::DrawLeafExpr()
    }
 
    if (fUserBinning) {
-      ResetMethodCalled();
-      Bool_t ok = KVBase::OpenContextMenu("DefineUserBinning", this);
-      if (!ok) return;
-      // cancel was pressed ?
-      if (MethodNotCalled()) return;
+      if (!DefineUserBinning()) return;
    }
 
    xmin = fTree->GetMinimum(Xexpr);
@@ -1797,11 +1791,7 @@ void KVTreeAnalyzer::DrawAsDalitz()
    }
 
    if (fUserBinning) {
-      ResetMethodCalled();
-      Bool_t ok = KVBase::OpenContextMenu("DefineUserBinningD", this, "DefineUserBinning");
-      if (!ok) return;
-      // cancel was pressed ?
-      if (MethodNotCalled()) return;
+      if (!DefineUserBinningD()) return;
    }
 
    TString histotitle;
@@ -1857,16 +1847,28 @@ void KVTreeAnalyzer::DrawAsDalitz()
 
 }
 
+bool KVTreeAnalyzer::DefineWeight()
+{
+   // Open dialogue box for user to fill required weight for histo
+   //
+   // returns false if Cancel button is pressed
+
+   KVNameValueList params{{"Weight", ""}};
+   Bool_t cancel_pressed{false};
+   auto s = new KVNameValueListGUI(GetMainWindow(), &params, &cancel_pressed);
+   s->DisplayDialog();
+   // cancel was pressed ?
+   if (cancel_pressed) return false;
+   fWeight = params.GetStringValue("Weight");
+   return true;
+}
+
 void KVTreeAnalyzer::DrawLeaf(TObject* obj)
 {
    // Method called when user double-clicks a leaf/alias in list
 
    if (fUserWeight) {
-      ResetMethodCalled();
-      Bool_t ok = KVBase::OpenContextMenu("DefineWeight", this);
-      if (!ok) return;
-      // cancel was pressed ?
-      if (MethodNotCalled()) return;
+      if (!DefineWeight()) return;
    }
 
    TH1* histo = nullptr;
@@ -2444,7 +2446,7 @@ void KVTreeAnalyzer::OpenChain()
       // look in first file to find first TTree and use its name/title
       TString theTreeName, theTreeTitle;
       TFile* file = TFile::Open(fi.fFileNamesList->First()->GetName());
-      KVList keys(0);
+      KVUnownedList keys;
       keys.AddAll(file->GetListOfKeys());
       // Get list of trees in file
       unique_ptr<KVSeqCollection> trees(keys.GetSubListWithMethod("TTree", "GetClassName"));
@@ -2457,6 +2459,10 @@ void KVTreeAnalyzer::OpenChain()
          KVTreeAnalyzer* newAnal = this;
          if (fTree) newAnal = new KVTreeAnalyzer(kFALSE);
          newAnal->OpenChain(theTreeName, theTreeTitle, fi.fFileNamesList);
+         if (fi.fFileNamesList->GetEntries() == 1) {
+            // if a single file is selected, look to see if any histograms are in it
+            newAnal->GetHistosFromFile(file, keys);
+         }
       }
    }
    dir = fi.fIniDir;
@@ -2502,24 +2508,8 @@ void KVTreeAnalyzer::HistoFileMenu_Save()
    fAnalysisSaveDir = fi.fIniDir;
 }
 
-void KVTreeAnalyzer::OpenSingleFile(TFile* file)
+void KVTreeAnalyzer::GetHistosFromFile(TFile* file, const KVUnownedList& keys)
 {
-   // Open TTree in file (as a TChain) and import any histograms found in file
-
-   fHistolist.Clear();
-   KVList keys(0);
-   keys.AddAll(file->GetListOfKeys());
-   // Get list of trees in file
-   unique_ptr<KVSeqCollection> trees(keys.GetSubListWithMethod("TTree", "GetClassName"));
-   if (trees->GetEntries()) {
-      // Get name of first tree
-      TString aTreeName = trees->First()->GetName();
-      TString aFileName = file->GetName();
-      TList fileList;
-      TNamed ff(aFileName.Data(), "File Name");
-      fileList.Add(&ff);
-      OpenChain(aTreeName, trees->First()->GetTitle(), &fileList);
-   }
    TIter next(&keys);
    TKey* akey;
    while ((akey = (TKey*)next())) {
@@ -2532,6 +2522,27 @@ void KVTreeAnalyzer::OpenSingleFile(TFile* file)
       }
    }
    G_histolist->Display(&fHistolist);
+}
+
+void KVTreeAnalyzer::OpenSingleFile(TFile* file)
+{
+   // Open TTree in file (as a TChain) and import any histograms found in file
+
+   fHistolist.Clear();
+   KVUnownedList keys;
+   keys.AddAll(file->GetListOfKeys());
+   // Get list of trees in file
+   unique_ptr<KVSeqCollection> trees(keys.GetSubListWithMethod("TTree", "GetClassName"));
+   if (trees->GetEntries()) {
+      // Get name of first tree
+      TString aTreeName = trees->First()->GetName();
+      TString aFileName = file->GetName();
+      TList fileList;
+      TNamed ff(aFileName.Data(), "File Name");
+      fileList.Add(&ff);
+      OpenChain(aTreeName, trees->First()->GetTitle(), &fileList);
+   }
+   GetHistosFromFile(file, keys);
 }
 
 void KVTreeAnalyzer::OpenAnyFile(const Char_t* filepath)
