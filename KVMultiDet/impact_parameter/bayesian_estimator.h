@@ -377,7 +377,7 @@ namespace KVImpactParameters {
 
          p_X_X_integrator_with_selection.SetParameter(0, fIPDist.GetCentrality().Eval(x[0]));
          double num =  p_X_X_integrator_with_selection.Integral(p[0], p[1], 1.e-4);
-         return 2 * num * fIPDist.GetDifferentialCrossSection(x[0]);
+         return num * fIPDist.GetDifferentialCrossSection(x[0]);
       }
 
    public:
