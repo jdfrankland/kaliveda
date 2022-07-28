@@ -17,6 +17,8 @@ INDRAFAZIA.E818.EventReconstruction.DoCalibration: yes
 INDRAFAZIA.E818.EventReconstruction.DoIdentification: yes
 INDRAFAZIA.E818.HasCalibIdentInfos:   yes
 INDRAFAZIA.E818.ActiveIdentifications:      INDRA.CSI INDRA.SI-CSI FAZIA.Si-Si FAZIA.Si-CsI FAZIA.Si FAZIA.CsI
+INDRAFAZIA.E818.INDRA.SI-CSI.MassID: yes
+INDRAFAZIA.E818.INDRA.SI-CSI.MassID.Validity:  Z<=10
 
 # DETECTOR THICKNESSES
 INDRAFAZIA.E818.DetectorThicknessesFile: DetectorThicknessFiles.dat
