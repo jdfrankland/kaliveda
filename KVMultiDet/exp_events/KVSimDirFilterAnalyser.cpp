@@ -55,14 +55,27 @@ void KVSimDirFilterAnalyser::preInitRun()
    fRun = gExpDB->GetDBRun(run.Atoi());
    fAnalysisClass->SetCurrentRun(fRun);
    KVMultiDetArray::MakeMultiDetector(gDataSet->GetName(), run.Atoi());
+   // put detector array in simulation mode
+   gMultiDetArray->SetSimMode();
 }
 
 void KVSimDirFilterAnalyser::preAnalysis()
 {
-   // Called by KVEventSelector just after reading new event and just before
-   // calling user analysis.
-   // Set minimum acceptable multiplicity for event.
+   // Called by KVEventSelector just after reading new event and just before calling user analysis
+   //
+   // Copy calculated energy losses of all particles into the detectors
+
    gMultiDetArray->SetMinimumOKMultiplicity(fAnalysisClass->GetEvent());
+
+   for (auto& n : EventIterator(fAnalysisClass->GetEvent())) {
+      for (auto& p : *n.GetParameters()) {
+         auto d = gMultiDetArray->GetDetector(p.GetName());
+         if (d) {
+            // sum up energy losses in each detector
+            d->SetEnergyLoss(p.GetDouble() + d->GetEnergyLoss());
+         }
+      }
+   }
 }
 
 void KVSimDirFilterAnalyser::Make(const Char_t* kvsname)

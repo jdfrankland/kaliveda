@@ -51,9 +51,7 @@ public:
    {
       return fRun;
    }
-#ifdef USING_ROOT6
    void SetTriggerConditionsForRun(int run);
-#endif
    ClassDef(KVSimDirFilterAnalyser, 1) //Analysis of filtered simulations
 };
 
