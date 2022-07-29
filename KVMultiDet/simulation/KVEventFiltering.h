@@ -123,8 +123,6 @@ public:
    void InitRun();
    void OpenOutputFile(KVDBSystem*, Int_t);
 
-   TFile* fFile;
-   TTree* fTree;
    KVReconstructedEvent* fReconEvent;
    TVector3 fCMVelocity;
    TVector3 fProjVelocity;

@@ -148,7 +148,7 @@ Bool_t KVEventFiltering::Analysis()
       }
       fReconEvent->SetNumber(fEVN++);
       fReconEvent->SetFrameName("lab");
-      fTree->Fill();
+      FillTree();
 #ifdef WITH_GEMINI
    }
    while (fGemini && --iterations);
@@ -322,12 +322,13 @@ void KVEventFiltering::InitAnalysis()
    gMultiDetArray->PrintStatusOfIDTelescopes();
 
    OpenOutputFile(sys, run);
-   if (sys) fTree = AddTree("ReconstructedEvents", Form("%s filtered with %s (%s)", GetOpt("SimTitle").Data(), gMultiDetArray->GetTitle(), sys->GetName()));
-   else fTree = AddTree("ReconstructedEvents", Form("%s filtered with %s", GetOpt("SimTitle").Data(), gMultiDetArray->GetTitle()));
+   TTree* t{nullptr};
+   if (sys) t = AddTree("ReconstructedEvents", Form("%s filtered with %s (%s)", GetOpt("SimTitle").Data(), gMultiDetArray->GetTitle(), sys->GetName()));
+   else t = AddTree("ReconstructedEvents", Form("%s filtered with %s", GetOpt("SimTitle").Data(), gMultiDetArray->GetTitle()));
 
    TString reconevclass = gDataSet->GetReconstructedEventClassName();
    fReconEvent = (KVReconstructedEvent*)TClass::GetClass(reconevclass)->New();
-   KVEvent::MakeEventBranch(fTree, "ReconEvent", fReconEvent);
+   KVEvent::MakeEventBranch(t, "ReconEvent", fReconEvent);
 }
 
 void KVEventFiltering::InitRun()
@@ -401,8 +402,7 @@ void KVEventFiltering::OpenOutputFile(KVDBSystem* S, Int_t run)
    TString fullpath;
    AssignAndDelete(fullpath, gSystem->ConcatFileName(GetOpt("OutputDir").Data(), outfile.Data()));
 
-   //fFile = new TFile(fullpath,"recreate");
-   CreateTreeFile(fullpath);
+   SetJobOutputFileName(fullpath);
 
    TDirectory* curdir = gDirectory;
    writeFile->cd();
