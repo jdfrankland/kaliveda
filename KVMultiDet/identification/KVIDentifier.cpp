@@ -534,7 +534,7 @@ Int_t KVIDentifier::ContinueDrawing()
    Double_t xmax = fX[fNpoints - 1];
    Double_t xmin = fX[0];
 
-   Info("ContinueDrawing", "Existing Line %lf %lf, Added line %lf %lf", xmin, xmax, last, first);
+//   Info("ContinueDrawing", "Existing Line %lf %lf, Added line %lf %lf", xmin, xmax, last, first);
 
    if (first > xmax) {
       //A rajouter apres (a droite) de la ligne existante
@@ -558,7 +558,7 @@ Int_t KVIDentifier::ContinueDrawing()
       }
    }
    else {
-      Info("ContinueDrawing", "Faire une extension a droite ou a gauche\nsans recouvrement avec la ligne existante");
+//      Info("ContinueDrawing", "Faire une extension a droite ou a gauche\nsans recouvrement avec la ligne existante");
    }
 
    delete gr;
