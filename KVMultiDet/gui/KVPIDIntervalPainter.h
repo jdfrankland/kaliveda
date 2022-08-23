@@ -11,7 +11,7 @@
 #include "TLine.h"
 #include "TMarker.h"
 #include "TLatex.h"
-#include "KVCanvas.h"
+#include "TCanvas.h"
 #include "KVList.h"
 #include "KVIDZAFromZGrid.h"
 
@@ -144,7 +144,7 @@ class KVPIDIntervalPainter : public TNamed {
    KVPIDIntervalPainter* left_interval = nullptr; // interval to the left (i.e. smaller mass) than this one
    KVPIDIntervalPainter* right_interval = nullptr; // interval to the right (i.e. larger mass) than this one
 
-   KVCanvas* fCanvas = nullptr;
+   TCanvas* fCanvas = nullptr;
 
    Bool_t active_intervals = true;
 
@@ -211,7 +211,7 @@ public:
    {
       Emit("IntMod()");
    }
-   void SetCanvas(KVCanvas* cc)
+   void SetCanvas(TCanvas* cc)
    {
       fCanvas = cc;
    }
