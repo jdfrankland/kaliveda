@@ -21,7 +21,7 @@
 #include <TGNumberEntry.h>
 #include <TGTextEntry.h>
 #include <TGProgressBar.h>
-#include "KVCanvas.h"
+#include "TCanvas.h"
 #include "KVList.h"
 #include "KVListView.h"
 #include "KVIDZAFromZGrid.h"
@@ -44,7 +44,7 @@ class KVItvFinderDialog {
    RQ_OBJECT("KVZAFinderDialog")
 
    TGTransientFrame* fMain;
-   KVCanvas* fCanvas;
+   TCanvas* fCanvas;
    TVirtualPad* fPad;
 
    TGToolBar* fToolBar;
@@ -120,6 +120,7 @@ public:
 
    void DoClose()
    {
+      gROOT->ProcessLine("KVItvFinderDialog* _dummy_itv=nullptr");
       delete this;
    }
 
@@ -128,6 +129,7 @@ public:
    void SaveGrid();//{fGrid->GetIntervalSets()->ls(); fGrid->GetParameters()->ls();}
    void ExportToGrid();
    void NewInterval();//{Info("NewInterval","Not yet implemented");}
+   void AddInterval(double pid);
    void NewIntervalSet();//{Info("NewIntervalSet","Not yet implemented");}
    void RemoveInterval();//{Info("RemoveInterval","Not yet implemented");}
    void MassesUp();//{Info("ChangeMasses","Not yet implemented");}
@@ -139,6 +141,8 @@ public:
    void FitIsotopes();
    void SetFitParameters();
    void RemoveFit();
+
+   void HandleKey();
 
    void ProcessIdentification(Int_t zmin = -1, Int_t zmax = -1);
    void FindPIDIntervals(Int_t zz);

@@ -12,6 +12,7 @@
 #include "KVIdentificationResult.h"
 #include "KVNameValueListGUI.h"
 #include <KVMultiGaussIsotopeFit.h>
+#include "KeySymbols.h"
 #include <thread>
 
 ClassImp(KVItvFinderDialog)
@@ -52,6 +53,8 @@ KVItvFinderDialog::KVItvFinderDialog(KVIDZAFromZGrid* gg, TH2* hh)//:fSpectrum(7
    gStyle->SetOptStat(0);
    gStyle->SetOptTitle(0);
 
+   gROOT->ProcessLine(Form("KVItvFinderDialog* _dummy_itv=(KVItvFinderDialog*)%p", this));
+
    fMain = new TGTransientFrame(gClient->GetDefaultRoot(), gClient->GetDefaultRoot(), 10, 10);
    // Here is the recipe for cleanly closing a window
    // (see https://root-forum.cern.ch/t/error-in-rootx11errorhandler-baddrawable-quot/8095/6)
@@ -70,9 +73,11 @@ KVItvFinderDialog::KVItvFinderDialog(KVIDZAFromZGrid* gg, TH2* hh)//:fSpectrum(7
    // (see https://root-forum.cern.ch/t/error-in-rootx11errorhandler-baddrawable-quot/8095/6)
    auto WID = fRootEmbeddedCanvas615->GetCanvasWindowId();
    delete fRootEmbeddedCanvas615->GetCanvas();
-   fCanvas = new KVCanvas("c123", 10, 10, WID);
+   fCanvas = new TCanvas("c123", 10, 10, WID);
+   fCanvas->AddExec("toto", "if(_dummy_itv)_dummy_itv->HandleKey();");
    fRootEmbeddedCanvas615->AdoptCanvas(fCanvas);
    fPad = fCanvas->cd();
+//   fPad->AddExec("test","printf('coucou\n')");
    fCanvas->SetRightMargin(0.02);
    fCanvas->SetTopMargin(0.02);
    fCanvas->SetLeftMargin(0.08);
@@ -542,6 +547,24 @@ void KVItvFinderDialog::SaveGrid()
 {
    ExportToGrid();
 
+   TString currentdir(gSystem->ExpandPathName("."));
+
+   TString fn = fHisto->GetName();
+   fn += ".dat";
+
+   Int_t ret_code;
+   new TGMsgBox(
+      gClient->GetRoot(),
+      gClient->GetDefaultRoot(),
+      "KVIDGridEditor::SaveCurrentGrid", Form("Do you wat to save the grid here : %s", fn.Data()),
+      kMBIconExclamation, kMBYes | kMBNo, &ret_code
+   );
+
+   if (ret_code == kMBYes) {
+      fGrid->WriteAsciiFile(Form("%s", fn.Data()));
+      return;
+   }
+
    static TString dir(".");
    const char* filetypes[] = {
       "ID Grid files", "*.dat",
@@ -629,16 +652,18 @@ void KVItvFinderDialog::NewInterval()
    }
    else if (pid < ((interval*)current_interval_set->GetIntervals()->First())->GetPID()) { // to left of all others
       aa = ((interval*)current_interval_set->GetIntervals()->First())->GetA() - 1;
-      // use guesstimate as long as it is smaller than A of previously defined interval with largest PID
+      // NO MORE : use guesstimate as long as it is smaller than A of previously defined interval with largest PID
+      // NOW : use 'aa_guessstimate' only for first interval
       //Info("NewInt","before first interval, with a=%d",aa+1);
-      if (aa_guessstimate < aa + 1) aa = aa_guessstimate;
+//      if (aa_guessstimate < aa + 1) aa = aa_guessstimate;
       iint = 0;
    }
    else if (pid > ((interval*)current_interval_set->GetIntervals()->Last())->GetPID()) { // to right of all others
       aa = ((interval*)current_interval_set->GetIntervals()->Last())->GetA() + 1;
-      // use guesstimate as long as it is larger than A of previously defined interval with smallest PID
+      // NO MORE :  use guesstimate as long as it is larger than A of previously defined interval with smallest PID
+      // NOW : use 'aa_guessstimate' only for first interval
       //Info("NewInt","after last interval, with a=%d",aa-1);
-      if (aa_guessstimate > aa - 1) aa = aa_guessstimate;
+//      if (aa_guessstimate > aa - 1) aa = aa_guessstimate;
       iint = current_interval_set->GetNPID();
    }
    else {
@@ -696,6 +721,102 @@ void KVItvFinderDialog::NewInterval()
 
    fCanvas->Modified();
    fCanvas->Update();
+}
+
+void KVItvFinderDialog::AddInterval(double pid)
+{
+   std::unique_ptr<TList> list(fIntervalSetListView->GetSelectedObjects());
+   if (!list->GetSize() || list->GetSize() > 1) {
+      current_interval_set = nullptr;
+      return;
+   }
+
+   current_interval_set = (interval_set*)list->At(0);
+
+   int aa = 0;
+   int iint = 0;
+
+   // try to guess mass from position (PID)
+   // typical isotope separation in PID is 0.12 (e.g. for carbon isotopes)
+   // assume that PID=z means A=2*Z
+   auto aa_guessstimate = TMath::Nint(current_interval_set->GetZ() * 2 + (pid - current_interval_set->GetZ()) / 0.12);
+//Info("NewINt","pid = %f guess a=%d",pid,aa_guessstimate);
+   if (!current_interval_set->GetNPID()) {
+      aa = aa_guessstimate;
+      iint = 0;
+   }
+   else if (pid < ((interval*)current_interval_set->GetIntervals()->First())->GetPID()) { // to left of all others
+      aa = ((interval*)current_interval_set->GetIntervals()->First())->GetA() - 1;
+      // NO MORE : use guesstimate as long as it is smaller than A of previously defined interval with largest PID
+      // NOW : use 'aa_guessstimate' only for first interval
+      //Info("NewInt","before first interval, with a=%d",aa+1);
+//      if (aa_guessstimate < aa + 1) aa = aa_guessstimate;
+      iint = 0;
+   }
+   else if (pid > ((interval*)current_interval_set->GetIntervals()->Last())->GetPID()) { // to right of all others
+      aa = ((interval*)current_interval_set->GetIntervals()->Last())->GetA() + 1;
+      // NO MORE :  use guesstimate as long as it is larger than A of previously defined interval with smallest PID
+      // NOW : use 'aa_guessstimate' only for first interval
+      //Info("NewInt","after last interval, with a=%d",aa-1);
+//      if (aa_guessstimate > aa - 1) aa = aa_guessstimate;
+      iint = current_interval_set->GetNPID();
+   }
+   else {
+      // look for intervals between which the new one is places
+      for (int ii = 1; ii < current_interval_set->GetNPID(); ii++) {
+         if (pid > ((interval*)current_interval_set->GetIntervals()->At(ii - 1))->GetPID()
+               && pid < ((interval*)current_interval_set->GetIntervals()->At(ii))->GetPID()) {
+            aa = ((interval*)current_interval_set->GetIntervals()->At(ii - 1))->GetA() + 1;
+            // use guesstimate if it is in between masses of adjacent intervals (in terms of PID)
+            if ((aa_guessstimate > (aa - 1)) &&
+                  (aa_guessstimate < ((interval*)current_interval_set->GetIntervals()->At(ii))->GetA()))
+               aa = aa_guessstimate;
+            iint = ii;
+            break;
+         }
+      }
+   }
+
+   interval* itv = new interval(current_interval_set->GetZ(), aa, pid, pid - 0.05, pid + 0.05);
+   current_interval_set->GetIntervals()->AddAt(itv, iint);
+
+   // find intervals which are now left (smaller mass) and right (higher mass) than this one
+   interval* left_interval = iint > 0 ? (interval*)current_interval_set->GetIntervals()->At(iint - 1) : nullptr;
+   interval* right_interval = iint < current_interval_set->GetIntervals()->GetEntries() - 1 ? (interval*)current_interval_set->GetIntervals()->At(iint + 1) : nullptr;
+   // find the corresponding painters
+   KVPIDIntervalPainter* left_painter{nullptr}, *right_painter{nullptr};
+   TIter next_painter(&fItvPaint);
+   KVPIDIntervalPainter* pidpnt;
+   while ((pidpnt = (KVPIDIntervalPainter*)next_painter())) {
+      if (pidpnt->GetInterval() == left_interval) left_painter = pidpnt;
+      else if (pidpnt->GetInterval() == right_interval) right_painter = pidpnt;
+   }
+
+   // give a different colour to each interval
+   auto nitv = current_interval_set->GetIntervals()->GetEntries();
+   auto cstep = TColor::GetPalette().GetSize() / (nitv + 1);
+
+   KVPIDIntervalPainter* dummy = new KVPIDIntervalPainter(itv, fLinearHisto, TColor::GetPalette()[cstep * (iint + 1)],
+         left_painter);
+   // set up links between painters
+   if (right_painter) {
+      right_painter->set_left_interval(dummy);
+      dummy->set_right_interval(right_painter);
+   }
+   fPad->cd();
+   dummy->Draw();
+   dummy->Connect("IntMod()", "KVItvFinderDialog", this, "UpdatePIDList()");
+   dummy->SetDisplayLabel(1);
+   dummy->SetCanvas(fCanvas);
+   fItvPaint.Add(dummy);
+
+   fIntervalListView->Display(current_interval_set->GetIntervals());
+
+   fItvPaint.Execute("Update", "");
+
+   fCanvas->Modified();
+   fCanvas->Update();
+
 }
 
 void KVItvFinderDialog::NewIntervalSet()
@@ -1067,6 +1188,27 @@ void KVItvFinderDialog::RemoveFit()
 
    fPad->Modified();
    fPad->Update();
+}
+
+void KVItvFinderDialog::HandleKey()
+{
+
+   if (!fCanvas) return;
+   if (fCanvas->GetEvent() == kMouseMotion) return;
+
+   switch (fCanvas->GetEvent()) {
+      case kButton2Up:
+         FitIsotopes();
+         break;
+      case kButton1Double:
+         fCanvas->SetLogy(!fCanvas->GetLogy());
+         break;
+      case kButton1Shift:
+//         std::cout << fCanvas->GetEventX() << " " << fCanvas->AbsPixeltoX(fCanvas->GetEventX()) << std::endl;
+         AddInterval(fCanvas->AbsPixeltoX(fCanvas->GetEventX()));
+         break;
+   }
+
 }
 
 void KVItvFinderDialog::FindPIDIntervals(Int_t zz)
