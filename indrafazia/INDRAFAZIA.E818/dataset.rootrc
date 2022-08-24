@@ -32,8 +32,8 @@ INDRAFAZIA.E818.INDRA.SI-CSI.GridOrder:    ADC_TotLight,1.0*ADC_TotLight
 INDRAFAZIA.E818.IdentificationParameterList.FAZIA.CsI: FAZIA.CsI.IdentificationFiles.dat
 INDRAFAZIA.E818.IdentificationParameterFile.FAZIA.Si: IDGridsFAZIA_Si.dat
 INDRAFAZIA.E818.IdentificationParameterList.FAZIA.Si-Si: FAZIA.Si-Si.IdentificationFiles.dat
-INDRAFAZIA.E818.IdentificationParameterList.FAZIA.Si-CsI: FAZIA.Si-CsI.IdentificationFiles.dat
-#INDRAFAZIA.E818.FAZIA.Si-CsI.GridOrder:
+#INDRAFAZIA.E818.IdentificationParameterList.FAZIA.Si-CsI: FAZIA.Si-CsI.IdentificationFiles.dat
+#INDRAFAZIA.E818.FAZIA.Si-CsI.GridOrder: SI1::Energy+SI2::Energy_1.0*CSI::Q3.FPGAEnergy,SI1::Energy+SI2::Energy_CSI::Q3.FPGAEnergy
 
 # nominal geometry (85.43cm is distance to true target position, i.e. approx. 1 cm upstream of theoretical target position)
 INDRAFAZIA.E818.FAZIETO.DistanceZ:       85.43
