@@ -20,6 +20,14 @@ INDRAFAZIA.E818.ActiveIdentifications:      INDRA.CSI INDRA.SI-CSI FAZIA.Si-Si F
 INDRAFAZIA.E818.INDRA.SI-CSI.MassID: yes
 INDRAFAZIA.E818.INDRA.SI-CSI.MassID.Validity:  Z<=10
 
+# Trigger patterns used in FAZIA trigger box for experiment
++INDRAFAZIA.E818.FAZIA.TriggerPatterns: Mult1
+INDRAFAZIA.E818.FAZIA.TriggerPattern.Mult1: 1
++INDRAFAZIA.E818.FAZIA.TriggerPatterns: Mult2
+INDRAFAZIA.E818.FAZIA.TriggerPattern.Mult2: 2
++INDRAFAZIA.E818.FAZIA.TriggerPatterns: Mult1/100
+INDRAFAZIA.E818.FAZIA.TriggerPattern.Mult1/100: 4
+
 # DETECTOR THICKNESSES
 INDRAFAZIA.E818.DetectorThicknessesFile: DetectorThicknessFiles.dat
 
