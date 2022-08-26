@@ -183,6 +183,8 @@ public:
             return "SOME_ENERGY_LOSSES_CALCULATED";
          case WARNING_CSI_MAX_ENERGY:
             return "WARNING_CSI_MAX_ENERGY";
+         case ENERGY_LOSSES_TENTATIVELY_CALCULATED:
+            return "ENERGY_LOSSES_TENTATIVELY_CALCULATED (for Z=1,2 stopped in uncalibrated CsI)";
          default:
             return Form("(unknown:%d)", ec);
       }
