@@ -110,8 +110,7 @@ void KVFAZIAGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
          // estimation for Z=1 and Z=2):
          bool si1_pileup = PART->GetParameters()->GetBoolValue("si1_pileup");
 
-         if (si1->IsCalibrated() && si1->GetEnergy() && si2->IsCalibrated() && si2->GetEnergy()
-               && !si1_pileup && PART->GetZ() > 2) {
+         if (si1->IsCalibrated() && si1->GetEnergy() && si2->IsCalibrated() && si2->GetEnergy() && !si1_pileup) {
             // calculate total delta-E in (SI1+SI2) then use to calculate CsI energy
             double deltaE = si1->GetEnergy() + si2->GetEnergy();
             KVDetector si1si2("Si", si1->GetThickness() + si2->GetThickness());
@@ -120,7 +119,8 @@ void KVFAZIAGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
             PART->SetParameter("FAZIA.ESI2", si2->GetEnergy());
             PART->SetParameter("FAZIA.ECSI", -ecsi);
             PART->SetEnergy(deltaE + ecsi);
-            SetCalibrationStatus(*PART, KVFAZIA::ECodes::SOME_ENERGY_LOSSES_CALCULATED); // CsI energy calculated
+            if (PART->GetZ() > 2) SetCalibrationStatus(*PART, KVFAZIA::ECodes::SOME_ENERGY_LOSSES_CALCULATED); // CsI energy calculated
+            else               SetCalibrationStatus(*PART, KVFAZIA::ECodes::ENERGY_LOSSES_TENTATIVELY_CALCULATED); // CsI energy calculated
          }
       }
    }

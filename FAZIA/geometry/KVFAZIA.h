@@ -169,7 +169,8 @@ public:
       NO_CALIBRATION_ATTEMPTED = 0, ///< particle stopped in detectors with no available calibration
       NORMAL_CALIBRATION = 1,       ///< normal well-calibrated particle with no problems
       SOME_ENERGY_LOSSES_CALCULATED = 2, ///< particle calibration OK, with some detector energies calculated
-      WARNING_CSI_MAX_ENERGY = 3    ///< particle calibration OK, although apparent energy would mean punching through the CsI
+      WARNING_CSI_MAX_ENERGY = 3,    ///< particle calibration OK, although apparent energy would mean punching through the CsI
+      ENERGY_LOSSES_TENTATIVELY_CALCULATED = 4    ///< particle calibration OK, with some detector energies tentatively calculated (Z<2)
    };
    TString GetECodeMeaning(Int_t ec) const
    {
