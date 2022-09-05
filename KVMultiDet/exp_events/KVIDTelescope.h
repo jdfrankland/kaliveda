@@ -21,7 +21,6 @@ $Id: KVIDTelescope.h,v 1.33 2009/04/01 15:58:10 ebonnet Exp $
 
 #include "KVBase.h"
 #include "KVDetector.h"
-#include "KVRList.h"
 #include "TGraph.h"
 #include "KVParticleCondition.h"
 class KVReconstructedNucleus;
@@ -32,11 +31,8 @@ class KVMultiDetArray;
 class KVIdentificationResult;
 class TH2;
 
-#ifdef WITH_CPP11
+#include <KVUnownedList.h>
 #include <unordered_map>
-#else
-#include <map>
-#endif
 
 /**
   \class KVIDTelescope
@@ -91,9 +87,9 @@ class KVIDTelescope: public KVBase {
    UShort_t fIDCode;            //! general id code corresponding to correct identification by this type of telescope
 
 protected:
-   KVList fDetectors;         //list of detectors in telescope
-   KVGroup* fGroup;           //group to which telescope belongs
-   KVList fIDGrids;           //identification grid(s)
+   KVUnownedList fDetectors;         //list of detectors in telescope
+   KVGroup* fGroup;                  //group to which telescope belongs
+   KVUnownedList fIDGrids;           //identification grid(s)
    enum {
       kMassID = BIT(15),         //set if telescope is capable of mass identification i.e. isotopic resolution
       kReadyForID = BIT(16)         //set if telescope is ready and able for identification. set in Initialize()
@@ -102,17 +98,22 @@ protected:
 
    void SetLabelFromURI(const Char_t* uri);
    std::unique_ptr<KVParticleCondition> fMassIDValidity;//! may be used to limit mass identification to certain Z and/or A range
-   KVDetectorSignal* GetSignalFromGridVar(const KVString& var, const KVString& axe);
+   KVDetectorSignal* GetSignalFromGridVar(const KVString& var, const KVString& axe, KVString& det_labels);
    struct GraphCoords {
       KVDetectorSignal* fVarX;//!
       KVDetectorSignal* fVarY;//!
+      KVString fDetLabelsX;//!
+      KVString fDetLabelsY;//!
    };
    mutable std::unordered_map<KVIDGraph*, GraphCoords> fGraphCoords;//! X/Y coordinates from detector signals for ID maps
+   KVList fMultiDetExpressions;//! used to clean up any multi-detector signal expressions generated to calculate X/Y coordinates
 
    KVIDGrid* newGrid(bool onlyZ);
    void addLineToGrid(KVIDGrid* gg, int zz, int aa, int npoints);
 
 public:
+
+   KVString GetDetectorLabelsForGridCoord(const KVString& axis) const;
 
    // status of particle calibration after Calibrate(KVReconstructedNucleus*) is called
    enum {

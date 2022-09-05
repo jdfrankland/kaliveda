@@ -46,7 +46,7 @@ ClassImp(KVIDTelescope)
 TEnv* KVIDTelescope::fgIdentificationBilan = nullptr;
 
 KVIDTelescope::KVIDTelescope()
-   : fDetectors(kFALSE), fGroup(nullptr), fIDGrids(kFALSE)
+   : fGroup(nullptr)
 {
    init();
 }
@@ -140,7 +140,14 @@ void KVIDTelescope::Initialize(void)
             else {
                fIDGrids.Clear();
                grid_list.Begin(",");
-               while (!grid_list.End()) fIDGrids.Add(tmp_list.FindObject(grid_list.Next()));
+               while (!grid_list.End()) {
+                  auto gr_name = grid_list.Next();
+                  auto gr_ob = tmp_list.FindObject(gr_name);
+                  if (!gr_ob) {
+                     Info("Initialize", "IDtel=%s grid %s missing", GetName(), gr_name.Data());
+                  }
+                  fIDGrids.Add(gr_ob);
+               }
                ok = kTRUE;
             }
          }
@@ -162,15 +169,22 @@ void KVIDTelescope::Initialize(void)
 //___________________________________________________________________________________________
 void KVIDTelescope::AddDetector(KVDetector* d)
 {
-   //Add a detector to the telescope.
-   //The first detector added is the "DeltaE" member, the second the "Eresidual" member.
-   //Update name of telescope to "ID_[name of DE]_[name of E]"
+   // Add a detector to the telescope.
+   //
+   // Detectors must be added in the order they will be hit by impinging particles,
+   // with the last detector being the one particles stopped in the telescope will stop in.
+   // i.e. dE1, dE2, ..., Eres
+   //
+   // Update name of telescope to "ID_[name of 1st detector]_[name of 2nd detector]_ ... _[name of last detector]"
 
    if (d) {
       fDetectors.Add(d);
       d->AddIDTelescope(this);
-      if (GetSize() > 1)
-         SetName(Form("ID_%s_%s", GetDetector(1)->GetName(), GetDetector(2)->GetName()));
+      if (GetSize() > 1) {
+         TString old_name = GetName();
+         old_name += Form("_%s", GetDetectors()->Last()->GetName());
+         SetName(old_name);
+      }
       else SetName(Form("ID_%s", GetDetector(1)->GetName()));
    }
    else {
@@ -400,7 +414,7 @@ void KVIDTelescope::SetIDGrid(KVIDGraph* grid)
    //~~~~~~~~~~~~~~~~~~
    //    [det_label] (optional)  = detector label i.e. string returned by KVDetector::GetLabel()
    //                    method for detector. By default, VARX is assumed to be the Eres detector
-   //                    or second detector and VARY the DE detector or first detector
+   //                    or last detector and VARY the DE detector or first detector
    //    [signal_name] = name of a signal defined for the detector, possibly depending
    //                    on availability of calibration
    //
@@ -411,11 +425,14 @@ void KVIDTelescope::SetIDGrid(KVIDGraph* grid)
 
    if (grid) {
       fIDGrids.Add(grid);
-      KVDetectorSignal* xx = GetSignalFromGridVar(grid->GetVarX(), "X");
-      KVDetectorSignal* yy = GetSignalFromGridVar(grid->GetVarY(), "Y");
+      KVString det_labels_x, det_labels_y;
+      KVDetectorSignal* xx = GetSignalFromGridVar(grid->GetVarX(), "X", det_labels_x);
+      KVDetectorSignal* yy = GetSignalFromGridVar(grid->GetVarY(), "Y", det_labels_y);
       GraphCoords gc;
       gc.fVarX = xx;
+      gc.fDetLabelsX = det_labels_x;
       gc.fVarY = yy;
+      gc.fDetLabelsY = det_labels_y;
       fGraphCoords[grid] = gc;
       TString grid_name;
       if (xx && yy) {
@@ -425,27 +442,27 @@ void KVIDTelescope::SetIDGrid(KVIDGraph* grid)
    }
 }
 
-KVDetectorSignal* KVIDTelescope::GetSignalFromGridVar(const KVString& var, const KVString& axe)
+KVDetectorSignal* KVIDTelescope::GetSignalFromGridVar(const KVString& var, const KVString& axe, KVString& det_labels)
 {
    // Deduce & return pointer to detector signal from grid VARX/VARY parameter
    //
-   // To be valid, grid VARX/Y parameters should be set in one of two ways:
+   // To be valid, grid VARX/Y parameters should be set using mathematical expressions
+   // which use the following references to detector signals for the telescope:
    //
    //~~~~~~~~~~~~~~~~~~
    //      [signal name]
-   //      [det_label]::[signal name]
+   //  OR  [det_label]::[signal name]
    //~~~~~~~~~~~~~~~~~~
    //
    // where
    //
    //~~~~~~~~~~~~~~~~~~
-   //    [signal_name] = name of a signal or a mathematical expression using
-   //                    any of the signals defined for the detector
+   //    [signal_name] = name of a signal defined for 1 of the detectors of the telescope
    //    [det_label]   = optional detector label i.e. string returned by
    //                    KVDetector::GetLabel() method for detector
    //~~~~~~~~~~~~~~~~~~
    //
-   // If `[det_label]` is not given, we assume for `VARX` the second (E) detector,
+   // If `[det_label]` is not given, we assume for `VARX` the last (E) detector,
    // while for `VARY` we assume the first (dE) detector. If this telescope has only
    // one detector, we use it for both variables.
    //
@@ -454,6 +471,23 @@ KVDetectorSignal* KVIDTelescope::GetSignalFromGridVar(const KVString& var, const
    //~~~~~~~~~~~~~~~~~~
    //         KVDetector::GetListOfDetectorSignals()
    //~~~~~~~~~~~~~~~~~~
+   //
+   // #### Example ####
+   // Imagine a telescope which combines 2 detectors, with labels SI and CSI (in that order, i.e. SI is the dE detector,
+   // CSI is the residual energy detector). The following cases are valid:
+   //
+   //~~~~~
+   // VARX = Energy                              : use 'Energy' signal of CSI detector (default for VARX)
+   // VARY = ADC                                 : use 'ADC' signal of SI detector (default for VARY)
+   // VARY = CSI::Energy                         : use 'Energy' signal of CSI detector (overrides default for VARY, SI)
+   // VARX = (Q3-Q3Fast)/(0.8*Q3)                : uses 'Q3' and 'Q3Fast' signals of CSI detector (default for VARX)
+   // VARY = 1.5*SI::ADC - CSI::Q3Fast/CSI::Q3   : combination of signals from both detectors
+   //~~~~~
+   //
+   // The 'det_labels' string will be filled with a comma-separated list of the labels of each detector used
+   // in the expressions.
+   //
+   // \note if any signals are not defined, they will be evaluated as zero
 
    if (var == "") {
       Warning("GetSignalFromGridVar",
@@ -464,24 +498,77 @@ KVDetectorSignal* KVIDTelescope::GetSignalFromGridVar(const KVString& var, const
    KVDetector* det = nullptr;
    KVDetectorSignal* ds(nullptr);
    KVString sig_type;
-   if (var.GetNValues("::") == 2) {
-      // VARX/Y = [det_label]::[signal name]
-      var.Begin("::");
-      KVString det_label = var.Next();
-      sig_type = var.Next();
-      det = (KVDetector*)GetDetectors()->FindObjectByLabel(det_label);
-      if (!det) {
-         Error("GetSignalFromGridVar",
-               "Problem initialising ID-grid %s coordinate for telescope %s. Request for unknown detector label %s. Check definition of VAR%s for grid (=%s)",
-               axe.Data(), GetName(), det_label.Data(), axe.Data(), var.Data());
-         return nullptr;
+
+   // check if VARX/Y is a mathematical expression
+   Bool_t is_expression = var.GetNValues("+-*/()") > 1;
+   // examine each term in expression (this will split the elements in a mathematical expression,
+   // or just take the whole expression if no math operators are present)
+   var.Begin("+-*/()");
+   bool explicit_det_ref = false;
+   bool multidetexpr = false;
+   KVString det_label;
+   while (!var.End()) {
+      KVString t = var.Next();
+      // check if we have an explicit reference to a detector
+      if (t.Contains("::")) {
+         t.Begin("::");
+         det_label = t.Next();
+         auto _det = (KVDetector*)GetDetectors()->FindObjectByLabel(det_label);
+         if (_det) {
+            explicit_det_ref = true;
+            sig_type = t.Next();
+            // check signal is defined for detector
+            if (_det->GetDetectorSignal(sig_type)) {
+               if (det_labels.Length()) {
+                  if (!det_labels.Contains(det_label)) det_labels += Form(",%s", det_label.Data());
+               }
+               else
+                  det_labels = det_label;
+            }
+         }
+         if (det && (_det != det)) multidetexpr = true; // more than 1 detector is referenced
+         det = _det;
+      }
+   }
+   // treat all cases with explicit detector references
+   if (explicit_det_ref) {
+      if (!multidetexpr) {
+         // only 1 detector is directly referenced
+         if (!is_expression) {
+            // it is not a mathematical expression: this is just the name of a detector signal
+            return det->GetDetectorSignal(sig_type);
+         }
+         else {
+            // math expression with explicit reference to signal(s) of 1 detector
+            sig_type = var;
+            // remove all explicit references to detector: 'det' pointer has been set
+            sig_type.ReplaceAll(Form("%s::", det_label.Data()), "");
+            // expression will be handled below
+         }
+      }
+      else {
+         // use specific constructor for explicit detector references
+         ds = new KVDetectorSignalExpression(var, var, GetDetectors());
+         if (!ds->IsValid()) {
+            delete ds;
+            ds = nullptr;
+            Error("GetSignalFromGridVar",
+                  "Problem initialising ID-grid %s coordinate for telescope %s."
+                  " Check definition of VAR%s for grid (=%s)",
+                  axe.Data(), GetName(), axe.Data(), var.Data());
+            return ds;
+         }
+         fMultiDetExpressions.Add(ds);
+         return ds;
       }
    }
    else {
-      // VARX/Y = [signal name]
+      // no explicit reference to detectors - by default, use detector (1) for Y axis,
+      // and the last detector for X axis
       if (axe == "Y" || GetSize() == 1) det = GetDetector(1);
-      else det = GetDetector(2);
+      else det = GetDetector(GetSize());
       sig_type = var;
+      det_labels = det->GetLabel();
    }
    ds = det->GetDetectorSignal(sig_type);
    if (!ds) {
@@ -640,6 +727,39 @@ void KVIDTelescope::addLineToGrid(KVIDGrid* idgrid, int zz, int aa, int npoints)
 
 }
 
+KVString KVIDTelescope::GetDetectorLabelsForGridCoord(const KVString& axis) const
+{
+   // Returns a comma-separated list of the labels of the detectors used to determine
+   // the "x" or "y" coordinates of the identification grid(s)
+   //
+   // If there is more than 1 grid and the list is not the same for all grids,
+   // prints a warning message.
+   //
+   // \param[in] axis name of grid axis i.e. "x", "X", "y" or "Y" (case insensitive)
+
+   KVString _axis = axis;
+   _axis.ToUpper();
+
+   if (_axis != "X" && _axis != "Y") {
+      Error("GetDetectorLabelsForGridCoord", "Called with illegal axis name '%s'", axis.Data());
+      return "";
+   }
+   KVString lab_list;
+
+   for (auto& __gc : fGraphCoords) {
+      KVString labs;
+      if (_axis == "X") labs = __gc.second.fDetLabelsX;
+      else labs = __gc.second.fDetLabelsY;
+      if (lab_list.Length() && lab_list != labs) {
+         Error("GetDetectorLabelsForGridCoord", "Grids for telescope %s use different detector types for %s-coordinate: "
+               "%s and %s", GetName(), _axis.Data(), lab_list.Data(), labs.Data());
+         return "";
+      }
+      lab_list = labs;
+   }
+   return lab_list;
+}
+
 //____________________________________________________________________________________
 
 KVIDGraph* KVIDTelescope::GetIDGrid()
@@ -654,6 +774,10 @@ KVIDGraph* KVIDTelescope::GetIDGrid()
 KVIDGraph* KVIDTelescope::GetIDGrid(Int_t index)
 {
    //Return pointer to grid using position in list. First grid has index = 1.
+   if (index < 1) {
+      Error("GetIDGrid(int)", "Index must be >=1!");
+      return nullptr;
+   }
    return (KVIDGraph*)GetListOfIDGrids()->At(index - 1);
 }
 
