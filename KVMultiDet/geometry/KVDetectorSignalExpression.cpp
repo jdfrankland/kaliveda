@@ -7,7 +7,7 @@
 ClassImp(KVDetectorSignalExpression)
 
 KVDetectorSignalExpression::KVDetectorSignalExpression(const Char_t* type, const KVString& _expr, KVDetector* det)
-   : KVDetectorSignal(type, det), fFormula(nullptr)
+   : KVDetectorSignal(type, det)
 {
    // \param[in] type the typename for this expression, will be used as an alias for the expression
    // \param[in] _expr a mathematical expression using names of signals already defined for detector \a det. See TFormula
@@ -32,17 +32,97 @@ KVDetectorSignalExpression::KVDetectorSignalExpression(const Char_t* type, const
       }
    }
    if (nsigs) {
-#if ROOT_VERSION_CODE < ROOT_VERSION(6,0,0)
-      fFormula = new TFormula(type, expr);
-#else
       fFormula.reset(new TFormula(type, expr));
-#endif
       fValid = kTRUE;
    }
    else
       fValid = kFALSE;
 
    SetTitle(Form("Signal calculated as %s for detector %s", _expr.Data(), det->GetName()));
+}
+
+KVDetectorSignalExpression::KVDetectorSignalExpression(const Char_t* type, const KVString& _expr, const KVSeqCollection* dets)
+   : KVDetectorSignal(type)
+{
+   // Constructor to be used with expressions which use explict references to detector signals
+   // in the form [DET]::[SIG] where [DET] is the detector label and [SIG] is the signal name.
+   // The list must contain the detectors whose labels are referenced.
+   //
+   // \note any signals which are not defined will be systematically evaluated as zero
+   //
+   // \param[in] type the typename for this expression, will be used as an alias for the expression
+   // \param[in] _expr a mathematical expression using explicit references to names of detector signals
+   // \param[in] dets a list of pointers to the detectors whose signals are to be used in the expression
+
+   int nsigs = 0;
+   KVString expr = _expr;
+   SetLabel(_expr);
+   fRaw = kTRUE;
+   // examine each term in expression
+   _expr.Begin("+-*/()");
+   bool multidetexpr = false;
+   bool explicit_det_reference = false;
+   KVDetector* det = nullptr;
+   while (!_expr.End()) {
+      KVString t = _expr.Next();
+      // check if we have an explicit reference to a detector
+      if (t.Contains("::")) {
+         explicit_det_reference = true;
+         // check if more than 1 detector is referenced
+         t.Begin("::");
+         auto det_label = t.Next();
+         auto _det = (KVDetector*)dets->FindObjectByLabel(det_label);
+         if (!_det) {
+            // reference to unknown detector
+            Error("KVDetectorSignalExpression(const Char_t*,const KVString&,const KVSeqCollection*)",
+                  "Use of reference to unknown detector with label %s in expression %s",
+                  det_label.Data(), _expr.Data());
+            fValid = kFALSE;
+            return;
+         }
+         auto sig_name = t.Next();
+         auto dsig = _det->GetDetectorSignal(sig_name);
+         KVString det_sig_ref = Form("%s::%s", det_label.Data(), sig_name.Data());
+         if (!dsig) {
+            // reference to unknown signal
+            Error("KVDetectorSignalExpression(const Char_t*,const KVString&,const KVSeqCollection*)",
+                  "Use of reference to undefined signal %s for detector %s in expression %s : will evaluate as 0",
+                  sig_name.Data(), _det->GetName(), _expr.Data());
+            expr.ReplaceAll(det_sig_ref, "0");
+         }
+         else {
+            if (expr.Contains(det_sig_ref)) {
+               expr.ReplaceAll(det_sig_ref, Form("[%d]", nsigs));
+               fSignals.push_back(dsig);
+               ++nsigs;
+               if (!dsig->IsRaw()) fRaw = kFALSE;
+            }
+         }
+         if (det && (_det != det)) multidetexpr = true;
+         det = _det;
+      }
+   }
+   if (!explicit_det_reference) {
+      fValid = kFALSE;
+      Error("KVDetectorSignalExpression(const Char_t*,const KVString&,const KVSeqCollection*)",
+            "Expression %s must contain explicit references to detector labels",
+            _expr.Data());
+      return;
+   }
+   if (nsigs) {
+      fFormula.reset(new TFormula(type, expr));
+      fValid = kTRUE;
+   }
+   else
+      fValid = kFALSE;
+
+   if (multidetexpr)
+      SetTitle(Form("Signal calculated as %s", _expr.Data()));
+   else {
+      // only 1 detector is referenced in the expression
+      SetDetector(det);
+      SetTitle(Form("Signal calculated as %s for detector %s", _expr.Data(), det->GetName()));
+   }
 }
 
 Double_t KVDetectorSignalExpression::GetValue(const KVNameValueList& params) const

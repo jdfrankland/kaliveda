@@ -42,24 +42,13 @@ class KVDetectorSignalExpression : public KVDetectorSignal {
 
    friend class KVDetector;
 
-#if ROOT_VERSION_CODE < ROOT_VERSION(6,0,0)
-   TFormula* fFormula;//!
-#else
    std::unique_ptr<TFormula> fFormula;
-#endif
    std::vector<KVDetectorSignal*> fSignals;
    Bool_t fValid;
    Bool_t fRaw;
    KVDetectorSignalExpression(const Char_t* type, const KVString& _expr, KVDetector* det);
-
 public:
-   virtual ~KVDetectorSignalExpression()
-   {
-#if ROOT_VERSION_CODE < ROOT_VERSION(6,0,0)
-      SafeDelete(fFormula);
-#endif
-   }
-
+   KVDetectorSignalExpression(const Char_t* type, const KVString& _expr, const KVSeqCollection* dets);
    Double_t GetValue(const KVNameValueList& params = "") const;
    Bool_t IsValid() const
    {
