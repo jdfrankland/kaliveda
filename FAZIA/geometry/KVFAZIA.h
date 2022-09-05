@@ -130,7 +130,9 @@ public:
       ID_GAMMA = 0,    ///< 'gamma' particle identified by pulse shape analysis in CSI
       ID_SI1_PSA = 11, ///< particle identified by pulse shape analysis in SI1
       ID_SI1_SI2 = 12, ///< particle identified in SI1-SI2 telescope
+      ID_SI1_CSI = 13, ///< particle identified in SI1-SI2 telescope
       ID_SI2_CSI = 23, ///< particle identified in SI2-CSI telescope
+      ID_SI12_CSI = 123, ///< particle identified in (SI1+SI2)-CSI telescope
       ID_CSI_PSA = 33, ///< particle identified by pulse shape analysis in CSI
       ID_STOPPED_IN_FIRST_STAGE = 5, ///< particle stopped in SI1, no identification possible better than estimation of minimum Z
       ID_SI1_SI2_MAYBE_PUNCH_THROUGH = 120, ///< possible ambiguity of particle identification in SI1-SI2 due to unvetoed punch-through
@@ -247,6 +249,7 @@ public:
    virtual void MakeCalibrationTables(KVExpDB*);
 
    std::string GetTriggerForCurrentRun() const;
+   void DeduceIdentificationTelescopesFromGeometry();
 
    ClassDef(KVFAZIA, 1) //Base class for description of the FAZIA set up
 };

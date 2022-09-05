@@ -29,15 +29,28 @@ KVFAZIAIDTelescope::KVFAZIAIDTelescope()
 
 void KVFAZIAIDTelescope::AddDetector(KVDetector* d)
 {
-   //Add a detector to the telescope.
-   //The first detector added is the "DeltaE" member, the second the "Eresidual" member.
-   //Update name of telescope to "ID_[name of DE]_[name of E]"
+   // Add a detector to the telescope.
+   //
+   // Detectors must be added in the order they will be hit by impinging particles,
+   // with the last detector being the one particles stopped in the telescope will stop in.
+   // i.e. dE1, dE2, ..., Eres
+   //
+   // Update name of telescope to "ID_[label of 1st detector]_[label of 2nd detector]_ ... _[label of last detector]"
 
    if (d) {
       fDetectors.Add(d);
       d->AddIDTelescope(this);
-      if (GetSize() > 1)
-         SetName(Form("ID_%s_%s_%d", GetDetector(1)->GetLabel(), GetDetector(2)->GetLabel(), GetDetector(1)->GetIndex()));
+      if (GetSize() > 1) {
+         TString name = "ID_";
+         KVDetector* det = nullptr;
+         for (int i = 1; i <= GetSize(); ++i) {
+            det = GetDetector(i);
+            name += det->GetLabel();
+            name += "_";
+         }
+         name += Form("%d", det->GetIndex());
+         SetName(name);
+      }
       else
          SetName(Form("ID_%s_%d", GetDetector(1)->GetLabel(), GetDetector(1)->GetIndex()));
    }

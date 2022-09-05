@@ -146,7 +146,7 @@ protected:
    virtual void SetDetecting(KVDetector* det, Bool_t detecting = kTRUE);
 
    void CalculateReconstructionTrajectories();
-   void DeduceIdentificationTelescopesFromGeometry();
+   virtual void DeduceIdentificationTelescopesFromGeometry();
    void AddTrajectory(KVGeoDNTrajectory* d)
    {
       fTrajectories.Add(d);

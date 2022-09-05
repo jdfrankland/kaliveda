@@ -47,6 +47,7 @@ KVFAZIAIDSiPSA::KVFAZIAIDSiPSA()
       fAThreshold->SetParameters(-5.14823, 2.03461, 1.55798);
    }
    SetType("SiPSA");
+   SetLabel("FAZIA.Si");
    fMaxZ = 18.5;
    fSigmaZ = .4;
 

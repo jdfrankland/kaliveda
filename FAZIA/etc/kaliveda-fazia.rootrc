@@ -92,10 +92,10 @@ FAZIADetectorPlugin: FAZIADetector
 
 # DEFAULT IDTELESCOPE PLUGINS FOR FAZIA
 +Plugin.KVIDTelescope:    ^FAZIA.Si-Si$          KVFAZIAIDSiSi             FAZIAidentification           "KVFAZIAIDSiSi()"
-+Plugin.KVIDTelescope:    ^FAZIA.Si-CsI$         KVFAZIAIDSiCsI            FAZIAidentification           "KVFAZIAIDSiCsI()"
+#+Plugin.KVIDTelescope:    ^FAZIA.Si-CsI$         KVFAZIAIDSiCsI            FAZIAidentification           "KVFAZIAIDSiCsI()"
++Plugin.KVIDTelescope:    ^FAZIA.Si-CsI$         KVFAZIAIDSiSiCsI          FAZIAidentification           "KVFAZIAIDSiSiCsI()"
 +Plugin.KVIDTelescope:    ^FAZIA.Si$             KVFAZIAIDSiPSA            FAZIAidentification           "KVFAZIAIDSiPSA()"
 +Plugin.KVIDTelescope:    ^FAZIA.CsI$            KVFAZIAIDCsI              FAZIAidentification           "KVFAZIAIDCsI()"
-
 
 +Plugin.TSelector:  FAZIAReader    KVFAZIAReader      FAZIAanalysis    "KVFAZIAReader()"
 

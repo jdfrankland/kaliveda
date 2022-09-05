@@ -19,6 +19,7 @@ KVFAZIAIDSiCsI::KVFAZIAIDSiCsI()
 {
    // Default constructor
    SetType("Si-CsI");
+   SetLabel("FAZIA.Si-CsI");
    fBelowProton = 0;
    fSiThreshold = 0;
    fMaxZ = 16.5;

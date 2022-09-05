@@ -18,6 +18,7 @@ KVFAZIAIDSiSi::KVFAZIAIDSiSi()
 {
    // Default constructor
    SetType("Si-Si");
+   SetLabel("FAZIA.Si-Si");
    SetHasMassID(kTRUE);
    fMaxZ = 22.5;
    fSigmaZ = .5;

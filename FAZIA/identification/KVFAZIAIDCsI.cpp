@@ -21,6 +21,7 @@ KVFAZIAIDCsI::KVFAZIAIDCsI()
 {
    // Default constructor
    SetType("CsI");
+   SetLabel("FAZIA.CsI");
    fMaxZ = 22.5; // dummy hight values, hard threshold at Z=4 set by CanIdentify() Mmethod
    fSigmaZ = .5;
    /* in principle all CsI R-L telescopes can identify mass & charge */

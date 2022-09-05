@@ -20,6 +20,7 @@
 #include "TGeoCompositeShape.h"
 #include "TGeoEltu.h"
 
+#include <KVFAZIAIDSiSiCsI.h>
 #include <KVReconstructedNucleus.h>
 
 #ifdef WITH_MFM
@@ -118,6 +119,65 @@ std::string KVFAZIA::GetTriggerForCurrentRun() const
       }
    }
    return "";
+}
+
+void KVFAZIA::DeduceIdentificationTelescopesFromGeometry()
+{
+   // Set identification telescope objects for FAZIA geometry by hand.
+   //
+   // - CSI
+   // - SI1-SI2-CSI (name: ID_SI_CSI_xxxx)
+   // - SI1-SI2
+   // - SI1
+
+   fIDTelescopes->Delete();
+   TIter next_traj(GetTrajectories());
+   KVGeoDNTrajectory* traj;
+   while ((traj = (KVGeoDNTrajectory*)next_traj())) {   // loop over all trajectories
+
+      traj->IterateBackFrom();   // from closest-in to furthest-out detector
+
+      KVGeoDetectorNode* N;
+      KVDetector* csi{nullptr}, *si2{nullptr}, *si1{nullptr};
+      while ((N = traj->GetNextNode())) {
+         auto d = N->GetDetector();
+         if (d->IsLabelled("SI1") && d->IsOK()) si1 = d;
+         else if (d->IsLabelled("SI2") && d->IsOK()) si2 = d;
+         else if (d->IsLabelled("CSI") && d->IsOK()) csi = d;
+      }
+
+      auto add_telescope = [ = ](KVIDTelescope * idt, KVGroup * g) {
+         idt->SetGroup(g);
+         traj->AccessIDTelescopeList()->Add(idt);
+         fIDTelescopes->Add(idt);
+      };
+
+      if (csi) {
+         // add CSI and SI1-SI2-CSI telescopes
+         KVIDTelescope* idt = new KVFAZIAIDCsI;
+         idt->AddDetector(csi);
+         add_telescope(idt, csi->GetGroup());
+         if (si1 && si2) {
+            idt = new KVFAZIAIDSiSiCsI;
+            idt->AddDetector(si1);
+            idt->AddDetector(si2);
+            idt->AddDetector(csi);
+            idt->SetName(Form("ID_SI_CSI_%d", csi->GetIndex()));
+            add_telescope(idt, csi->GetGroup());
+         }
+      }
+      if (si1 && si2) {
+         auto idt = new KVFAZIAIDSiSi;
+         idt->AddDetector(si1);
+         idt->AddDetector(si2);
+         add_telescope(idt, si2->GetGroup());
+      }
+      if (si1) {
+         auto idt = new KVFAZIAIDSiPSA;
+         idt->AddDetector(si1);
+         add_telescope(idt, si1->GetGroup());
+      }
+   }
 }
 
 
@@ -697,7 +757,16 @@ void KVFAZIA::SetIDCodeForIDTelescope(KVIDTelescope* idt) const
 
    if (idt->InheritsFrom(KVFAZIAIDSiPSA::Class())) idt->SetIDCode(IDCodes::ID_SI1_PSA);
    else if (idt->InheritsFrom(KVFAZIAIDSiSi::Class())) idt->SetIDCode(IDCodes::ID_SI1_SI2);
-   else if (idt->InheritsFrom(KVFAZIAIDSiCsI::Class())) idt->SetIDCode(IDCodes::ID_SI2_CSI);
+   else if (idt->InheritsFrom(KVFAZIAIDSiSiCsI::Class())) {
+      // ID code for these telescopes depends on what detectors the grid's VARY uses
+      auto labsY = idt->GetDetectorLabelsForGridCoord("y");
+      if (labsY.Contains("SI1") && labsY.Contains("SI2"))
+         idt->SetIDCode(IDCodes::ID_SI12_CSI);
+      else if (labsY.Contains("SI1"))
+         idt->SetIDCode(IDCodes::ID_SI1_CSI);
+      else if (labsY.Contains("SI2"))
+         idt->SetIDCode(IDCodes::ID_SI2_CSI);
+   }
    else if (idt->InheritsFrom(KVFAZIAIDCsI::Class())) idt->SetIDCode(IDCodes::ID_CSI_PSA);
    else {
       Error("SetIDCodeForIDTelescope", "Request for telescope name=%s of unknown class=%s",
