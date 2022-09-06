@@ -86,8 +86,8 @@ void KVFAZIAGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
       }
    }
 
-   // particle identified in Si2-CsI
-   if (PART->GetIDCode() == KVFAZIA::IDCodes::ID_SI2_CSI) {
+   // particle identified in Si2-CsI or in (Si1+Si2)-CsI
+   if (PART->GetIDCode() == KVFAZIA::IDCodes::ID_SI2_CSI || PART->GetIDCode() == KVFAZIA::IDCodes::ID_SI12_CSI) {
 
       KVNameValueList part_id(Form("Z=%d,A=%d", PART->GetZ(), PART->GetA()));
 
@@ -106,8 +106,9 @@ void KVFAZIAGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
          // treat case of uncalibrated CsI detector
          // case where SI1 && SI2 are calibrated & present in event
          // and if NOTHING ELSE STOPPED IN SI1
-         // and only for Z>2 (because silicon energy losses are too small to give correct
-         // estimation for Z=1 and Z=2):
+         //
+         // For Z<=2 the calibration code KVFAZIA::ECodes::ENERGY_LOSSES_TENTATIVELY_CALCULATED is given
+         // (because silicon energy losses may be too small to give correct estimation for Z=1 and Z=2):
          bool si1_pileup = PART->GetParameters()->GetBoolValue("si1_pileup");
 
          if (si1->IsCalibrated() && si1->GetEnergy() && si2->IsCalibrated() && si2->GetEnergy() && !si1_pileup) {
@@ -120,10 +121,11 @@ void KVFAZIAGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
             PART->SetParameter("FAZIA.ECSI", -ecsi);
             PART->SetEnergy(deltaE + ecsi);
             if (PART->GetZ() > 2) SetCalibrationStatus(*PART, KVFAZIA::ECodes::SOME_ENERGY_LOSSES_CALCULATED); // CsI energy calculated
-            else               SetCalibrationStatus(*PART, KVFAZIA::ECodes::ENERGY_LOSSES_TENTATIVELY_CALCULATED); // CsI energy calculated
+            else                  SetCalibrationStatus(*PART, KVFAZIA::ECodes::ENERGY_LOSSES_TENTATIVELY_CALCULATED); // CsI energy calculated
          }
       }
    }
+
    // particle identified in CsI
    if (PART->GetIDCode() == KVFAZIA::IDCodes::ID_CSI_PSA) {
 
