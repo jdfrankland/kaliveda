@@ -30,8 +30,6 @@ void ROOT6SimulatedEventAnalysisTemplate::InitAnalysis()
                      250, -15, 15, 250, -15, 15);
 
    // DEFINITION OF TREE USED TO STORE RESULTS
-   CreateTreeFile();
-
    auto t = AddTree("data", GetOpt("SimulationInfos"));
 
    // add a branch to tree for each defined global variable

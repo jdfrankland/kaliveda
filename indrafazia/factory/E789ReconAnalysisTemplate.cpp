@@ -38,7 +38,6 @@ void E789ReconAnalysisTemplate::InitAnalysis(void)
 
    /*** USING A TREE ***/
    // if you want to store data in a TTree, do as follows:
-   // CreateTreeFile();//<--- essential
    // auto t = AddTree("myTree");
    // t->Branch("myVar", &myVar);
    //  etc.

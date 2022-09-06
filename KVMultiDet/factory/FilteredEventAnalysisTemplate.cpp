@@ -19,8 +19,6 @@ void FilteredEventAnalysisTemplate::InitAnalysis()
    AddHisto<TH2F>("Z_Vpar", "Z vs V_{par} [cm/ns] in CM", 250, -10, 10, 75, .5, 75.5);
 
    // DEFINITION OF TREE USED TO STORE RESULTS
-   CreateTreeFile();
-
    auto t = AddTree("data", GetOpt("SimulationInfos"));
 
    // add a branch to tree for each defined global variable

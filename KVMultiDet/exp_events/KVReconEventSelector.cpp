@@ -14,7 +14,7 @@ void KVReconEventSelector::Init(TTree* tree)
    // When using PROOF, need to set tree pointer in KVDataAnalyser
    KVEventSelector::Init(tree);
    if (tree && gDataAnalyser->GetProofMode() != KVDataAnalyser::EProofMode::None) {
-      gDataAnalyser->SetTree(tree);
+      gDataAnalyser->SetAnalysedTree(tree);
    }
 }
 

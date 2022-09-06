@@ -39,11 +39,11 @@ public:
    KVReconDataAnalyser();
    virtual ~ KVReconDataAnalyser();
 
-   TTree* GetTree() const
+   TTree* GetAnalysedTree() const
    {
       return theChain;
    }
-   void SetTree(TTree* t)
+   void SetAnalysedTree(TTree* t)
    {
       theChain = t;
    }

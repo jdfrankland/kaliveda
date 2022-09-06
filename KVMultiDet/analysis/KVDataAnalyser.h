@@ -380,8 +380,8 @@ public:
    }
    virtual void SetTriggerConditionsForRun(int) {}
 
-   virtual void SetTree(TTree*) {}
-   virtual TTree* GetTree() const
+   virtual void SetAnalysedTree(TTree*) {}
+   virtual TTree* GetAnalysedTree() const
    {
       // If data being analysed is contained in a ROOT TTree, return its address
       //

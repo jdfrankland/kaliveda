@@ -86,7 +86,7 @@ public:
    {
       fFilterSystem = f;
    }
-   TTree* GetTree() const
+   TTree* GetAnalysedTree() const
    {
       return fAnalysisChain;
    }

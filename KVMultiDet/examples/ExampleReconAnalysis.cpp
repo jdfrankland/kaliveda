@@ -4,7 +4,8 @@
 
 ClassImp(ExampleReconAnalysis)
 
-#include "KVDataAnalyser.h"
+#include "KVINDRA.h"
+#include "KVFAZIA.h"
 
 void ExampleReconAnalysis::InitAnalysis(void)
 {
@@ -14,38 +15,51 @@ void ExampleReconAnalysis::InitAnalysis(void)
    // and PROOFLite analyses.
 
    /*** ADDING GLOBAL VARIABLES TO THE ANALYSIS ***/
-   /* These will be automatically calculated for each event before
-      your Analysis() method will be called                        */
-   AddGV("KVZtot", "ztot");                             // total charge
-
-   auto zvtot = AddGV("KVZVtot", "zvtot");              // total Z*vpar
-   zvtot->SetMaxNumBranches(1);    // only write "Z" component in TTree
-
-   AddGV("KVMult", "mtot"); // total multiplicity
-   // total multiplicity in forward CM hemisphere
-   auto gv = AddGV("KVMult", "mtot_av");
-   gv->SetSelection({
-      "Vcm>0", [](const KVNucleus * n)
-      {
-         return n->GetVpar() > 0;
-      }}
-                   );
-   gv->SetFrame("CM");
+   // For E789, we recommend to not use the global variables for the moment,
+   // as they are only calculated for particles whose "OK" status is set according
+   // to a single selection of identification & calibration codes defined in InitRun().
+   // In the present example, this selection has been deactivated (see comments in InitRun()).
+   //
+   // In a future version of KaliVeda, it will be possible to handle several global variable
+   // lists in the analysis, each with its specific particle selection criteria (not limited to
+   // ID codes and E codes).
 
    /*** DECLARING SOME HISTOGRAMS ***/
-   AddHisto<TH1F>("zdist", "Charge distribution", 100, -.5, 99.5);
-   AddHisto<TH2F>("zvpar", "Z vs V_{par} in CM", 100, -15., 15., 75, .5, 75.5);
+   AddHisto<TH1F>("all_idcodes_fazia", "ID codes in FAZIA", 10, 0, 10);
+   AddHisto<TH1F>("all_idcodes_indra", "ID codes in INDRA", 10, 0, 10);
+   AddHisto<TH1F>("all_ecodes_fazia", "E codes in FAZIA", 5, 0, 5);
+   AddHisto<TH1F>("all_ecodes_indra", "E codes in INDRA", 5, 0, 5);
+   AddHisto<TH1F>("mtot_ch", "Total charged multiplicity", 50, -.5, 49.5);
+   add_idcode_histos("mtot_ch");
+   AddHisto<TH1F>("zdist", "Charge distribution", 50, -.5, 49.5);
+   add_idcode_histos("zdist");
+   AddHisto<TH2F>("a_vs_z", "A vs. Z", 35, -.5, 34.5, 65, -.5, 64.5);
+   add_idcode_histos("a_vs_z");
+   // some kinematic properties - for calibrated particles only
+   AddHisto<TH2F>("vper_proton", "Inv. velocity plot (protons) [cm/ns]", 500, 0, 15, 500, -10, 10);
+   AddHisto<TH2F>("vper_alpha", "Inv. velocity plot (alphas) [cm/ns]", 500, 0, 15, 500, -10, 10);
+   AddHisto<TH2F>("Z_vpar", "Z vs. parallel velocity [cm/ns]", 500, 0, 15, 35, .5, 35.5);
+   AddHisto<TH1F>("calibrated_ecodes_fazia", "E codes for calibrated particles in FAZIA", 5, 0, 5);
+   AddHisto<TH1F>("calibrated_ecodes_indra", "E codes for calibrated particles in INDRA", 5, 0, 5);
 
    /*** USING A TREE ***/
-   CreateTreeFile();//<--- essential
-   auto t = AddTree("myTree");
-
-   GetGVList()->MakeBranches(t); // store global variable values in branches
+   // if you want to store data in a TTree, do as follows:
+   // auto t = AddTree("myTree");
+   // t->Branch("myVar", &myVar);
+   //  etc.
 
    /*** DEFINE WHERE TO SAVE THE RESULTS ***/
    // This filename will be used for interactive and PROOFlite jobs.
    // When running in batch mode, this will automatically use the job name.
    SetJobOutputFileName("ExampleReconAnalysis_results.root");
+}
+
+void ExampleReconAnalysis::add_idcode_histos(const TString& histo_name)
+{
+   AddHisto<TH1F>(Form("%s_idcodes_fazia", histo_name.Data()),
+                  Form("%s : ID codes in FAZIA", GetHisto(histo_name)->GetTitle()), 10, 0, 10);
+   AddHisto<TH1F>(Form("%s_idcodes_indra", histo_name.Data()),
+                  Form("%s : ID codes in INDRA", GetHisto(histo_name)->GetTitle()), 10, 0, 10);
 }
 
 //_____________________________________
@@ -58,24 +72,50 @@ void ExampleReconAnalysis::InitRun(void)
    // which will be used in your analysis. These particles will be labelled 'OK'
    // (i.e. the method IsOK() for these particles returns kTRUE).
    //
-   // If no explicit selection is indicated here, an automatic selection for each multidetector
-   // array will be made using the default accepted values which are defined in variables
-   // [array].ReconstructedNuclei.AcceptID/ECodes.
-   //
-   // You can change the selection (or deactivate it) here by doing any of the following:
-   //
-   // gMultiDetArray->AcceptIDCodes("12,33"); => accept only ID codes in list
-   // gMultiDetArray->AcceptAllIDCodes();     => accept particles with any ID code
-   //
-   // If the experiment used a combination of arrays, codes have to be set for
-   // each array individually:
-   // gMultiDetArray->GetArray("[name]")->Accept.. => setting for array [name]
+   // For E789 it is recommended to deactivate this functionality and select particles
+   // individually depending on the needs of the analysis (i.e. include uncalibrated &
+   // partially (or un-)identfied particles when calculating multiplicities, but limit
+   // to well-identified particles for e.g. isospin transport studies and/or
+   // well-calibrated particles when dealing with kinematic properties).
+   gMultiDetArray->AcceptAllIDCodes();
+   gMultiDetArray->AcceptAllECodes();
 
    // set title of TTree with name of analysed system
-   GetTree("myTree")->SetTitle(GetCurrentRun()->GetSystemName());
+   // GetTree("myTree")->SetTitle(GetCurrentRun()->GetSystemName());
 
-   // reject reconstructed events which are not consistent with the DAQ trigger
+   // The following will reject reconstructed events for which the FAZIA trigger
+   // bit pattern is not consistent with the physics trigger i.e. M>=2.
+   // This will reject events where only the downscaled M>=1 trigger fired.
+   //
+   // Instead of this, you can use
+   //   if( gFazia->GetTrigger().IsTrigger( [name of trigger] ) ) { ... }
+   // to test or select events individually according to the fired trigger pattern,
+   // in your Analysis() method.
+   //
+   // See KVFAZIATrigger for details.
    SetTriggerConditionsForRun(GetCurrentRun()->GetNumber());
+}
+
+void ExampleReconAnalysis::fill_idcode_histos(const TString& histo_name, const KVReconstructedNucleus& rn)
+{
+   if (rn.InArray("INDRA"))
+      FillHisto(Form("%s_idcodes_indra", histo_name.Data()), gIndra->GetIDCodeMeaning(rn.GetIDCode()), 1);
+   else if (rn.InArray("FAZIA"))
+      FillHisto(Form("%s_idcodes_fazia", histo_name.Data()), gFazia->GetIDCodeMeaning(rn.GetIDCode()), 1);
+   else
+      Fatal("fill_idcode_histos", "Particle not in INDRA and not in FAZIA!!! array=%s",
+            rn.GetArrayName().Data());
+}
+
+void ExampleReconAnalysis::fill_ecode_histos(const TString& histo_name, const KVReconstructedNucleus& rn)
+{
+   if (rn.InArray("INDRA"))
+      FillHisto(Form("%s_ecodes_indra", histo_name.Data()), gIndra->GetECodeMeaning(rn.GetECode()), 1);
+   else if (rn.InArray("FAZIA"))
+      FillHisto(Form("%s_ecodes_fazia", histo_name.Data()), gFazia->GetECodeMeaning(rn.GetECode()), 1);
+   else
+      Fatal("fill_ecode_histos", "Particle not in INDRA and not in FAZIA!!! array=%s",
+            rn.GetArrayName().Data());
 }
 
 //_____________________________________
@@ -85,17 +125,57 @@ Bool_t ExampleReconAnalysis::Analysis(void)
    // The current event can be accessed by a call to method GetEvent().
    // See KVReconstructedEvent documentation for the available methods.
 
-   GetGVList()->FillBranches(); // update values of all global variable branches
-   FillTree(); // write new results in TTree
 
-   /*** LOOP OVER PARTICLES OF EVENT ***/
-   for (auto& n : ReconEventOKIterator(GetEvent())) {
-      // "OK" particles => using selection criteria of InitRun()
-      // fill Z distribution
-      FillHisto("zdist", n.GetZ());
-      // fill Z-Vpar(CM)
-      FillHisto("zvpar", n.GetFrame("CM")->GetVpar(), n.GetZ());
+   int mtot_ch = 0;
+
+   for (auto& n : EventIterator(*GetEvent())) {
+      auto& rn = dynamic_cast<KVReconstructedNucleus&>(n);
+
+      fill_idcode_histos("all", rn);
+      fill_ecode_histos("all", rn);
+
+      // 'Identified' particles may in fact not be identified at all, or only partially
+      // They include particles stopping in the first stage of deltaE-E telescopes,
+      // heavy (Z>5) particles stopped in CsI without a deltaE detector in front,
+      // or even gamma particles (FAZIA) & "neutrons" (INDRA).
+      if (rn.IsIdentified() && rn.GetZ() > 0) {
+         // To calculate the best estimate of total charged particle multiplicity,
+         // we include all 'Identified' particles with Z>0
+         fill_idcode_histos("mtot_ch", rn);
+         ++mtot_ch;
+      }
+
+      // Particles with 'IsZMeasured'=true are particles whose Z was measured...
+      // this means excluding i.e. particles stopping in the first stage of deltaE-E telescopes
+      // or heavy (Z>5) particles stopped in CsI without a deltaE detector in front, for which
+      // we can only estimate a lower limit for the Z.
+      // However, it should be noted that while this condition excludes gamma particles,
+      // neutrons have a measured Z too (it is equal to 0!).
+      if (rn.IsZMeasured() && rn.GetZ() > 0) { // GetZ()>0: exclude neutrons (INDRA)
+         FillHisto("zdist", rn.GetZ());
+         fill_idcode_histos("zdist", rn);
+
+         // Particles with 'IsAMeasured'=true have isotopic mass resolution
+         if (rn.IsAMeasured()) {
+            FillHisto("a_vs_z", rn.GetZ(), rn.GetA());
+            fill_idcode_histos("a_vs_z", rn);
+         }
+
+         // Only particles with 'IsCalibrated'=true have measured kinematical properties
+         if (rn.IsCalibrated()) {
+            if (rn.IsAMeasured()) { // limit to isotopically identified LCP
+               if (rn.IsIsotope(1, 1)) FillHisto("vper_proton", rn.GetVpar(), rn.GetVperp(),
+                                                    1. / (1.e-3 + TMath::Abs(rn.GetVperp())));
+               else if (rn.IsIsotope(2, 4)) FillHisto("vper_alpha", rn.GetVpar(), rn.GetVperp(),
+                                                         1. / (1.e-3 + TMath::Abs(rn.GetVperp())));
+            }
+            FillHisto("Z_vpar", rn.GetVpar(), rn.GetZ());
+            fill_ecode_histos("calibrated", rn);
+         }
+      }
+
    }
+   FillHisto("mtot_ch", mtot_ch);
 
    return kTRUE;
 }

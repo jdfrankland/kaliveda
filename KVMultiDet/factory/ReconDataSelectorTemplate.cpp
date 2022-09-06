@@ -22,13 +22,11 @@ void ReconDataSelectorTemplate::InitAnalysis(void)
    gv->SetSelection("_NUC_->GetZ()>4");          // relativistic CM KE tensor for fragments
 
    /*** DECLARING SOME HISTOGRAMS ***/
-   AddHisto(new TH1F("zdist", "Charge distribution", 100, -.5, 99.5));
-   AddHisto(new TH2F("zvpar", "Z vs V_{par} in ellipsoid", 100, -15., 15., 75, .5, 75.5));
+   AddHisto<TH1F>("zdist", "Charge distribution", 100, -.5, 99.5);
+   AddHisto<TH2F>("zvpar", "Z vs V_{par} in ellipsoid", 100, -15., 15., 75, .5, 75.5);
 
    /*** USING A TREE ***/
-   CreateTreeFile();//<--- essential
-   TTree* t = new TTree("myTree", "");
-   AddTree(t);
+   auto t = AddTree("myTree", "");
    GetGVList()->MakeBranches(t); // store global variable values in branches
 
    /*** DEFINE WHERE TO SAVE THE RESULTS ***/

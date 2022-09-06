@@ -629,7 +629,7 @@ void KVEventSelector::Init(TTree* tree)
    fChain->SetMakeClass(1);
    // When using PROOF, need to set tree pointer in KVDataAnalyser
    if (gDataAnalyser->GetProofMode() != KVDataAnalyser::EProofMode::None) {
-      gDataAnalyser->SetTree(tree);
+      gDataAnalyser->SetAnalysedTree(tree);
    }
 
    if (strcmp(GetBranchName(), "")  && fChain->GetBranch(GetBranchName())) {

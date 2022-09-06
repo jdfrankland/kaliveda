@@ -1,9 +1,10 @@
 #include "ExampleSimDataAnalysis.h"
 #include "KVSimNucleus.h"
 #include "KVBatchSystem.h"
-#include <KVSimEvent.h>
 
 ClassImp(ExampleSimDataAnalysis)
+
+#include "KVSimEvent.h"
 
 void ExampleSimDataAnalysis::InitAnalysis()
 {
@@ -35,8 +36,6 @@ void ExampleSimDataAnalysis::InitAnalysis()
                      250, -15, 15, 250, -15, 15);
 
    // DEFINITION OF TREE USED TO STORE RESULTS
-   CreateTreeFile();
-
    auto t = AddTree("data", GetOpt("SimulationInfos"));
 
    // add a branch to tree for each defined global variable
@@ -57,7 +56,6 @@ Bool_t ExampleSimDataAnalysis::Analysis()
    }
 
    GetGVList()->FillBranches();
-
    FillTree();
 
    return kTRUE;

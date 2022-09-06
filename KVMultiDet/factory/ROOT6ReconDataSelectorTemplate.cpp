@@ -31,7 +31,6 @@ void ROOT6ReconDataSelectorTemplate::InitAnalysis(void)
    AddHisto<TH2F>("zvpar", "Z vs V_{par} in CM", 100, -15., 15., 75, .5, 75.5);
 
    /*** USING A TREE ***/
-   CreateTreeFile();//<--- essential
    auto t = AddTree("myTree");
 
    GetGVList()->MakeBranches(t); // store global variable values in branches
