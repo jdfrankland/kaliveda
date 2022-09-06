@@ -1,5 +1,3 @@
-calibINDRA_AlphaAndElast.SI_R09_ADCtoMeV.env
-calibINDRA_AlphaAndElast.SI_R08_ADCtoMeV.env
-calibINDRA_AlphaAndElast.SI_R07_ADCtoMeV.env
-calibINDRA_AlphaAndElast.SI_R06_ADCtoMeV.env
+calibINDRA.SI_ADCtoMeV.env
+calibINDRA.SI_ADCtoMeV_comp.env
 calibINDRA_CSI_Zgeq2.dat
