@@ -595,7 +595,14 @@ public:
       // By default, for historical reasons, this returns 5
       return 5;
    }
-
+   virtual TString GetIDCodeMeaning(Int_t) const
+   {
+      return "";
+   }
+   virtual TString GetECodeMeaning(Int_t) const
+   {
+      return "";
+   }
 
    ClassDef(KVMultiDetArray, 7) //Base class for multidetector arrays
 };

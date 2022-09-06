@@ -12,8 +12,11 @@
 */
 
 #include "KVReconEventSelector.h"
+#include "KVMultiDetArray.h"
 
 class ExampleReconAnalysis : public KVReconEventSelector {
+
+   KVMultiDetArray* INDRA, *FAZIA;
 
    void add_idcode_histos(const TString&);
    void fill_idcode_histos(const TString&, const KVReconstructedNucleus&);

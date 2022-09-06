@@ -4,9 +4,6 @@
 
 ClassImp(ExampleReconAnalysis)
 
-#include "KVINDRA.h"
-#include "KVFAZIA.h"
-
 void ExampleReconAnalysis::InitAnalysis(void)
 {
    // Declaration of histograms, global variables, etc.
@@ -80,6 +77,9 @@ void ExampleReconAnalysis::InitRun(void)
    gMultiDetArray->AcceptAllIDCodes();
    gMultiDetArray->AcceptAllECodes();
 
+   INDRA = gMultiDetArray->GetArray("INDRA");
+   FAZIA = gMultiDetArray->GetArray("FAZIA");
+
    // set title of TTree with name of analysed system
    // GetTree("myTree")->SetTitle(GetCurrentRun()->GetSystemName());
 
@@ -88,7 +88,7 @@ void ExampleReconAnalysis::InitRun(void)
    // This will reject events where only the downscaled M>=1 trigger fired.
    //
    // Instead of this, you can use
-   //   if( gFazia->GetTrigger().IsTrigger( [name of trigger] ) ) { ... }
+   //   if( FAZIA->GetTrigger().IsTrigger( [name of trigger] ) ) { ... }
    // to test or select events individually according to the fired trigger pattern,
    // in your Analysis() method.
    //
@@ -99,9 +99,9 @@ void ExampleReconAnalysis::InitRun(void)
 void ExampleReconAnalysis::fill_idcode_histos(const TString& histo_name, const KVReconstructedNucleus& rn)
 {
    if (rn.InArray("INDRA"))
-      FillHisto(Form("%s_idcodes_indra", histo_name.Data()), gIndra->GetIDCodeMeaning(rn.GetIDCode()), 1);
+      FillHisto(Form("%s_idcodes_indra", histo_name.Data()), INDRA->GetIDCodeMeaning(rn.GetIDCode()), 1);
    else if (rn.InArray("FAZIA"))
-      FillHisto(Form("%s_idcodes_fazia", histo_name.Data()), gFazia->GetIDCodeMeaning(rn.GetIDCode()), 1);
+      FillHisto(Form("%s_idcodes_fazia", histo_name.Data()), FAZIA->GetIDCodeMeaning(rn.GetIDCode()), 1);
    else
       Fatal("fill_idcode_histos", "Particle not in INDRA and not in FAZIA!!! array=%s",
             rn.GetArrayName().Data());
@@ -110,9 +110,9 @@ void ExampleReconAnalysis::fill_idcode_histos(const TString& histo_name, const K
 void ExampleReconAnalysis::fill_ecode_histos(const TString& histo_name, const KVReconstructedNucleus& rn)
 {
    if (rn.InArray("INDRA"))
-      FillHisto(Form("%s_ecodes_indra", histo_name.Data()), gIndra->GetECodeMeaning(rn.GetECode()), 1);
+      FillHisto(Form("%s_ecodes_indra", histo_name.Data()), INDRA->GetECodeMeaning(rn.GetECode()), 1);
    else if (rn.InArray("FAZIA"))
-      FillHisto(Form("%s_ecodes_fazia", histo_name.Data()), gFazia->GetECodeMeaning(rn.GetECode()), 1);
+      FillHisto(Form("%s_ecodes_fazia", histo_name.Data()), FAZIA->GetECodeMeaning(rn.GetECode()), 1);
    else
       Fatal("fill_ecode_histos", "Particle not in INDRA and not in FAZIA!!! array=%s",
             rn.GetArrayName().Data());
