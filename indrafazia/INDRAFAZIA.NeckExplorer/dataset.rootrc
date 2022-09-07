@@ -1,0 +1,22 @@
+# fichier d initialisation pour la lecture des dataset INDRAFAZIA
+#
++DataSet:	  INDRAFAZIA.NeckExplorer
+INDRAFAZIA.NeckExplorer.DataSet.Title:    INDRA-FAZIA Neck Explorer
+INDRAFAZIA.NeckExplorer.DataSet.RepositoryDir:	indrafazia
+INDRAFAZIA.NeckExplorer.KVDataSet.DataType.Subdir.recon:  recon
+INDRAFAZIA.NeckExplorer.KVDataSet.DataType.Subdir.root:  root
+INDRAFAZIA.NeckExplorer.DataSet.ExpSetUp.ClassList: KVFAZIA KVINDRA
+INDRAFAZIA.NeckExplorer.HasCalibIdentInfos:   no
+INDRAFAZIA.NeckExplorer.ActiveIdentifications:      INDRA.CSI INDRA.SI-CSI INDRA.CI-SI INDRA.CI-CSI FAZIA.Si-Si FAZIA.Si-CsI FAZIA.Si FAZIA.CsI
+INDRAFAZIA.NeckExplorer.INDRA.SI-CSI.MassID: yes
+INDRAFAZIA.NeckExplorer.INDRA.SI-CSI.MassID.Validity:  Z<=10
+INDRAFAZIA.NeckExplorer.FAZIETO.DistanceZ:       85.43
+INDRAFAZIA.NeckExplorer.FAZIETO.ThetaMinCompactGeo:  1.5
+INDRAFAZIA.E818.INDRA.SI-CSI.MassID: yes
+INDRAFAZIA.E818.INDRA.SI-CSI.MassID.Validity:  Z<=10
+
++Plugin.KVMultiDetArray:    INDRAFAZIA.NeckExplorer    KVExpSetUp    KVMultiDetexp_events    "KVExpSetUp()"
++Plugin.KVExpDB:   INDRAFAZIA.NeckExplorer    KVExpSetUpDB     KVMultiDetexp_events   "KVExpSetUpDB(const Char_t*)"
++Plugin.KVFAZIA:    INDRAFAZIA.NeckExplorer    KVFAZIETO    FAZIAgeometry    "KVFAZIETO()"
++Plugin.KVINDRA:    INDRAFAZIA.NeckExplorer    KVINDRA    KVIndraexp_events    "KVINDRA()"
+
