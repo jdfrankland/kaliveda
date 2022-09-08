@@ -56,14 +56,10 @@ void KVIDGraph::init()
    // Initialisations, used by constructors
    // All graphs are added to gIDGridManager (if it exists).
 
-   fIdentifiers = new KVList;
-   fCuts = new KVList;
-   fInfoZones = new KVList;
-   fIdentifiers->SetCleanup();
-   fCuts->SetCleanup();
-   fInfoZones->SetCleanup();
+   fIdentifiers.SetCleanup();
+   fCuts.SetCleanup();
+   fInfoZones.SetCleanup();
    fXmin = fYmin = fXmax = fYmax = 0;
-   fPar = new KVNameValueList;
    fLastScaleX = 1.0;
    fLastScaleY = 1.0;
    fOnlyZId = kFALSE;
@@ -120,18 +116,18 @@ void KVIDGraph::Copy(TObject& obj) const
       const_cast < KVIDGraph* >(this)->Scale(1. / fLastScaleX,
                                              1. / fLastScaleY);
 
-   fIdentifiers->Copy((TObject&)(*grid.GetIdentifiers()));
-   fCuts->Copy((TObject&)(*grid.GetCuts()));
-   fInfoZones->Copy((TObject&)(*grid.GetInfos()));
+   fIdentifiers.Copy(grid.fIdentifiers);
+   fCuts.Copy(grid.fCuts);
+   fInfoZones.Copy(grid.fInfoZones);
    // set mass formula of grid (and identifiers)
    grid.SetMassFormula(GetMassFormula());
    //copy all parameters EXCEPT scaling parameters
    KVNamedParameter* par = 0;
-   for (int i = 0; i < fPar->GetNpar(); i++) { //loop over all parameters
-      par = fPar->GetParameter(i);
+   for (int i = 0; i < fPar.GetNpar(); i++) { //loop over all parameters
+      par = fPar.GetParameter(i);
       TString parname(par->GetName());
       if (!parname.Contains("ScaleFactor"))
-         grid.fPar->SetValue(*par);
+         grid.fPar.SetValue(*par);
    }
    //restore scaling to this grid if there was one, and apply it to the copied grid
    if (fLastScaleX != 1 || fLastScaleY != 1) {
@@ -162,14 +158,7 @@ KVIDGraph::KVIDGraph(const KVIDGraph& grid) : TCutG(), fRunList(""), fDyName("")
 KVIDGraph::~KVIDGraph()
 {
    // Destructor
-
-   fIdentifiers->Delete();
-   delete fIdentifiers;
-   fCuts->Delete();
-   delete fCuts;
-   fInfoZones->Delete();
-   delete fInfoZones;
-   delete fPar;
+   std::cout << "deleting idgraph " << GetName() << std::endl;
 
    // remove from grid manager
    if (gIDGridManager) gIDGridManager->GetGrids()->RecursiveRemove(this);
@@ -183,9 +172,9 @@ void KVIDGraph::Clear(Option_t*)
    // resets axis limits
    // scaling factors (if any) are removed
 
-   fIdentifiers->Delete();
-   fCuts->Delete();
-   fInfoZones->Delete();
+   fIdentifiers.Delete();
+   fCuts.Delete();
+   fInfoZones.Delete();
    fXmin = fYmin = fXmax = fYmax = 0;
    SetXScaleFactor();
    SetYScaleFactor();
@@ -199,12 +188,12 @@ void KVIDGraph::SetXScaleFactor(Double_t s)
    //Set scaling factor for X-axis - rescales all objects with this factor
    //SetXScaleFactor() or SetXScaleFactor(0) removes scale factor
    if (s > 0) {
-      fPar->SetValue("XScaleFactor", s);
+      fPar.SetValue("XScaleFactor", s);
       Scale(s / fLastScaleX);
       fLastScaleX = s;
    }
    else {
-      fPar->RemoveParameter("XScaleFactor");
+      fPar.RemoveParameter("XScaleFactor");
       Scale(1.0 / fLastScaleX);
       fLastScaleX = 1.0;
    }
@@ -217,12 +206,12 @@ void KVIDGraph::SetYScaleFactor(Double_t s)
    //Set scaling factor for Y-axis - rescales all objects with this factor
    //SetYScaleFactor() or SetYScaleFactor(0) removes scale factor
    if (s > 0) {
-      fPar->SetValue("YScaleFactor", s);
+      fPar.SetValue("YScaleFactor", s);
       Scale(-1.0, s / fLastScaleY);
       fLastScaleY = s;
    }
    else {
-      fPar->RemoveParameter("YScaleFactor");
+      fPar.RemoveParameter("YScaleFactor");
       Scale(-1.0, 1.0 / fLastScaleY);
       fLastScaleY = 1.0;
    }
@@ -234,7 +223,7 @@ Double_t KVIDGraph::GetXScaleFactor()
 {
    //Return scaling factor for X-axis
    //If factor not defined, returns 1
-   Double_t s = fPar->GetDoubleValue("XScaleFactor");
+   Double_t s = fPar.GetDoubleValue("XScaleFactor");
    if (s > 0)
       return s;
    return 1.0;
@@ -246,7 +235,7 @@ Double_t KVIDGraph::GetYScaleFactor()
 {
    //Return scaling factor for Y-axis
    //If factor not defined, returns 1
-   Double_t s = fPar->GetDoubleValue("YScaleFactor");
+   Double_t s = fPar.GetDoubleValue("YScaleFactor");
    if (s > 0)
       return s;
    return 1.0;
@@ -261,12 +250,12 @@ KVIDentifier* KVIDGraph::GetIdentifier(Int_t Z, Int_t A) const
 
    KVIDentifier* id = 0;
    if (!IsOnlyZId()) {
-      unique_ptr<KVSeqCollection> isotopes(fIdentifiers->GetSubListWithMethod(Form("%d", Z), "GetZ"));
+      unique_ptr<KVSeqCollection> isotopes(fIdentifiers.GetSubListWithMethod(Form("%d", Z), "GetZ"));
       TIter next(isotopes.get());
       while ((id = (KVIDentifier*)next())) if (id->GetA() == A) break;
    }
    else {
-      TIter next(fIdentifiers);
+      TIter next(&fIdentifiers);
       while ((id = (KVIDentifier*)next())) if (id->GetZ() == Z) break;
    }
    return id;
@@ -277,7 +266,7 @@ KVIDentifier* KVIDGraph::GetIdentifier(Int_t Z, Int_t A) const
 void KVIDGraph::RemoveIdentifier(KVIDentifier* id)
 {
    // Remove and destroy identifier
-   fIdentifiers->Remove(id);
+   fIdentifiers.Remove(id);
    delete id;
    Modified();
 }
@@ -287,7 +276,7 @@ void KVIDGraph::RemoveIdentifier(KVIDentifier* id)
 void KVIDGraph::RemoveCut(KVIDentifier* cut)
 {
    // Remove and destroy cut
-   fCuts->Remove(cut);
+   fCuts.Remove(cut);
    delete cut;
    Modified();
 }
@@ -295,7 +284,7 @@ void KVIDGraph::RemoveCut(KVIDentifier* cut)
 void KVIDGraph::RemoveInfo(KVIDentifier* info)
 {
    // Remove and destroy cut
-   fInfoZones->Remove(info);
+   fInfoZones.Remove(info);
    delete info;
    Modified();
 }
@@ -311,9 +300,9 @@ void KVIDGraph::WriteParameterListOfIDTelescopes()
    // this is in case there are telescope names already in the IDTelescopes parameter
    // but they are not telescopes in the current multi det array
    if (!fTelescopes.GetEntries()) return;
-   fPar->SetValue("IDTelescopes", "");
+   fPar.SetValue("IDTelescopes", "");
    KVString tel_list = GetNamesOfIDTelescopes();
-   fPar->SetValue("IDTelescopes", tel_list);
+   fPar.SetValue("IDTelescopes", tel_list);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -374,8 +363,8 @@ void KVIDGraph::WriteToAsciiFile(ofstream& gridfile)
    //write parameters
    WriteParameterListOfIDTelescopes();
    KVNamedParameter* par = 0;
-   for (int i = 0; i < fPar->GetNpar(); i++) { //loop over all parameters
-      par = fPar->GetParameter(i);
+   for (int i = 0; i < fPar.GetNpar(); i++) { //loop over all parameters
+      par = fPar.GetParameter(i);
       gridfile << "<PARAMETER> " << par->GetName() << "=" << par->GetString() << endl;
    }
 
@@ -387,18 +376,18 @@ void KVIDGraph::WriteToAsciiFile(ofstream& gridfile)
       Scale(1. / fLastScaleX, 1. / fLastScaleY);
 
    //Write identifiers
-   TIter next_IDline(fIdentifiers);
+   TIter next_IDline(&fIdentifiers);
    KVIDentifier* line;
    while ((line = (KVIDentifier*) next_IDline())) {
       line->WriteAsciiFile(gridfile, "ID");
    }
    //Write cuts
-   TIter next_OKline(fCuts);
+   TIter next_OKline(&fCuts);
    while ((line = (KVIDentifier*) next_OKline())) {
       line->WriteAsciiFile(gridfile, "OK");
    }
    //Write cuts
-   TIter next_INFOline(fInfoZones);
+   TIter next_INFOline(&fInfoZones);
    while ((line = (KVIDentifier*) next_INFOline())) {
       line->WriteAsciiFile(gridfile, "INFO");
    }
@@ -479,7 +468,7 @@ void KVIDGraph::ReadFromAsciiFile(ifstream& gridfile)
    //reset grid - destroy old lines, axis limits...
    Clear();
    //clear parameters
-   fPar->Clear();
+   fPar.Clear();
 
    KVString s;
    int line_no = 0; // counter for lines read
@@ -533,11 +522,11 @@ void KVIDGraph::ReadFromAsciiFile(ifstream& gridfile)
             value.Remove(TString::kBoth, ' '); //remove whitespace
             if (name != "" && value != "") {
                if (value.IsFloat())
-                  fPar->SetValue(name.Data(), value.Atof());
+                  fPar.SetValue(name.Data(), value.Atof());
                else if (value.IsDigit())
-                  fPar->SetValue(name.Data(), value.Atoi());
+                  fPar.SetValue(name.Data(), value.Atoi());
                else
-                  fPar->SetValue(name.Data(), value.Data());
+                  fPar.SetValue(name.Data(), value.Data());
             }
          }
          delete toks;           //must clean up
@@ -555,7 +544,7 @@ void KVIDGraph::ReadFromAsciiFile(ifstream& gridfile)
             if (name == "Runs")
                SetRuns(list.Data());
             else
-               fPar->SetValue(name.Data(), list.Data());
+               fPar.SetValue(name.Data(), list.Data());
          }
          delete toks;           //must clean up
       }
@@ -599,7 +588,7 @@ void KVIDGraph::ReadFromAsciiFile(ifstream& gridfile)
    }
    BackwardsCompatibilityFix();
    //set runlist
-   if (fPar->HasParameter("Runlist")) SetRuns(fPar->GetStringValue("Runlist"));
+   if (fPar.HasParameter("Runlist")) SetRuns(fPar.GetStringValue("Runlist"));
    else SetRuns("");
 
    // if a back-up copy had previously been created (by starting the editor)
@@ -734,13 +723,13 @@ void KVIDGraph::Draw(Option_t*)
       gPad->DrawFrame(GetXmin(), GetYmin(), GetXmax(), GetYmax());
    }
    {
-      fIdentifiers->R__FOR_EACH(KVIDentifier, Draw)("PL");
+      fIdentifiers.R__FOR_EACH(KVIDentifier, Draw)("PL");
    }
    {
-      fCuts->R__FOR_EACH(KVIDentifier, Draw)("PL");
+      fCuts.R__FOR_EACH(KVIDentifier, Draw)("PL");
    }
    {
-      fInfoZones->R__FOR_EACH(KVIDentifier, Draw)("PL");
+      fInfoZones.R__FOR_EACH(KVIDentifier, Draw)("PL");
    }
    gPad->Modified();
    gPad->Update();
@@ -798,7 +787,7 @@ void KVIDGraph::ExtendBeginningAllIdentLines(Double_t newX, Option_t* Direction)
    //
    // See KVIDentifier::ExtendLine()
 
-   fIdentifiers->R__FOR_EACH(KVIDentifier, ExtendLine)(true, newX, Direction);
+   fIdentifiers.R__FOR_EACH(KVIDentifier, ExtendLine)(true, newX, Direction);
 }
 
 void KVIDGraph::ExtendEndAllIdentLines(Double_t newX, Option_t* Direction)
@@ -806,7 +795,7 @@ void KVIDGraph::ExtendEndAllIdentLines(Double_t newX, Option_t* Direction)
    // Extend the last segment of each identification line to new coordinate newX
    //
    // See KVIDentifier::ExtendLine()
-   fIdentifiers->R__FOR_EACH(KVIDentifier, ExtendLine)(false, newX, Direction);
+   fIdentifiers.R__FOR_EACH(KVIDentifier, ExtendLine)(false, newX, Direction);
 }
 
 //_______________________________________________________________________________________________//
@@ -818,15 +807,15 @@ void KVIDGraph::Print(Option_t*) const
    cout << ClassName() << " : " << GetName() << endl;
    cout << "Title : " << GetTitle() << endl;
    //print list of parameters
-   fPar->Print();
+   fPar.Print();
    KVIDentifier* line = 0;
-   TIter nextOK(fCuts);
+   TIter nextOK(&fCuts);
    while ((line = (KVIDentifier*) nextOK()))
       line->ls();
-   TIter nextID(fIdentifiers);
+   TIter nextID(&fIdentifiers);
    while ((line = (KVIDentifier*) nextID()))
       line->ls();
-   TIter nextInfo(fInfoZones);
+   TIter nextInfo(&fInfoZones);
    while ((line = (KVIDentifier*) nextInfo()))
       line->ls();
 }
@@ -841,7 +830,7 @@ void KVIDGraph::FindAxisLimits()
    Double_t x, y, xmin, ymin, xmax, ymax;
    xmax = ymax = -999999;
    xmin = ymin = 999999;
-   TIter nextOK(fCuts);
+   TIter nextOK(&fCuts);
    while ((line = (KVIDentifier*) nextOK())) {
       for (int i = 0; i < line->GetN(); i++) {
          line->GetPoint(i, x, y);
@@ -851,7 +840,7 @@ void KVIDGraph::FindAxisLimits()
          ymax = (y > ymax ? y : ymax);
       }
    }
-   TIter nextID(fIdentifiers);
+   TIter nextID(&fIdentifiers);
    while ((line = (KVIDentifier*) nextID())) {
       for (int i = 0; i < line->GetN(); i++) {
          line->GetPoint(i, x, y);
@@ -881,13 +870,13 @@ void KVIDGraph::Scale(TF1* sx, TF1* sy)
    if (!sx && !sy)
       return;
    if (GetNumberOfIdentifiers() > 0) {
-      fIdentifiers->R__FOR_EACH(KVIDentifier, Scale)(sx, sy);
+      fIdentifiers.R__FOR_EACH(KVIDentifier, Scale)(sx, sy);
    }
    if (GetNumberOfCuts() > 0) {
-      fCuts->R__FOR_EACH(KVIDentifier, Scale)(sx, sy);
+      fCuts.R__FOR_EACH(KVIDentifier, Scale)(sx, sy);
    }
    if (GetNumberOfInfos() > 0) {
-      fInfoZones->R__FOR_EACH(KVIDentifier, Scale)(sx, sy);
+      fInfoZones.R__FOR_EACH(KVIDentifier, Scale)(sx, sy);
    }
    Modified();
 }
@@ -901,21 +890,15 @@ void KVIDGraph::Scale(Double_t sx, Double_t sy)
    if (TMath::Abs(sx) == 1 && TMath::Abs(sy) == 1)
       return;
    if (GetNumberOfIdentifiers() > 0) {
-      fIdentifiers->R__FOR_EACH(KVIDentifier, Scale)(sx, sy);
+      fIdentifiers.R__FOR_EACH(KVIDentifier, Scale)(sx, sy);
    }
    if (GetNumberOfCuts() > 0) {
-      fCuts->R__FOR_EACH(KVIDentifier, Scale)(sx, sy);
+      fCuts.R__FOR_EACH(KVIDentifier, Scale)(sx, sy);
    }
    if (GetNumberOfInfos() > 0) {
-      fInfoZones->R__FOR_EACH(KVIDentifier, Scale)(sx, sy);
+      fInfoZones.R__FOR_EACH(KVIDentifier, Scale)(sx, sy);
    }
 }
-
-//___________________________________________________________________________________
-
-
-//___________________________________________________________________________________
-
 
 //___________________________________________________________________________________
 
@@ -1001,7 +984,7 @@ Bool_t KVIDGraph::IsIdentifiable(Double_t x, Double_t y, TString* rejected_by) c
    // If the point is rejected by a cut we return kFALSE.
    // If rejected_by contains a valid pointer, we set it to the name of the rejecting cut.
 
-   TIter next(fCuts);
+   TIter next(&fCuts);
    KVIDentifier* id = 0;
    if (rejected_by) *rejected_by = "";
    while ((id = (KVIDentifier*)next())) {
@@ -1017,7 +1000,7 @@ void KVIDGraph::SetInfos(Double_t x, Double_t y, KVIdentificationResult* idr) co
 {
    // loop over KVIDGraph::fInfoZones to set flags in KVIdentificationResult
 
-   TIter next(fInfoZones);
+   TIter next(&fInfoZones);
    KVIDentifier* id = 0;
    while ((id = (KVIDentifier*)next())) {
       if (id->TestPoint(x, y)) {
@@ -1032,7 +1015,7 @@ void KVIDGraph::SetRuns(const KVNumberList& runs)
 {
    // Set list of runs for which grid is valid
    fRunList = runs;
-   fPar->SetValue("Runlist", fRunList.AsString());
+   fPar.SetValue("Runlist", fRunList.AsString());
    Modified();
 }
 
@@ -1048,8 +1031,8 @@ const Char_t* KVIDGraph::GetName() const
    fDyName = "";
    if (fTelescopes.At(0)) fDyName = fTelescopes.At(0)->GetName();
    else {
-      if (fPar->HasParameter("IDTelescopes")) {
-         KVString tel_list = fPar->GetStringValue("IDTelescopes");
+      if (fPar.HasParameter("IDTelescopes")) {
+         KVString tel_list = fPar.GetStringValue("IDTelescopes");
          tel_list.Begin(",");
          fDyName = tel_list.Next();
       }
@@ -1067,12 +1050,12 @@ void KVIDGraph::BackwardsCompatibilityFix()
    //<PARAMETER> First run=... ----> <PARAMETER> Runlist=...
    //<PARAMETER> Last run=...
 
-   if (fPar->HasParameter("Runlist")) return;
-   if (fPar->HasParameter("First run") && fPar->HasParameter("Last run")) {
-      fRunList.SetMinMax(fPar->GetIntValue("First run"), fPar->GetIntValue("Last run"));
-      fPar->SetValue("Runlist", fRunList.AsString());
-      fPar->RemoveParameter("First run");
-      fPar->RemoveParameter("Last run");
+   if (fPar.HasParameter("Runlist")) return;
+   if (fPar.HasParameter("First run") && fPar.HasParameter("Last run")) {
+      fRunList.SetMinMax(fPar.GetIntValue("First run"), fPar.GetIntValue("Last run"));
+      fPar.SetValue("Runlist", fRunList.AsString());
+      fPar.RemoveParameter("First run");
+      fPar.RemoveParameter("Last run");
    }
 }
 //_______________________________________________________________________________________________//
@@ -1153,7 +1136,7 @@ void KVIDGraph::SetMassFormula(Int_t mass)
    fMassFormula = mass;
    if (IsOnlyZId()) {
       if (GetNumberOfIdentifiers() > 0) {
-         fIdentifiers->R__FOR_EACH(KVIDentifier, SetMassFormula)(mass);
+         fIdentifiers.R__FOR_EACH(KVIDentifier, SetMassFormula)(mass);
       }
    }
    Modified();
@@ -1169,7 +1152,7 @@ void KVIDGraph::SetOnlyZId(Bool_t yes)
    // widths are calculated (see KVIDGrid::CalculateLineWidths)
    fOnlyZId = yes;
    if (GetNumberOfIdentifiers() > 0) {
-      fIdentifiers->R__FOR_EACH(KVIDentifier, SetOnlyZId)(yes);
+      fIdentifiers.R__FOR_EACH(KVIDentifier, SetOnlyZId)(yes);
    }
    Modified();
 }
@@ -1241,13 +1224,13 @@ void KVIDGraph::SetEditable(Bool_t editable)
 
    TCutG::SetEditable(editable);
    if (GetNumberOfIdentifiers() > 0) {
-      fIdentifiers->R__FOR_EACH(KVIDentifier, SetEditable)(editable);
+      fIdentifiers.R__FOR_EACH(KVIDentifier, SetEditable)(editable);
    }
    if (GetNumberOfCuts() > 0) {
-      fCuts->R__FOR_EACH(KVIDentifier, SetEditable)(editable);
+      fCuts.R__FOR_EACH(KVIDentifier, SetEditable)(editable);
    }
    if (GetNumberOfInfos() > 0) {
-      fInfoZones->R__FOR_EACH(KVIDentifier, SetEditable)(editable);
+      fInfoZones.R__FOR_EACH(KVIDentifier, SetEditable)(editable);
    }
 }
 
@@ -1262,8 +1245,8 @@ const Char_t* KVIDGraph::GetNamesOfIDTelescopes() const
    if (!fTelescopes.GetEntries()) {
       // case of grid with "unknown" ID telescopes
       // we return the value of the IDTelescopes parameter (if defined)
-      if (fPar->HasParameter("IDTelescopes")) {
-         tel_list = fPar->GetStringValue("IDTelescopes");
+      if (fPar.HasParameter("IDTelescopes")) {
+         tel_list = fPar.GetStringValue("IDTelescopes");
          return tel_list.Data();
       }
    }
@@ -1283,12 +1266,12 @@ void KVIDGraph::Streamer(TBuffer& R__b)
 
    if (R__b.IsReading()) {
       R__b.ReadClassBuffer(KVIDGraph::Class(), this);
-      TIter nxt_id(fIdentifiers);
+      TIter nxt_id(&fIdentifiers);
       KVIDentifier* id;
       while ((id = (KVIDentifier*)nxt_id())) id->fParent = this;
-      TIter nxt_cut(fCuts);
+      TIter nxt_cut(&fCuts);
       while ((id = (KVIDentifier*)nxt_cut())) id->fParent = this;
-      TIter nxt_info(fInfoZones);
+      TIter nxt_info(&fInfoZones);
       while ((id = (KVIDentifier*)nxt_info())) id->fParent = this;
    }
    else {

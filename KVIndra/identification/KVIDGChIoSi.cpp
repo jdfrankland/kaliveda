@@ -113,13 +113,13 @@ void KVIDGChIoSi::BackwardsCompatibilityFix()
    //<PARAMETER> Mod max=...
 
    KVIDZAGrid::BackwardsCompatibilityFix();
-   if (fPar->HasParameter("IDTelescopes")) return;
+   if (GetParameters()->HasParameter("IDTelescopes")) return;
 
    Warning("BackwardsCompatibilityFix",
            "This fix no longer works correctly. Dummy ID telescopes will be associated with this grid. There will be problems.");
-   if (fPar->HasParameter("Rings")) { // && gIndra ) <== SHOULD NOT DEPEND ON KVINDRA!!!
-      KVNumberList Rings(fPar->GetStringValue("Rings"));
-      KVNumberList Modules(fPar->GetStringValue("Modules"));
+   if (GetParameters()->HasParameter("Rings")) { // && gIndra ) <== SHOULD NOT DEPEND ON KVINDRA!!!
+      KVNumberList Rings(GetParameters()->GetStringValue("Rings"));
+      KVNumberList Modules(GetParameters()->GetStringValue("Modules"));
       int r, m;
       Rings.Begin();
       while (!Rings.End()) {
@@ -133,8 +133,8 @@ void KVIDGChIoSi::BackwardsCompatibilityFix()
          }
       }
       WriteParameterListOfIDTelescopes();
-      fPar->RemoveParameter("Rings");
-      fPar->RemoveParameter("Modules");
+      GetParameters()->RemoveParameter("Rings");
+      GetParameters()->RemoveParameter("Modules");
    }
    fSeuil = (KVIDLine*)GetCut("Seuil_Si");
    fBragg = (KVIDLine*)GetCut("Bragg_line");

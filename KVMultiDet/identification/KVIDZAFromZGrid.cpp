@@ -162,9 +162,9 @@ void KVIDZAFromZGrid::PrintPIDLimits()
 
 void KVIDZAFromZGrid::ClearPIDIntervals()
 {
-   if (fPar->HasParameter("PIDRANGE")) fPar->RemoveParameter("PIDRANGE");
+   if (GetParameters()->HasParameter("PIDRANGE")) GetParameters()->RemoveParameter("PIDRANGE");
    for (int ii = 1; ii < 30; ii++) {
-      if (fPar->HasParameter(Form("PIDRANGE%d", ii))) fPar->RemoveParameter(Form("PIDRANGE%d", ii));
+      if (GetParameters()->HasParameter(Form("PIDRANGE%d", ii))) GetParameters()->RemoveParameter(Form("PIDRANGE%d", ii));
    }
 }
 

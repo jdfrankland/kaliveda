@@ -71,11 +71,7 @@ public:
    {
       SetVarX(VarX);
       SetVarY(VarY);
-   };
-   void AddParameter(char* Name, char* Value)
-   {
-      fPar->SetValue(Name, Value);
-   };
+   }
 
    virtual void Initialize();// *MENU*
    void DrawLinesWithWidth();// *MENU={Hierarchy="View.../DrawLinesWithWidth"}*
@@ -113,7 +109,7 @@ public:
    }
    void  SetToF(const Char_t* tof)
    {
-      fPar->SetValue("ToF", tof);
+      AddParameter("ToF", tof);
       Modified();
    }// *MENU={Hierarchy="Set.../Time of Flight"}*
 

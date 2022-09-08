@@ -48,9 +48,9 @@ KVTGIDGrid::KVTGIDGrid(KVTGID* tgid, KVIDZAGrid* original)
       while (gIDGridManager->GetGrid(name.Data()));
    }
    SetName(name.Data());
-   if (original) original->GetCuts()->Copy((TObject&)*fCuts);
+   if (original) original->GetCuts()->Copy(fCuts);
 
-   fPar->SetValue("HasTGID", 1);
+   GetParameters()->SetValue("HasTGID", 1);
    FindAxisLimits();
 }
 
@@ -75,7 +75,7 @@ void KVTGIDGrid::ReadFromAsciiFile(ifstream& gridfile)
    // Read grid and parameters of LTG fit used to generate grid in gridfile.
    KVIDGraph::ReadFromAsciiFile(gridfile);
    KVString line;
-   if (fPar->GetIntValue("HasTGID")) {
+   if (fPar.GetIntValue("HasTGID")) {
       line.ReadLine(gridfile);
       if (line.BeginsWith("++KVTGID"))  fTGID = KVTGID::ReadFromAsciiFile(GetName(), gridfile);
    }
@@ -122,7 +122,7 @@ void KVTGIDGrid::Generate(Double_t xmax, Double_t xmin, Int_t ID_min, Int_t ID_m
    }
 
    // delete all previous identification lines
-   fIdentifiers->Delete();
+   fIdentifiers.Delete();
    fXmin = fYmin = fXmax = fYmax = 0;
 
    for (Int_t ID = ID_min; ID <= ID_max; ID++) {

@@ -36,12 +36,12 @@ class KVIDGraph : public TCutG {
 protected:
 
    Bool_t         fOnlyZId;         //set to kTRUE when only to be used to give Z identification of nuclei, no mass info
-   KVList*         fIdentifiers;    //-> list of identification objects
-   KVList*         fCuts;           //-> cuts used to define area in which identification is possible
-   KVList*         fInfoZones;      //-> contours/lines used to add info to particles (ex: punch-through)
+   KVList         fIdentifiers;    // list of identification objects
+   KVList         fCuts;           // cuts used to define area in which identification is possible
+   KVList         fInfoZones;      // contours/lines used to add info to particles (ex: punch-through)
    Axis_t         fXmin, fXmax;     //!min/max X coordinates of graph
    Axis_t         fYmin, fYmax;     //!min/max Y coordinates of graph
-   KVNameValueList*   fPar;            //-> parameters associated to grid
+   KVNameValueList   fPar;            // parameters associated to grid
    Double_t       fLastScaleX;      //last applied scaling factor on X
    Double_t       fLastScaleY;      //last applied scaling factor on Y
    TVirtualPad*    fPad;            //!pad in which graph is drawn
@@ -80,6 +80,10 @@ public:
       // By default, this returns the value of idr.IDOK, but may be overridden in child classes.
 
       return idr.IDOK;
+   }
+   void AddParameter(char* Name, char* Value)
+   {
+      fPar.SetValue(Name, Value);
    }
 
    KVIDGraph();
@@ -182,25 +186,25 @@ public:
    void SetLineColor(Color_t lcolor)
    {
       //Set line colour of all objects in grid
-      fIdentifiers->Execute("SetLineColor", Form("%d", (Int_t) lcolor));
-      fCuts->Execute("SetLineColor", Form("%d", (Int_t) lcolor));
-      fInfoZones->Execute("SetLineColor", Form("%d", (Int_t) lcolor));
+      fIdentifiers.Execute("SetLineColor", Form("%d", (Int_t) lcolor));
+      fCuts.Execute("SetLineColor", Form("%d", (Int_t) lcolor));
+      fInfoZones.Execute("SetLineColor", Form("%d", (Int_t) lcolor));
       Modified();
    } // *MENU={Hierarchy="View.../SetLinecolor"}*
    void SetLineStyle(Style_t lstyle)
    {
       //Set line style of all objects in grid
-      fIdentifiers->Execute("SetLineStyle", Form("%d", (Int_t) lstyle));
-      fCuts->Execute("SetLineStyle", Form("%d", (Int_t) lstyle));
-      fInfoZones->Execute("SetLineStyle", Form("%d", (Int_t) lstyle));
+      fIdentifiers.Execute("SetLineStyle", Form("%d", (Int_t) lstyle));
+      fCuts.Execute("SetLineStyle", Form("%d", (Int_t) lstyle));
+      fInfoZones.Execute("SetLineStyle", Form("%d", (Int_t) lstyle));
       Modified();
    } // *MENU={Hierarchy="View.../SetLineStyle"}*
    void SetLineWidth(Width_t lwidth)
    {
       //Set line width of all objects in grid
-      fIdentifiers->Execute("SetLineWidth", Form("%d", (Int_t) lwidth));
-      fCuts->Execute("SetLineWidth", Form("%d", (Int_t) lwidth));
-      fInfoZones->Execute("SetLineWidth", Form("%d", (Int_t) lwidth));
+      fIdentifiers.Execute("SetLineWidth", Form("%d", (Int_t) lwidth));
+      fCuts.Execute("SetLineWidth", Form("%d", (Int_t) lwidth));
+      fInfoZones.Execute("SetLineWidth", Form("%d", (Int_t) lwidth));
       Modified();
    } // *MENU={Hierarchy="View.../SetLineWidth"}*
 
@@ -266,56 +270,76 @@ public:
    KVIDentifier* GetIdentifierAt(Int_t index) const
    {
       // Return identifier at position 'index' (=0,1,...) in list of identifiers
-      return (KVIDentifier*)fIdentifiers->At(index);
+      return (KVIDentifier*)fIdentifiers.At(index);
    }
    KVIDentifier* GetIdentifier(const Char_t* name) const
    {
-      return (KVIDentifier*)fIdentifiers->FindObject(name);
+      return (KVIDentifier*)fIdentifiers.FindObject(name);
    }
    KVIDentifier* GetCut(const Char_t* name) const
    {
-      return (KVIDentifier*)fCuts->FindObject(name);
+      return (KVIDentifier*)fCuts.FindObject(name);
    }
    KVIDentifier* GetInfo(const Char_t* name) const
    {
-      return (KVIDentifier*)fInfoZones->FindObject(name);
+      return (KVIDentifier*)fInfoZones.FindObject(name);
    }
-   KVNameValueList* GetParameters() const
+   const KVNameValueList* GetParameters() const
    {
       // Return pointer to list of parameters associated to grid
-      return fPar;
+      return &fPar;
    }
-   KVList* GetIdentifiers() const
+   KVNameValueList* GetParameters()
+   {
+      // Return pointer to list of parameters associated to grid
+      return &fPar;
+   }
+   const KVList* GetIdentifiers() const
    {
       // Returns list of identifier objects (derived from KVIDentifier)
-      return fIdentifiers;
+      return &fIdentifiers;
    }
-   KVList* GetCuts() const
+   KVList* GetIdentifiers()
+   {
+      // Returns list of identifier objects (derived from KVIDentifier)
+      return &fIdentifiers;
+   }
+   const KVList* GetCuts() const
    {
       // Returns list of cuts (derived from KVIDentifier)
-      return fCuts;
+      return &fCuts;
    }
-   KVList* GetInfos() const
+   KVList* GetCuts()
    {
       // Returns list of cuts (derived from KVIDentifier)
-      return fInfoZones;
+      return &fCuts;
+   }
+   const KVList* GetInfos() const
+   {
+      // Returns list of cuts (derived from KVIDentifier)
+      return &fInfoZones;
+   }
+   KVList* GetInfos()
+   {
+      // Returns list of cuts (derived from KVIDentifier)
+      return &fInfoZones;
    }
    Int_t GetNumberOfIdentifiers() const
    {
-      return fIdentifiers->GetSize();
+      return fIdentifiers.GetSize();
    }
    Int_t GetNumberOfCuts() const
    {
-      return fCuts->GetSize();
+      return fCuts.GetSize();
    }
    Int_t GetNumberOfInfos() const
    {
-      return fInfoZones->GetSize();
+      return fInfoZones.GetSize();
    }
    virtual void AddIdentifier(KVIDentifier* id)
    {
       // Add identifier to the graph. It will be deleted by the graph.
-      fIdentifiers->Add(id);
+      fIdentifiers.Add(id);
       id->SetParent(this);
       id->SetVarX(GetVarX());
       id->SetVarY(GetVarY());
@@ -330,7 +354,7 @@ public:
       // Add cut to the graph. It will be deleted by the graph.
       cut->SetLineColor(kRed);
       cut->SetParent(this);
-      fCuts->Add(cut);
+      fCuts.Add(cut);
       cut->SetVarX(GetVarX());
       cut->SetVarY(GetVarY());
       cut->SetBit(kMustCleanup);
@@ -341,7 +365,7 @@ public:
       // Add info lines/cuts to the graph. It will be deleted by the graph.
       info->SetLineColor(kBlue);
       info->SetParent(this);
-      fInfoZones->Add(info);
+      fInfoZones.Add(info);
       info->SetVarX(GetVarX());
       info->SetVarY(GetVarY());
       info->SetBit(kMustCleanup);
@@ -349,13 +373,13 @@ public:
    }
    void SortIdentifiers()
    {
-      fIdentifiers->Sort();
+      fIdentifiers.Sort();
       //Modified();
    }
    Bool_t IsSorted() const
    {
       // Return kTRUE if list of identifiers has been sorted
-      return fIdentifiers->IsSorted();
+      return fIdentifiers.IsSorted();
    }
    Axis_t GetXmin() const
    {
@@ -445,7 +469,7 @@ public:
    {
       TGraph::DrawPanel();
    }
-#if ROOT_VERSION_CODE > ROOT_VERSION(5,25,4)
+
    virtual TFitResultPtr Fit(const char* formula, Option_t* option = "", Option_t* goption = "", Axis_t xmin = 0, Axis_t xmax = 0)
    {
       return TGraph::Fit(formula, option, goption, xmin, xmax);
@@ -454,16 +478,7 @@ public:
    {
       return TGraph::Fit(f1, option, goption, xmin, xmax);
    }
-#else
-   virtual Int_t     Fit(const char* formula, Option_t* option = "", Option_t* goption = "", Axis_t xmin = 0, Axis_t xmax = 0)
-   {
-      return TGraph::Fit(formula, option, goption, xmin, xmax);
-   }
-   virtual Int_t     Fit(TF1* f1, Option_t* option = "", Option_t* goption = "", Axis_t xmin = 0, Axis_t xmax = 0)
-   {
-      return TGraph::Fit(f1, option, goption, xmin, xmax);
-   }
-#endif
+
    //---- The following redeclarations are here just to remove the *MENU* tag which
    //---- is present in TObject.h, to stop these methods appearing in the ID line context menus
    virtual void        Delete(Option_t* option = "")

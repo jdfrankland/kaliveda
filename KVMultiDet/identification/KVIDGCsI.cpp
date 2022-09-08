@@ -54,7 +54,7 @@ Bool_t KVIDGCsI::IsIdentifiable(Double_t x, Double_t y, TString* reject) const
 struct add_remove_imf_line {
    KVList* idlines;
    KVIDLine* imfline;
-   add_remove_imf_line(KVList* l, KVIDLine* i) : idlines(l), imfline(i)
+   add_remove_imf_line(const KVList& l, KVIDLine* i) : idlines(const_cast<KVList*>(&l)), imfline(i)
    {
       if (imfline) idlines->AddLast(imfline);
    }
@@ -569,8 +569,8 @@ void KVIDGCsI::Initialize()
    // IMF & Gamma line pointers are initialised
 
    // if grid has already been used for identification, IMF_line will be in identifiers list.
-   TObject* imfline = fIdentifiers->FindObject("IMF_line");
-   if (imfline) fIdentifiers->Remove(imfline); // remove to avoid problems with CalculateLineWidths
+   TObject* imfline = fIdentifiers.FindObject("IMF_line");
+   if (imfline) fIdentifiers.Remove(imfline); // remove to avoid problems with CalculateLineWidths
    KVIDZAGrid::Initialize();
    GammaLine = (KVIDLine*)GetCut("gamma_line");
    if (!GammaLine) {
@@ -603,7 +603,7 @@ void KVIDGCsI::BackwardsCompatibilityFix()
    // no longer exist.
 
    KVIDZAGrid::BackwardsCompatibilityFix();
-   if (fPar->HasParameter("IDTelescopes")) return;
+   if (GetParameters()->HasParameter("IDTelescopes")) return;
 
    Fatal("BackwardsCompatibilityFix",
          "This fix no longer works. There will be problems.");

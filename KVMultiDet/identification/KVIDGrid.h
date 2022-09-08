@@ -199,7 +199,7 @@ public:
       if (idx_max == nlines - 1) {
          if (upper->WhereAmI(x, y, position)) {
             // above last line
-            idx = idx_min = fIdentifiers->IndexOf(upper); // index of last line
+            idx = idx_min = fIdentifiers.IndexOf(upper); // index of last line
             idx_max = -1;
             dist = dist_min = TMath::Abs(upper->DistanceToLine(x, y, dummy));
             return upper;
@@ -211,7 +211,7 @@ public:
          if (!lower->WhereAmI(x, y, position)) {
             // below first line
             idx_min = -1;
-            idx = idx_max = fIdentifiers->IndexOf(lower); // index of first line
+            idx = idx_max = fIdentifiers.IndexOf(lower); // index of first line
             dist = dist_max = TMath::Abs(lower->DistanceToLine(x, y, dummy));
             return lower;
          }
@@ -220,8 +220,8 @@ public:
       dist_max = TMath::Abs(upper->DistanceToLine(x, y, dummy));
       dist_min = TMath::Abs(lower->DistanceToLine(x, y, dummy));
       // convert indices back to index in main list
-      idx_min = fIdentifiers->IndexOf(lower);
-      idx_max = fIdentifiers->IndexOf(upper);
+      idx_min = fIdentifiers.IndexOf(lower);
+      idx_max = fIdentifiers.IndexOf(upper);
       if (dist_max < dist_min) {
          dist = dist_max;
          idx = idx_max;

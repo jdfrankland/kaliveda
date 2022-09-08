@@ -125,11 +125,6 @@ public:
       SetVarX(VarX);
       SetVarY(VarY);
    }
-   void AddParameter(char* Name, char* Value)
-   {
-      fPar->SetValue(Name, Value);
-   }
-
    virtual void Initialize();// *MENU*
    void DrawLinesWithWidth();// *MENU={Hierarchy="View.../DrawLinesWithWidth"}*
 

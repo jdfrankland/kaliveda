@@ -84,7 +84,7 @@ void KVIDZAGrid::RemoveLine(Int_t Z, Int_t A)
    }
    else {
       if (!IsOnlyZId()) {
-         KVList* tmplist = (KVList*)fIdentifiers->GetSubListWithMethod(Form("%d", Z), "GetZ");
+         KVList* tmplist = (KVList*)fIdentifiers.GetSubListWithMethod(Form("%d", Z), "GetZ");
          TIter next_id(tmplist);
          while ((tmpline = (KVIDZALine*)next_id())) {
             if (tmpline) RemoveIdentifier((KVIDentifier*)tmpline);
@@ -1526,7 +1526,7 @@ KVIDGraph* KVIDZAGrid::MakeSubsetGraph(Int_t Zmin, Int_t Zmax, const Char_t* gra
    // name and be associated with the same ID telescopes as this one.
 
    TList* lines = new TList; // subset of lines to clone
-   TIter next(fIdentifiers);
+   TIter next(&fIdentifiers);
    KVIDentifier* l;
    while ((l = (KVIDentifier*)next())) {
       if (l->GetZ() >= Zmin && l->GetZ() <= Zmax) lines->Add(l);
