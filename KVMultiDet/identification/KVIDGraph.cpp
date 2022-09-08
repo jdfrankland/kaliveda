@@ -158,8 +158,6 @@ KVIDGraph::KVIDGraph(const KVIDGraph& grid) : TCutG(), fRunList(""), fDyName("")
 KVIDGraph::~KVIDGraph()
 {
    // Destructor
-   std::cout << "deleting idgraph " << GetName() << std::endl;
-
    // remove from grid manager
    if (gIDGridManager) gIDGridManager->GetGrids()->RecursiveRemove(this);
 }
