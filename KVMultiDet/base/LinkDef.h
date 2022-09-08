@@ -72,5 +72,6 @@
 #pragma link C++ class KVSQLite::column+;
 #pragma link C++ class KVSQLite::table+;
 #pragma link C++ class KVSQLite::database+;
+#pragma link C++ class KVSQLROOTFile+;
 #endif
 #endif

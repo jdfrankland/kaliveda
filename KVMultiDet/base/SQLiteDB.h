@@ -273,11 +273,17 @@ namespace KVSQLite {
       table(const TString& Name = "")
          : fName(Name), fInsert(KVSQLite::insert_mode::DEFAULT), fColumns(), fColMap(), fTemp(false)
       {
+         if (Name.Contains("_")) {
+            throw std::runtime_error("Do not use '_' in table names");
+         }
          if (!type_map.size()) init_type_map();
       }
       table(const TString& Name, const std::vector<KVSQLite::column>& cols)
          : fName(Name), fInsert(KVSQLite::insert_mode::DEFAULT), fColumns(cols), fColMap(), fTemp(false)
       {
+         if (Name.Contains("_")) {
+            throw std::runtime_error("Do not use '_' in table names");
+         }
          if (!type_map.size()) init_type_map();
          for (auto& c : fColumns) c.set_table(Name);
       }
@@ -289,6 +295,9 @@ namespace KVSQLite {
       }
       void set_name(const TString& name)
       {
+         if (name.Contains("_")) {
+            throw std::runtime_error("Do not use '_' in table names");
+         }
          fName = name;
       }
 
@@ -380,6 +389,8 @@ namespace KVSQLite {
       int check_columns(const KVNameValueList&);
       void prepare_data(const KVNameValueList&, const KVNamedParameter* = nullptr);
       void set_all_columns_null();
+
+      TString get_column_names(const TString& exclude = "", const TString& delim = ",") const;
 
       ClassDef(table, 0) //Table in an SQLite database
    };

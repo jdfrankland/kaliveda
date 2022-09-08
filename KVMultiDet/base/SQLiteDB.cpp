@@ -910,7 +910,7 @@ namespace KVSQLite {
    {
       // fill all columns in table with data contained in KVNameValueList parameters having the same name.
       //
-      // any columns which do not appear in the KVNameValueList will be set to 'null'
+      // any columns which do not appear in the KVNameValueList (except for PRIMARY KEY) will be set to 'null'
       //
       // if required, any parameters with the same type&value as "null_value" will be set to 'null' too
 
@@ -929,6 +929,25 @@ namespace KVSQLite {
       for (int i = 0; i < number_of_columns(); ++i) {
          (*this)[i].set_null();
       }
+   }
+
+   TString table::get_column_names(const TString& exclude, const TString& delim) const
+   {
+      // Return a comma-separated list of the colum names
+      //
+      // \param[in] delim separator to use in list (default: ",")
+      // \param[in] exclude list of column names to exclude from list
+
+      TString namelist;
+      int added = 0;
+      for (int i = 0; i < number_of_columns(); ++i) {
+         TString name = (*this)[i].name();
+         if (exclude.Contains(name)) continue;
+         if (added) namelist += delim;
+         namelist += name;
+         ++added;
+      }
+      return namelist;
    }
 
    //____________________________________________________________________________//

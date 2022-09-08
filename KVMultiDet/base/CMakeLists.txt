@@ -4,7 +4,7 @@ if(WITH_RSQLITE)
    set(extra_libs ${extra_libs} ${ROOT_RSQLite_LIBRARY})
    set(lib_exclude)
 else()
-   set(lib_exclude SQLiteDB)
+   set(lib_exclude SQLiteDB KVSQLROOTFile)
 endif()
 set(dict_exclude KVError.h)
 
