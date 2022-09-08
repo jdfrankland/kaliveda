@@ -444,7 +444,7 @@ public:
          TGeoTranslation* postTrans = nullptr);
    void CalculateDetectorSegmentationIndex();
    virtual void AnalyseGroupAndReconstructEvent(KVReconstructedEvent* recev, KVGroup* grp);
-   virtual void SetGridsInTelescopes(UInt_t run);
+   void SetGridsInTelescopes(UInt_t run);
    void FillListOfIDTelescopes(KVIDGraph* gr) const;
 
    void Draw(Option_t* option = "");

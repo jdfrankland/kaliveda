@@ -141,7 +141,7 @@ void KVSQLROOTFile::ls(Option_t*) const
    }
 }
 
-void KVSQLROOTFile::FillListOfObjectsWithSelection(KVSeqCollection& list, const KVString& where)
+void KVSQLROOTFile::FillListOfObjectsWithSelection(KVSeqCollection* list, const KVString& where)
 {
    // Fill the list given as argument with pointers to all objects which obey the given selection.
    //
@@ -166,10 +166,10 @@ void KVSQLROOTFile::FillListOfObjectsWithSelection(KVSeqCollection& list, const 
    fObjDB->select_data("objTable,objInfos", "unique_id", where);
    while (fObjDB->get_next_result()) {
       auto uuid = get_objTable()["unique_id"].get_data<KVString>();
-      list.Add(get_object_with_UUID(uuid));
+      list->Add(get_object_with_UUID(uuid));
    }
 }
-void KVSQLROOTFile::FillListOfObjectsWithSelection(KVSeqCollection& list, const KVString& where, const KVString& numberlist_column, int value)
+void KVSQLROOTFile::FillListOfObjectsWithSelection(KVSeqCollection* list, const KVString& where, const KVString& numberlist_column, int value)
 {
    // Fill the list given as argument with pointers to all objects which obey the given selection.
    // 'numberlist_column' is the name of a column in the `objInfos` table containing strings which may be
@@ -199,7 +199,7 @@ void KVSQLROOTFile::FillListOfObjectsWithSelection(KVSeqCollection& list, const 
       KVNumberList nl(get_objInfos()[numberlist_column].get_data<KVString>());
       if (nl.Contains(value)) {
          auto uuid = get_objTable()["unique_id"].get_data<KVString>();
-         list.Add(get_object_with_UUID(uuid));
+         list->Add(get_object_with_UUID(uuid));
       }
    }
 }

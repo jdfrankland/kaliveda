@@ -33,8 +33,8 @@ class KVIDGridManager: public KVBase {
 
 private:
 
-   KVList* fGrids;              //collection of all ID graphs handled by manager
-   TList fLastReadGrids;        //! list of grids created by last call to ReadAsciiFile
+   KVList fGrids;              //collection of all ID graphs handled by manager
+   TList  fLastReadGrids;        //! list of grids created by last call to ReadAsciiFile
 
 protected:
 
@@ -50,8 +50,8 @@ public:
 
    KVList* GetGrids()
    {
-      return fGrids;
-   };
+      return &fGrids;
+   }
 
    void Clear(Option_t* opt = "");
    Bool_t ReadAsciiFile(const Char_t* filename);
@@ -68,8 +68,8 @@ public:
    };
    void ls(Option_t* /*opt*/ = "") const
    {
-      fGrids->ls();
-   };
+      fGrids.ls();
+   }
 
    void StartViewer() const;
 
@@ -84,11 +84,17 @@ public:
       // (note: 'type' is actually value of KVIDTelescope::GetLabel)
       // DELETE LIST AFTER USE !!!
 
-      return (KVList*)fGrids->GetSubListWithMethod(label, "GetIDTelescopeLabel");
+      return (KVList*)fGrids.GetSubListWithMethod(label, "GetIDTelescopeLabel");
       //N.B. cast to (KVList*) is valid as long as fGrids is a KVList
    };
    void GetListOfIDTelescopeLabels(KVString&);
    void Initialize(Option_t* /*opt*/ = "");
+
+   virtual bool IsSQLROOT() const
+   {
+      return false;
+   }
+   virtual void LoadGridsForRun(UInt_t) {}
 
    ClassDef(KVIDGridManager, 0) //Handles a collection of identification grids
 };

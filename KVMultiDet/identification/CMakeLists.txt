@@ -3,6 +3,10 @@ if(NOT WITH_FITLTG)
 else()
 	include_directories(${FitLTG_SOURCE_DIR}/src)
 endif()
+#---Need ROOT with SQLite support for SQLiteDB
+if(NOT WITH_RSQLITE)
+   set(do_not_compile ${do_not_compile} KVSQLROOTIDGridManager)
+endif()
 
 BUILD_KALIVEDA_MODULE(identification
 	PARENT ${KVSUBPROJECT}

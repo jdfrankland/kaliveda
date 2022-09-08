@@ -39,6 +39,9 @@
 #pragma link C++ class KVIDMap+;
 #pragma link C++ class KVIDGrid+;
 #pragma link C++ class KVIDGridManager;
+#ifdef WITH_RSQLITE
+#pragma link C++ class KVSQLROOTIDGridManager;
+#endif
 #pragma link C++ class KVIDZAGrid-;
 #pragma link C++ class KVIDZAFromZGrid+;
 #pragma link C++ class interval+;

@@ -53,8 +53,8 @@ public:
 
    void ls(Option_t* = "") const;
 
-   void FillListOfObjectsWithSelection(KVSeqCollection& list, const KVString& where);
-   void FillListOfObjectsWithSelection(KVSeqCollection& list, const KVString& where, const KVString& numberlist_column,
+   void FillListOfObjectsWithSelection(KVSeqCollection* list, const KVString& where);
+   void FillListOfObjectsWithSelection(KVSeqCollection* list, const KVString& where, const KVString& numberlist_column,
                                        int value);
 
    ClassDef(KVSQLROOTFile, 1) //Combine ROOT file containing objects with SQLite database with info on the objects

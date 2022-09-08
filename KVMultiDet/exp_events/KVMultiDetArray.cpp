@@ -39,6 +39,9 @@
 #include <KVNamedParameter.h>
 #include <KVCalibrator.h>
 #include <KVDBParameterSet.h>
+#ifdef WITH_RSQLITE
+#include <KVSQLROOTIDGridManager.h>
+#endif
 #ifdef WITH_OPENGL
 #include <TGLViewer.h>
 #include <TVirtualPad.h>
@@ -1856,6 +1859,21 @@ void KVMultiDetArray::SetIdentifications()
    //Note that, in general, the parameters of the identifications for a given run are not
    //set until SetParameters or SetRunIdentificationParameters is called.
 
+#ifdef WITH_RSQLITE
+   // if a KVSQLROOTFile has been filled with the dataset identification parameters we use it.
+   if (gIDGridManager->IsSQLROOT()) {
+      // nothing more to do
+      return;
+   }
+   else {
+      if (gDataSet->FindDataSetFile("idgrids_DB")) {
+         delete gIDGridManager;
+         gIDGridManager = new KVSQLROOTIDGridManager(gDataSet->GetFullPathToDataSetFile("idgrids_DB"));
+         return;
+      }
+   }
+#endif
+
    KVString id_labels = GetDataSetEnv(fDataSet, "ActiveIdentifications", "");
    if (id_labels == "" || (gDataSet && !gDataSet->HasCalibIdentInfos())) {
       Info("SetIdentifications", "No active identifications");
@@ -2720,16 +2738,25 @@ void KVMultiDetArray::SetGridsInTelescopes(UInt_t run)
 {
    // For each grid which is valid for this run, we call the KVIDTelescope::SetIDGrid method
    // of each associated ID telescope.
+
+   if (gIDGridManager->IsSQLROOT()) {
+      gIDGridManager->LoadGridsForRun(run);
+   }
+
    TIter next(gIDGridManager->GetGrids());
    KVIDGraph* gr = 0;
    while ((gr = (KVIDGraph*) next())) {
-      if (gr->GetRuns().Contains((Int_t) run)) {
+      if (!gIDGridManager->IsSQLROOT()) {
+         if (!gr->GetRuns().Contains((Int_t) run))
+            continue;
+      }
+      else
+         FillListOfIDTelescopes(gr);
 
-         TIter nxtid(gr->GetIDTelescopes());
-         KVIDTelescope* idt;
-         while ((idt = (KVIDTelescope*) nxtid())) {
-            idt->SetIDGrid(gr);
-         }
+      TIter nxtid(gr->GetIDTelescopes());
+      KVIDTelescope* idt;
+      while ((idt = (KVIDTelescope*) nxtid())) {
+         idt->SetIDGrid(gr);
       }
    }
 }

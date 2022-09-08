@@ -34,10 +34,9 @@ KVIDGridManager::KVIDGridManager()
    //Initialise global pointer gIDGridManager
    //Create list for ID grids
    gIDGridManager = this;
-   fGrids = new KVList;
-   fGrids->SendModifiedSignals(kTRUE);
-   fGrids->Connect("Modified()", "KVIDGridManager", this, "Modified()");
-   fGrids->SetCleanup();
+   fGrids.SendModifiedSignals(kTRUE);
+   fGrids.Connect("Modified()", "KVIDGridManager", this, "Modified()");
+   fGrids.SetOwner(kFALSE);
 }
 
 KVIDGridManager::~KVIDGridManager()
@@ -48,17 +47,15 @@ KVIDGridManager::~KVIDGridManager()
    Info("~KVIDGridManager", "DELETING ID GRID MANAGER");
    if (gIDGridManager == this)
       gIDGridManager = 0;
-   fGrids->Disconnect("Modified()", this, "Modified()");
+   fGrids.Disconnect("Modified()", this, "Modified()");
    fLastReadGrids.Clear();
-   fGrids->Delete();
-   delete fGrids;
 }
 
 void KVIDGridManager::AddGrid(KVIDGraph* grid)
 {
    // Add a grid to the collection. It will be deleted by the manager.
 
-   fGrids->Add(grid);
+   fGrids.Add(grid);
 }
 
 void KVIDGridManager::DeleteGrid(KVIDGraph* grid, Bool_t update)
@@ -67,21 +64,21 @@ void KVIDGridManager::DeleteGrid(KVIDGraph* grid, Bool_t update)
    //update flag allows to disable the emission of the 'Modified' signal in case the GUI
    //is deleting a list of grids - in this case we don't want to update until the end
 
-   if (!update) fGrids->Disconnect("Modified()", this, "Modified()");
-   fGrids->Remove(grid);
+   if (!update) fGrids.Disconnect("Modified()", this, "Modified()");
+   fGrids.Remove(grid);
    delete grid;
-   if (!update) fGrids->Connect("Modified()", "KVIDGridManager", this, "Modified()");
+   if (!update) fGrids.Connect("Modified()", "KVIDGridManager", this, "Modified()");
 }
 
 void KVIDGridManager::Clear(Option_t*)
 {
    //Delete all grids and empty list, ready to start anew
    Info("Clear", "DELETING ALL GRIDS IN IDGRIDMANAGER");
-   fGrids->Disconnect("Modified()", this, "Modified()");
+   fGrids.Disconnect("Modified()", this, "Modified()");
    fLastReadGrids.Clear();
-   fGrids->Delete();
+   fGrids.Clear();
    Modified();                  // emit signal to say something changed
-   fGrids->Connect("Modified()", "KVIDGridManager", this, "Modified()");
+   fGrids.Connect("Modified()", "KVIDGridManager", this, "Modified()");
 }
 
 Bool_t KVIDGridManager::ReadAsciiFile(const Char_t* filename)
@@ -108,7 +105,7 @@ Bool_t KVIDGridManager::ReadAsciiFile(const Char_t* filename)
 
    KVString s;
 
-   fGrids->Disconnect("Modified()", this, "Modified()");
+   fGrids.Disconnect("Modified()", this, "Modified()");
    while (gridfile.good()) {
       //read a line
       s.ReadLine(gridfile);
@@ -143,7 +140,7 @@ Bool_t KVIDGridManager::ReadAsciiFile(const Char_t* filename)
    gridfile.close();
    is_it_ok = kTRUE;
    Modified();                  // emit signal to say something changed
-   fGrids->Connect("Modified()", "KVIDGridManager", this, "Modified()");
+   fGrids.Connect("Modified()", "KVIDGridManager", this, "Modified()");
    return is_it_ok;
 }
 
@@ -156,7 +153,7 @@ Int_t KVIDGridManager::WriteAsciiFile(const Char_t* filename, const TCollection*
 
    ofstream gridfile(filename);
 
-   const TCollection* list_of_grids = (selection ? selection : fGrids);
+   const TCollection* list_of_grids = (selection ? selection : &fGrids);
    TIter next(list_of_grids);
    KVIDGraph* grid = 0;
    Int_t n_saved = 0;
@@ -195,7 +192,7 @@ void KVIDGridManager::GetListOfIDTelescopeLabels(KVString& list)
    // different labels of ID telescopes associated with current list of ID grids.
 
    list = "";
-   TIter next(fGrids);
+   TIter next(&fGrids);
    KVIDGraph* grid = 0;
    KVString lab;
    while ((grid = (KVIDGraph*) next())) {
@@ -213,7 +210,7 @@ void KVIDGridManager::Initialize(Option_t*)
 {
    // Initialize all grids in ID grid manager's list, i.e. we call the Initialize() method
    // of every grid/graph.
-   TIter next(fGrids);
+   TIter next(&fGrids);
    KVIDGraph* gr = 0;
    while ((gr = (KVIDGraph*) next())) gr->Initialize();
 }
