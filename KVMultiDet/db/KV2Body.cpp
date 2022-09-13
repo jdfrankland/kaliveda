@@ -792,8 +792,8 @@ Double_t KV2Body::ThetaLabVsThetaCM(Double_t* x, Double_t* par)
 
    Double_t ThetaCM = x[0] * TMath::DegToRad();
    Int_t OfNucleus = (Int_t)par[0];
-   Double_t TanThetaL = TMath::Sin(ThetaCM) / (K[OfNucleus] + TMath::Cos(ThetaCM)) / GetCMGamma();
-   Double_t ThetaL = TMath::ATan(TanThetaL) * TMath::RadToDeg();
+   Double_t ThetaL = TMath::ATan2(TMath::Sin(ThetaCM) + 1e-10, (K[OfNucleus] + TMath::Cos(ThetaCM)) * GetCMGamma()) * TMath::RadToDeg();
+
    if (ThetaL < 0.) ThetaL += 180.;
    return ThetaL;
 }
@@ -1366,6 +1366,11 @@ TF1* KV2Body::GetXSecRuthLabFunc(Int_t OfNucleus, Double_t theta_min, Double_t t
    // function of projectile (OfNucleus=3) or target (OfNucleus=4) lab scattering angle
    // By default, theta_min = 1 degree & theta_max = 179 degrees
 
+   if (theta_max > GetMaxAngleLab(OfNucleus)) {
+      theta_max = GetMaxAngleLab(OfNucleus);
+      Info("GetXSecRuthLabFunc", "Maximum angle set to %lf degrees", theta_max);
+   }
+
    TString name = "RuthXSec: ";
    name += GetNucleus(1)->GetSymbol();
    name += " + ";
@@ -1446,7 +1451,8 @@ Int_t KV2Body::FindRoots(TF1* fonc, Double_t xmin, Double_t xmax, Double_t val, 
       x1 = maxX;
       return nRoots;
    }
-   if ((maxX < xmax) && (maxX > xmin)) nRoots = 2;
+   // 2 roots if 'fonc' has a maximum xmin<maxX<xmax and if fonc(xmin)<val && fonc(xmax)<val
+   if ((maxX < xmax) && (maxX > xmin) && (fonc->Eval(xmin) < val) && (fonc->Eval(xmax) < val)) nRoots = 2;
    Double_t xmax1 = (nRoots == 2 ? maxX : xmax);
    x1 = fonc->GetX(val, xmin, xmax1);
    if (nRoots == 1) return nRoots;
@@ -1454,3 +1460,6 @@ Int_t KV2Body::FindRoots(TF1* fonc, Double_t xmin, Double_t xmax, Double_t val, 
       x2 = fonc->GetX(val, maxX, xmax);
    return nRoots;
 }
+
+
+
