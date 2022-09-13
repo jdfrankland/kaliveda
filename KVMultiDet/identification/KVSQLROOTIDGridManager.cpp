@@ -17,7 +17,6 @@ void KVSQLROOTIDGridManager::LoadGridsForRun(UInt_t run)
    //
    // Any previously loaded grids are first deleted.
 
-   Info("LoadGridsForRun", "Run=%u", run);
    Clear();
    KVIDGraph::SetAutoAdd(kFALSE);//otherwise we end up with all grids appearing twice
    fGridDB.FillListOfObjectsWithSelection(GetGrids(), "", "Runlist", run);

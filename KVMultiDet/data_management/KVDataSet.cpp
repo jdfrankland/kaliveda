@@ -263,6 +263,7 @@ void KVDataSet::OpenDataBase(Option_t* opt) const
       //check if it is the currently active database (gDataBase),
       //in which case we must 'cd()' to it after rebuilding
       Info("OpenDataBase", "Updating database file");
+      fDataBaseUpdateInProgress = true;
       is_glob_db = (fDataBase == gExpDB);
       if (fDataBase) {
          delete fDataBase;
@@ -278,6 +279,7 @@ void KVDataSet::OpenDataBase(Option_t* opt) const
       }
       SaveDataBase();
       if (fDataBase && is_glob_db) fDataBase->cd();
+      fDataBaseUpdateInProgress = false;
    }
    else if (!fDataBase) {
       // if database is not in memory at this point, we need to

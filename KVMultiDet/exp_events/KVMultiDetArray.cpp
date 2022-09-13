@@ -1744,6 +1744,46 @@ KVMultiDetArray* KVMultiDetArray::MakeMultiDetector(const Char_t* dataset_name, 
       if (codes != "") mda->fAcceptECodes.Set(codes);
       // set dataset-dependent condition for seeding reconstructed nuclei
       mda->SetPartSeedCond(GetDataSetEnv(dataset_name, Form("%s.ReconstructedNuclei.ParticleSeedCond", mda->GetName()), ""));
+#ifdef WITH_RSQLITE
+      // save contents of grid manager in an SQL-ROOT database if not already done
+      if (fMakeMultiDetectorSetParameters && !gIDGridManager->IsSQLROOT()) {
+         // 'if(fMakeMultiDetectorSetParameters...' ensures that we are not currently building a subarray
+         // of a KVExpSetUp. Grids can only be saved once in a single file after all have been read.
+         TString filepath;
+         if (is_gnuinstall()) {
+            // GNU-style install: use working directory $HOME/.kaliveda
+            filepath = GetWORKDIRFilePath(gDataSet->GetName());
+         }
+         else
+            filepath = gDataSet->GetDataSetDir();
+
+         filepath += "/idgrids_DB";
+
+         int n_grids_to_write = gIDGridManager->GetGrids()->GetEntries();
+
+         KVSQLROOTFile f(filepath, "recreate");
+
+         printf("Info in <KVMultiDetArray::MakeMultiDetector>: Saving %d grids in SQL-ROOT database file %s\n",
+                n_grids_to_write, filepath.Data());
+
+         TIter it(gIDGridManager->GetGrids());
+         KVIDGraph* gr;
+         while ((gr = (KVIDGraph*)it())) {
+            f.WriteObject(gr, {
+               {"IDLabel", gr->GetIDTelescopeLabel()},
+               {"IDTelescopes", gr->GetParameters()->GetStringValue("IDTelescopes")},
+               {"VarX", gr->GetVarX()},
+               {"VarY", gr->GetVarY()},
+               {"Runlist", gr->GetRunList()},
+            }
+                         );
+            --n_grids_to_write;
+            if (!(n_grids_to_write % 1000))  printf("Info in <KVMultiDetArray::MakeMultiDetector>: ...%d grids left...\n",
+                                                       n_grids_to_write);
+
+         }
+      }
+#endif
    }
    else {
       mda = gMultiDetArray;
@@ -1865,10 +1905,24 @@ void KVMultiDetArray::SetIdentifications()
       // nothing more to do
       return;
    }
-   else {
-      if (gDataSet->FindDataSetFile("idgrids_DB")) {
+   else if (!gDataSet->DataBaseUpdateInProgress())
+      // the update of the database may have been caused by 1 or more identification files being modified
+      // (even if they are not part of the database). in this case we read in all the grids again even
+      // if it has already been done before.
+   {
+      TString filepath;
+      if (is_gnuinstall()) {
+         // GNU-style install: use working directory $HOME/.kaliveda
+         filepath = GetWORKDIRFilePath(gDataSet->GetName());
+      }
+      else
+         filepath = gDataSet->GetDataSetDir();
+
+      filepath += "/idgrids_DB";
+
+      if (SearchKVFile(filepath.Data(), filepath)) {
          delete gIDGridManager;
-         gIDGridManager = new KVSQLROOTIDGridManager(gDataSet->GetFullPathToDataSetFile("idgrids_DB"));
+         gIDGridManager = new KVSQLROOTIDGridManager(filepath);
          return;
       }
    }

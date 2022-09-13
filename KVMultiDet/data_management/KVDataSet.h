@@ -244,7 +244,12 @@ protected:
    void SetDataSetSpecificTaskParameters(KVDataAnalysisTask*) const;
    TObject* open_runfile(const Char_t* type, Int_t run);
 
+   mutable Bool_t fDataBaseUpdateInProgress = false;//!
 public:
+   Bool_t DataBaseUpdateInProgress() const
+   {
+      return fDataBaseUpdateInProgress;
+   }
 
    KVAvailableRunsFile* GetAvailableRunsFile(const Char_t* type) const;
 

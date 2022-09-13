@@ -43,8 +43,7 @@ KVIDGridManager::~KVIDGridManager()
 {
    //Destructor
    //Reset global pointer gIDGridManager
-   //Delete list of ID grids (this deletes all the grids)
-   Info("~KVIDGridManager", "DELETING ID GRID MANAGER");
+
    if (gIDGridManager == this)
       gIDGridManager = 0;
    fGrids.Disconnect("Modified()", this, "Modified()");
@@ -73,7 +72,7 @@ void KVIDGridManager::DeleteGrid(KVIDGraph* grid, Bool_t update)
 void KVIDGridManager::Clear(Option_t*)
 {
    //Delete all grids and empty list, ready to start anew
-   Info("Clear", "DELETING ALL GRIDS IN IDGRIDMANAGER");
+
    fGrids.Disconnect("Modified()", this, "Modified()");
    fLastReadGrids.Clear();
    fGrids.Clear();
