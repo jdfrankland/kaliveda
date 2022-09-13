@@ -131,6 +131,7 @@ public:
       ID_SI1_PSA = 11, ///< particle identified by pulse shape analysis in SI1
       ID_SI1_SI2 = 12, ///< particle identified in SI1-SI2 telescope
       ID_SI1_CSI = 13, ///< particle identified in SI1-SI2 telescope
+      ID_SI2_PSA = 22, ///< particle identified by pulse shape analysis in SI1
       ID_SI2_CSI = 23, ///< particle identified in SI2-CSI telescope
       ID_SI12_CSI = 123, ///< particle identified in (SI1+SI2)-CSI telescope
       ID_CSI_PSA = 33, ///< particle identified by pulse shape analysis in CSI
@@ -148,10 +149,16 @@ public:
             return "ID_GAMMA";
          case ID_SI1_PSA:
             return "ID_SI1_PSA";
+         case ID_SI2_PSA:
+            return "ID_SI2_PSA";
          case ID_SI1_SI2:
             return "ID_SI1_SI2";
          case ID_SI2_CSI:
             return "ID_SI2_CSI";
+         case ID_SI1_CSI:
+            return "ID_SI1_CSI";
+         case ID_SI12_CSI:
+            return "ID_SI12_CSI";
          case ID_CSI_PSA:
             return "ID_CSI_PSA";
          case ID_STOPPED_IN_FIRST_STAGE:
@@ -160,6 +167,8 @@ public:
             return "ID_SI1_SI2_MAYBE_PUNCH_THROUGH";
          case ID_SI1_SI2_PUNCH_THROUGH:
             return "ID_SI1_SI2_PUNCH_THROUGH";
+         case ID_SI1_PUNCH_THROUGH:
+            return "ID_SI1_PUNCH_THROUGH";
          default:
             return Form("(unknown:%d)", idc);
       }

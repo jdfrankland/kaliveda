@@ -153,18 +153,29 @@ void KVFAZIA::DeduceIdentificationTelescopesFromGeometry()
       };
 
       if (csi) {
-         // add CSI and SI1-SI2-CSI telescopes
+         // add CSI, SI2-CSI and SI1-SI2-CSI telescopes
          KVIDTelescope* idt = new KVFAZIAIDCsI;
          idt->AddDetector(csi);
          add_telescope(idt, csi->GetGroup());
-         if (si1 && si2) {
-            idt = new KVFAZIAIDSiSiCsI;
-            idt->AddDetector(si1);
+         if (si2) {
+            idt = new KVFAZIAIDSiCsI;
             idt->AddDetector(si2);
             idt->AddDetector(csi);
-            idt->SetName(Form("ID_SI_CSI_%d", csi->GetIndex()));
             add_telescope(idt, csi->GetGroup());
+            if (si1) {
+               idt = new KVFAZIAIDSiSiCsI;
+               idt->AddDetector(si1);
+               idt->AddDetector(si2);
+               idt->AddDetector(csi);
+               idt->SetName(Form("ID_SI_CSI_%d", csi->GetIndex()));
+               add_telescope(idt, csi->GetGroup());
+            }
          }
+      }
+      if (si2) {
+         auto idt = new KVFAZIAIDSiPSA;
+         idt->AddDetector(si2);
+         add_telescope(idt, si2->GetGroup());
       }
       if (si1 && si2) {
          auto idt = new KVFAZIAIDSiSi;
@@ -755,8 +766,12 @@ void KVFAZIA::SetIDCodeForIDTelescope(KVIDTelescope* idt) const
 {
    // Set the FAZIA-specific general identification code for the given telescope
 
-   if (idt->InheritsFrom(KVFAZIAIDSiPSA::Class())) idt->SetIDCode(IDCodes::ID_SI1_PSA);
+   if (idt->InheritsFrom(KVFAZIAIDSiPSA::Class())) {
+      if (idt->GetDetector(1)->IsLabelled("SI1")) idt->SetIDCode(IDCodes::ID_SI1_PSA);
+      else  idt->SetIDCode(IDCodes::ID_SI2_PSA);
+   }
    else if (idt->InheritsFrom(KVFAZIAIDSiSi::Class())) idt->SetIDCode(IDCodes::ID_SI1_SI2);
+   else if (idt->InheritsFrom(KVFAZIAIDSiCsI::Class())) idt->SetIDCode(IDCodes::ID_SI12_CSI);
    else if (idt->InheritsFrom(KVFAZIAIDSiSiCsI::Class())) {
       // ID code for these telescopes depends on what detectors the grid's VARY uses
       auto labsY = idt->GetDetectorLabelsForGridCoord("y");
