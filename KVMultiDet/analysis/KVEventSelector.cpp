@@ -162,13 +162,13 @@ Bool_t KVEventSelector::Process(Long64_t entry)
    if (gDataAnalyser) gDataAnalyser->preAnalysis();
    fEventsRead++;
    if (GetEvent()) {
+      SetAnalysisFrame();//let user define any necessary reference frames for particles
       //apply particle selection criteria
       if (fPartCond.IsSet()) {
          for (auto& part : EventOKIterator(GetEvent())) {
             part.SetIsOK(fPartCond.Test(part));
          }
       }
-      SetAnalysisFrame();//let user define any necessary reference frames for OK particles
 
       // initialise global variables at first event
       if (fFirstEvent && !gvlist.IsEmpty()) {
