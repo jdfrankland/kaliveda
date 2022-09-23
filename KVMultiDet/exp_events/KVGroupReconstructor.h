@@ -38,7 +38,7 @@ protected:
    std::unordered_map<std::string, KVIdentificationResult*> id_by_type; //! identification results by type for current particle
 
    virtual KVReconstructedNucleus* ReconstructTrajectory(const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
-   void ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
+   virtual void ReconstructParticle(KVReconstructedNucleus* part, const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
    virtual void PostReconstructionProcessing();
    virtual void IdentifyParticle(KVReconstructedNucleus& PART);
    virtual void CalibrateParticle(KVReconstructedNucleus*)
