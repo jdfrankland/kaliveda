@@ -44,6 +44,8 @@ public:
    void SetArray(KVMultiDetArray* a)
    {
       fArray = a;
+      a->Clear();
+      a->SetSimMode(kTRUE);
    }
    KVMultiDetArray* GetArray() const
    {

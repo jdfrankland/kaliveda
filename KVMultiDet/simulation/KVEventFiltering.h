@@ -11,7 +11,7 @@
 #ifdef WITH_GEMINI
 #include "KVGemini.h"
 #endif
-
+#include "KVDetectionSimulator.h"
 //#define DEBUG_FILTER 1
 
 class KVDBSystem;
@@ -128,6 +128,8 @@ public:
    TVector3 fProjVelocity;
    Bool_t fTransformKinematics;//=kTRUE if simulation not in lab frame
    TString fNewFrame;   //allow the definition of a specific frame
+
+   KVDetectionSimulator fDetSimulator;
 
    ClassDef(KVEventFiltering, 1) //Filter simulated events with multidetector response
 };

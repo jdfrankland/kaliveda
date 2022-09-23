@@ -131,10 +131,12 @@ Bool_t KVEventFiltering::Analysis()
          else                    to_be_detected->SetFrame("lab", fCMVelocity);
          if (fRotate) {
             RandomRotation(to_be_detected, "lab");
-            gMultiDetArray->DetectEvent(to_be_detected, fReconEvent, "rotated_frame");
+            //gMultiDetArray->DetectEvent(to_be_detected, fReconEvent, "rotated_frame");
+            fDetSimulator.DetectEvent(to_be_detected, "rotated_frame");
          }
          else {
-            gMultiDetArray->DetectEvent(to_be_detected, fReconEvent, "lab");
+            //gMultiDetArray->DetectEvent(to_be_detected, fReconEvent, "lab");
+            fDetSimulator.DetectEvent(to_be_detected, "lab");
          }
       }
       else {
@@ -142,14 +144,17 @@ Bool_t KVEventFiltering::Analysis()
          to_be_detected->SetFrameName("lab");
          if (fRotate) {
             RandomRotation(to_be_detected);
-            gMultiDetArray->DetectEvent(to_be_detected, fReconEvent, "rotated_frame");
+            //gMultiDetArray->DetectEvent(to_be_detected, fReconEvent, "rotated_frame");
+            fDetSimulator.DetectEvent(to_be_detected, "rotated_frame");
          }
          else {
-            gMultiDetArray->DetectEvent(to_be_detected, fReconEvent);
+            //gMultiDetArray->DetectEvent(to_be_detected, fReconEvent);
+            fDetSimulator.DetectEvent(to_be_detected);
          }
       }
-      fReconEvent->SetNumber(fEVN++);
-      fReconEvent->SetFrameName("lab");
+      //fReconEvent->SetNumber(fEVN++);
+      //fReconEvent->SetFrameName("lab");
+      // Now reconstruct the event!
       FillTree();
 #ifdef WITH_GEMINI
    }
@@ -243,7 +248,8 @@ void KVEventFiltering::InitAnalysis()
 
    KVMultiDetArray::MakeMultiDetector(dataset, run);
    if (run == -1) gMultiDetArray->InitializeIDTelescopes();
-   gMultiDetArray->SetSimMode();
+
+   fDetSimulator.SetArray(gMultiDetArray);
 
    TString geo = GetOpt("Geometry").Data();
    if (geo == "ROOT") {
