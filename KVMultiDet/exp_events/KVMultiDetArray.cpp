@@ -147,10 +147,6 @@ KVMultiDetArray::~KVMultiDetArray()
    }
    fIDTelescopes = 0;
 
-   if (fTarget) {
-      delete fTarget;
-      fTarget = 0;
-   }
    if (gMultiDetArray == this)
       gMultiDetArray = nullptr;
 
@@ -1596,60 +1592,6 @@ void KVMultiDetArray::AnalyseGroupAndReconstructEvent(KVReconstructedEvent* rece
 //_________________________________________________________________________________
 
 
-void KVMultiDetArray::SetTarget(const Char_t* material,
-                                const Float_t thickness)
-{
-   //Define the target used for a given experimental set-up. For material names, see KVMaterial.
-   //The thickness is in mg/cm2.
-   //Use SetTarget(0) to remove the existing target.
-
-   if (!material) {
-      if (fTarget) {
-         delete fTarget;
-         fTarget = 0;
-      }
-      return;
-   }
-   if (!GetTarget())
-      fTarget = new KVTarget(material, thickness);
-
-}
-
-void KVMultiDetArray::SetTarget(KVTarget* targ)
-{
-   //Adopt KVTarget object for use as experimental target i.e. we make a clone of the object pointed to by 'targ'.
-   //Therefore, any subsequent modifications to the target should be made to the object whose pointer is returned by GetTarget().
-   //This object will be deleted with the detector array, or when the target is changed.
-   //
-   //Calling SetTarget(0) will remove any existing target.
-
-   if (fTarget) {
-      delete fTarget;
-      fTarget = 0;
-   }
-   if (!targ)
-      return;
-   fTarget = (KVTarget*) targ->Clone();
-}
-
-void KVMultiDetArray::SetTargetMaterial(const Char_t* material)
-{
-   //Define the target material used for a given experimental set-up.
-   //For material names, see KVDetector.
-
-   if (!GetTarget())
-      fTarget = new KVTarget(material, 0.0);
-}
-
-void KVMultiDetArray::SetTargetThickness(const Float_t thickness)
-{
-   //Define the target thickness (mg/cm2) used for a given experimental set-up.
-   //Need to define material first
-   if (GetTarget()) {
-      if (GetTarget()->GetLayerByIndex(1))
-         GetTarget()->GetLayerByIndex(1)->SetThickness(thickness);
-   }
-}
 
 void KVMultiDetArray::RemoveGroup(KVGroup*)
 {

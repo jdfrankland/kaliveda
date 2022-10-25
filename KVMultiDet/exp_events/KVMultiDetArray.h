@@ -327,12 +327,17 @@ public:
    KVSeqCollection* GetIDTelescopesWithType(const Char_t* type);
    void SetDetectorThicknesses();
 
-   void SetTarget(const Char_t* material, const Float_t thickness);
-   void SetTarget(KVTarget* target);
-   void SetTargetMaterial(const Char_t* material);
-   void SetTargetThickness(const Float_t thickness);
+   virtual void SetTarget(KVTarget* target)
+   {
+      // Set experimental target
+      //
+      // Calling SetTarget(0) will remove any existing target.
+
+      fTarget = target;
+   }
    KVTarget* GetTarget()
    {
+      // Get pointer to experimental target (if defined - if not, returns nullptr)
       return fTarget;
    }
 
@@ -414,9 +419,9 @@ public:
       // If on=kTRUE (default), we are in simulation mode (calculation of energy losses etc.)
       // If on=kFALSE, we are analysing/reconstruction experimental data
       fSimMode = on;
-      const_cast<KVSeqCollection*>(GetDetectors())->Execute("SetSimMode", Form("%d", (Int_t)on));
+      GetDetectors()->R__FOR_EACH(KVDetector, SetSimMode)(on);
    }
-   virtual Bool_t IsSimMode() const
+   Bool_t IsSimMode() const
    {
       // Returns simulation mode of array:
       //   IsSimMode()=kTRUE : we are in simulation mode (calculation of energy losses etc.)

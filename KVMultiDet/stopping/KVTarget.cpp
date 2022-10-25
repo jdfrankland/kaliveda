@@ -90,7 +90,8 @@ void KVTarget::AddLayer(const Char_t* material, Double_t thick)
    fNLayers++;
    if (fNLayers == 1) {
       SetName(material);
-   } else {
+   }
+   else {
       TString _name(GetName());
       _name += "/";
       _name += material;
@@ -335,7 +336,7 @@ KVTarget::~KVTarget()
 }
 
 //________________________________________________________________________
-
+//#define DBG_TRGT
 void KVTarget::DetectParticle(KVNucleus* kvp, TVector3*)
 {
    //Simulate passage of a particle through a target.
@@ -347,7 +348,6 @@ void KVTarget::DetectParticle(KVNucleus* kvp, TVector3*)
    //If IsIncoming()=kFALSE & IsOutgoing()=kFALSE, the particle will pass through the whole of the target.
    //If IsIncoming()=kTRUE, calculate energy loss up to interaction point
    //If IsOutgoing()=kTRUE, calculate energy loss from interaction point onwards (outwards)
-
    if (kvp->GetKE() <= 0.)
       return;
 
@@ -358,7 +358,8 @@ void KVTarget::DetectParticle(KVNucleus* kvp, TVector3*)
             i++) {
          GetLayerByIndex(i)->DetectParticle(kvp, &fNormal);
       }
-   } else {
+   }
+   else {
 
       //find starting or ending layer (where is I.P. ?)
       Int_t iplay_index = GetLayerIndex(GetInteractionPoint());
@@ -412,7 +413,8 @@ void KVTarget::DetectParticle(KVNucleus* kvp, TVector3*)
             for (int i = ilay1;
                   i >= ilay2 && kvp->GetKE() > 0.; i--)
                GetLayerByIndex(i)->DetectParticle(kvp, &fNormal);
-         } else {
+         }
+         else {
             for (int i = ilay1;
                   i <= ilay2 && kvp->GetKE() > 0.; i++)
                GetLayerByIndex(i)->DetectParticle(kvp, &fNormal);
@@ -421,7 +423,8 @@ void KVTarget::DetectParticle(KVNucleus* kvp, TVector3*)
          //reset original thickness of IP layer
          iplay->SetAreaDensity(thick_iplay);
 
-      } else {
+      }
+      else {
          Error("DetectParticle", "Interaction point is outside of target");
       }
    }
@@ -448,19 +451,20 @@ Double_t KVTarget::GetELostByParticle(KVNucleus* kvp, TVector3*)
       return E0;
 
    //make 'clone' of nucleus to simulate energy losses
-   KVNucleus* clone_part = new KVNucleus(kvp->GetZ(), kvp->GetA());
-   clone_part->SetMomentum(kvp->GetMomentum());
+   KVNucleus clone_part(kvp->GetZ(), kvp->GetA());
+   clone_part.SetMomentum(kvp->GetMomentum());
 
    if (!IsIncoming() && !IsOutgoing()) {
       //calculate losses in all layers
       for (int i = 1;
-            i <= NumberOfLayers() && clone_part->GetKE() > 0.;
+            i <= NumberOfLayers() && clone_part.GetKE() > 0.;
             i++) {
          Eloss +=
-            GetLayerByIndex(i)->GetELostByParticle(clone_part, &fNormal);
-         clone_part->SetKE(E0 - Eloss);
+            GetLayerByIndex(i)->GetELostByParticle(&clone_part, &fNormal);
+         clone_part.SetKE(E0 - Eloss);
       }
-   } else {
+   }
+   else {
 
       //find starting or ending layer (where is I.P. ?)
       Int_t iplay_index = GetLayerIndex(GetInteractionPoint());
@@ -468,7 +472,7 @@ Double_t KVTarget::GetELostByParticle(KVNucleus* kvp, TVector3*)
       cout << "IP is in layer " << iplay_index << endl;
 #endif
       //particle going forwards or backwards ?
-      TVector3 p = clone_part->GetMomentum();
+      TVector3 p = clone_part.GetMomentum();
       Bool_t backwards = (p * GetNormal() < 0.0);
 #ifdef DBG_TRGT
       cout << "Particle is going ";
@@ -512,33 +516,31 @@ Double_t KVTarget::GetELostByParticle(KVNucleus* kvp, TVector3*)
 
          if (backwards) {
             for (int i = ilay1;
-                  i >= ilay2 && clone_part->GetKE() > 0.; i--) {
+                  i >= ilay2 && clone_part.GetKE() > 0.; i--) {
                Eloss +=
-                  GetLayerByIndex(i)->GetELostByParticle(clone_part,
+                  GetLayerByIndex(i)->GetELostByParticle(&clone_part,
                         &fNormal);
-               clone_part->SetKE(E0 - Eloss);
+               clone_part.SetKE(E0 - Eloss);
             }
-         } else {
+         }
+         else {
             for (int i = ilay1;
-                  i <= ilay2 && clone_part->GetKE() > 0.; i++) {
+                  i <= ilay2 && clone_part.GetKE() > 0.; i++) {
                Eloss +=
-                  GetLayerByIndex(i)->GetELostByParticle(clone_part,
+                  GetLayerByIndex(i)->GetELostByParticle(&clone_part,
                         &fNormal);
-               clone_part->SetKE(E0 - Eloss);
+               clone_part.SetKE(E0 - Eloss);
             }
          }
 
          //reset original thickness of IP layer
          iplay->SetAreaDensity(thick_iplay);
 
-      } else {
+      }
+      else {
          Error("DetectParticle", "Interaction point is outside of target");
       }
    }
-
-   //delete clone
-   delete clone_part;
-
    return Eloss;
 }
 
@@ -596,7 +598,8 @@ TVector3& KVTarget::GetInteractionPoint(KVParticle* part)
          return fIntPoint;
       //set default direction - beam direction
       dir.SetXYZ(0, 0, 1);
-   } else {
+   }
+   else {
       dir = part->GetMomentum();
    }
    Double_t e_eff = GetTotalEffectiveThickness(dir);
@@ -728,26 +731,34 @@ Double_t KVTarget::GetParticleEIncFromERes(KVNucleus* kvp, TVector3*)
    Double_t ERes = 0.0;
 
    //make 'clone' of nucleus to simulate energy losses
-   KVNucleus* clone_part = new KVNucleus(kvp->GetZ(), kvp->GetA());
-   clone_part->SetMomentum(kvp->GetMomentum());
+   KVNucleus clone_part(kvp->GetZ(), kvp->GetA());
+   clone_part.SetMomentum(kvp->GetMomentum());
 
    if (!IsIncoming() && !IsOutgoing()) {
 
       //correct for losses in all layers
       for (int i = NumberOfLayers(); i > 0; i--) {
-         ERes = GetLayerByIndex(i)->GetParticleEIncFromERes(clone_part, &fNormal);
-         clone_part->SetKE(ERes);
+         ERes = GetLayerByIndex(i)->GetParticleEIncFromERes(&clone_part, &fNormal);
+         clone_part.SetKE(ERes);
       }
-      delete clone_part;
       return ERes;
 
-   } else {
+   }
+   else {
 
       //find starting or ending layer (where is I.P. ?)
       Int_t iplay_index = GetLayerIndex(GetInteractionPoint());
+#ifdef DBG_TRGT
+      cout << "IP is in layer " << iplay_index << endl;
+#endif
       //particle going forwards or backwards ?
-      TVector3 p = clone_part->GetMomentum();
+      TVector3 p = clone_part.GetMomentum();
       Bool_t backwards = (p * GetNormal() < 0.0);
+#ifdef DBG_TRGT
+      cout << "Particle is going ";
+      backwards ? cout << "backwards" : cout << "forwards";
+      cout << endl;
+#endif
 
       if (iplay_index) {
 
@@ -767,6 +778,10 @@ Double_t KVTarget::GetParticleEIncFromERes(KVNucleus* kvp, TVector3*)
 
          if (backwards)
             e_thick_iplay = iplay->GetAreaDensity() / KVUnits::mg - e_thick_iplay;
+#ifdef DBG_TRGT
+         cout << "Effective thickness of IP layer is " << e_thick_iplay <<
+              " (real:" << iplay->GetAreaDensity() / KVUnits::mg << ")" << endl;
+#endif
          //modify effective physical thickness of layer
          Double_t thick_iplay = iplay->GetAreaDensity();
          iplay->SetAreaDensity(e_thick_iplay * KVUnits::mg);
@@ -785,19 +800,20 @@ Double_t KVTarget::GetParticleEIncFromERes(KVNucleus* kvp, TVector3*)
             for (int i = ilay2;
                   i <= ilay1; i++) {
                ERes =
-                  GetLayerByIndex(i)->GetParticleEIncFromERes(clone_part,
+                  GetLayerByIndex(i)->GetParticleEIncFromERes(&clone_part,
                         &fNormal);
-               clone_part->SetKE(ERes);
+               clone_part.SetKE(ERes);
             }
 
-         } else {
+         }
+         else {
 
             for (int i = ilay2;
                   i >= ilay1 ; i--) {
                ERes =
-                  GetLayerByIndex(i)->GetParticleEIncFromERes(clone_part,
+                  GetLayerByIndex(i)->GetParticleEIncFromERes(&clone_part,
                         &fNormal);
-               clone_part->SetKE(ERes);
+               clone_part.SetKE(ERes);
             }
 
          }
@@ -805,14 +821,11 @@ Double_t KVTarget::GetParticleEIncFromERes(KVNucleus* kvp, TVector3*)
          //reset original thickness of IP layer
          iplay->SetAreaDensity(thick_iplay);
 
-      } else {
+      }
+      else {
          Error("GetParticleEIncFromERes", "Interaction point is outside of target");
       }
    }
-
-   //delete clone
-   delete clone_part;
-
    return ERes;
 }
 
