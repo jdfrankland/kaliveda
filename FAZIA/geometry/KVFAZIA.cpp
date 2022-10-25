@@ -378,10 +378,10 @@ void KVFAZIA::GetDetectorEvent(KVDetectorEvent* detev, const TSeqCollection* det
    // This can be made more efficient if the detectors which were hit in the event are already known:
    // then their list should be given to argument dets
    //
-   // If the list of fired detectors dets is not given, we use the internal fFiredACQParams list
+   // If the list of fired detectors dets is not given, we use the internal fFiredDetectors list
    // which is filled with all hit detectors when raw data is treated in treat_event()
 
-   if (!fHandledRawData) {
+   if (!IsSimMode() && !fHandledRawData) {
       //Info("GetDetectorEvent","i didnt handle any data...");
       return;
    }
@@ -453,10 +453,12 @@ void KVFAZIA::FillDetectorList(KVReconstructedNucleus* rnuc, KVHashList* DetList
 KVGroupReconstructor* KVFAZIA::GetReconstructorForGroup(const KVGroup* g) const
 {
    // Specialized group reconstructor for FAZIA
-
    KVGroupReconstructor* gr(nullptr);
    if (GetGroup(g->GetName())) { // make sure group belongs to us
-      gr = KVGroupReconstructor::Factory("FAZIA");
+      if (IsSimMode())
+         gr = KVGroupReconstructor::Factory("FAZIA.Filter");
+      else
+         gr = KVGroupReconstructor::Factory("FAZIA");
    }
    return gr;
 }

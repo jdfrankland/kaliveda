@@ -18,4 +18,5 @@
 #pragma link C++ class KVFAZIAZERO+;
 #pragma link C++ class KVFAZIAMidRapExplorer+;
 #pragma link C++ class KVFAZIATrigger+;
+#pragma link C++ class KVFAZIAFilterGroupReconstructor+;
 #endif
