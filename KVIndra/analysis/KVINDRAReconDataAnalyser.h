@@ -63,6 +63,15 @@ public:
    {
       theChain = t;
    }
+   TTree* GetAnalysedTree() const
+   {
+      return GetTree();
+   }
+   void SetAnalysedTree(TTree* t)
+   {
+      SetTree(t);
+   }
+
 
    virtual void Reset();
 
