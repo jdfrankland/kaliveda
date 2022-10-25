@@ -12,6 +12,7 @@
 #include "KVGemini.h"
 #endif
 #include "KVDetectionSimulator.h"
+#include "KVFilterEventReconstructor.h"
 //#define DEBUG_FILTER 1
 
 class KVDBSystem;
@@ -108,6 +109,14 @@ class KVEventFiltering : public KVEventSelector {
 #endif
 
    TString fIdCalMode; //! original exp setup hasIDandCalib to be reset in case of modifications
+   KVReconstructedEvent* fReconEvent;
+   TVector3 fCMVelocity;
+   TVector3 fProjVelocity;
+   Bool_t fTransformKinematics;//=kTRUE if simulation not in lab frame
+   TString fNewFrame;   //allow the definition of a specific frame
+
+   KVDetectionSimulator fDetSimulator;
+   std::unique_ptr<KVFilterEventReconstructor> fEventReconstructor;
 
    void RandomRotation(KVEvent* to_rotate, const TString& frame_name = "") const;
 public:
@@ -122,14 +131,6 @@ public:
    void InitAnalysis();
    void InitRun();
    void OpenOutputFile(KVDBSystem*, Int_t);
-
-   KVReconstructedEvent* fReconEvent;
-   TVector3 fCMVelocity;
-   TVector3 fProjVelocity;
-   Bool_t fTransformKinematics;//=kTRUE if simulation not in lab frame
-   TString fNewFrame;   //allow the definition of a specific frame
-
-   KVDetectionSimulator fDetSimulator;
 
    ClassDef(KVEventFiltering, 1) //Filter simulated events with multidetector response
 };

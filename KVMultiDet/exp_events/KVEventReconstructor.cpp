@@ -58,6 +58,10 @@ KVEventReconstructor::KVEventReconstructor(KVMultiDetArray* a, KVReconstructedEv
       if (GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoCalibration", kFALSE)) {
          Info("KVEventReconstructor", " -- calibration of events will be performed");
          fArray->PrintCalibStatusOfDetectors();
+         if (GetArray()->GetTarget()) {
+            // for target energy loss correction calculation
+            GetArray()->GetTarget()->SetOutgoing();
+         }
       }
    }
    else
@@ -84,13 +88,7 @@ void KVEventReconstructor::ReconstructEvent(const TSeqCollection* fired)
    // Reconstruct current event based on state of detectors in array
    //
    // The list pointer, if given, can be used to supply a list of fired
-   // acquisition parameters to KVMultiDetArray::GetDetectorEvent
-
-   if (GetArray()->GetTarget()) {
-      // for target energy loss correction calculation
-      GetArray()->GetTarget()->SetIncoming(kFALSE);
-      GetArray()->GetTarget()->SetOutgoing(kTRUE);
-   }
+   // detectors to KVMultiDetArray::GetDetectorEvent
 
    GetEvent()->Clear("N");// No Group Reset (would not reset groups with no reconstructed particles)
    detev.Clear("N");// reset all groups (but not acquisition parameters), even if no particles were reconstructed in them

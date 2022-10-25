@@ -5,26 +5,25 @@
 KVFilterEventReconstructor::KVFilterEventReconstructor(KVMultiDetArray* arg1, KVReconstructedEvent* arg2, KVEvent* E, const TString& det_frame)
    : KVEventReconstructor(arg1, arg2), fSimEvent(E), fDetectionFrame(det_frame)
 {
-   // set up simulated events in reconstructors
-   TIter it(GetReconstructors());
-   KVFilterGroupReconstructor* gr;
-   while ((gr = (KVFilterGroupReconstructor*)it())) gr->SetSimEvent(E);
+   if (E) SetSimEvent(E);
 }
 
-void KVFilterEventReconstructor::ReconstructEvent(const TSeqCollection* fired)
+void KVFilterEventReconstructor::ReconstructEvent(const TSeqCollection*)
 {
    // Copy particles of simulated event to group reconstructors before reconstruction.
    //
    // The particle default kinematics are in the detection frame.
 
+   TList fired; // list of stopping detectors for all particles
    for (auto& n : EventIterator(fSimEvent)) {
       if (n.GetParameters()->HasIntParameter("GROUP")) {
          auto gr = GetReconstructor(n.GetParameters()->GetIntValue("GROUP"));
          dynamic_cast<KVFilterGroupReconstructor*>(gr)->AddSimParticle((const KVNucleus*)n.GetFrame(fDetectionFrame));
+         fired.Add(GetArray()->GetDetector(n.GetParameters()->GetStringValue("STOPPING DETECTOR")));
       }
    }
 
-   KVEventReconstructor::ReconstructEvent(fired);
+   KVEventReconstructor::ReconstructEvent(&fired);
 }
 
 ClassImp(KVFilterEventReconstructor)

@@ -18,10 +18,11 @@
  */
 class KVDetectionSimulator : public KVBase {
 
-   KVMultiDetArray* fArray = nullptr;        //  array used for detection
-   KVDetectorEvent  fHitGroups;              //  used to reset hit detectors in between events
-   Bool_t           fCalcTargELoss = kTRUE;  //  whether to include energy loss in target, if defined
-   Bool_t           fGeoFilter = kFALSE;     //  when true, only consider geometry, not particle energies
+   KVMultiDetArray* fArray = nullptr;        //!  array used for detection
+   KVDetectorEvent  fHitGroups;              //!  used to reset hit detectors in between events
+   Bool_t           fCalcTargELoss = kTRUE;  //!  whether to include energy loss in target, if defined
+   Bool_t           fGeoFilter = kFALSE;     //!  when true, only consider geometry, not particle energies
+   TString          fDetectionFrame;         //!  name of kinematical frame used in last call to DetectEvent()
 
    KVRangeTableGeoNavigator* get_array_navigator() const
    {
@@ -41,11 +42,14 @@ public:
       fGeoFilter = kTRUE;
    }
 
-   void SetArray(KVMultiDetArray* a)
+   void SetArray(KVMultiDetArray* a, Double_t e_cut_off = 1.e-3)
    {
       fArray = a;
       a->Clear();
       a->SetSimMode(kTRUE);
+      get_array_navigator()->SetCutOffKEForPropagation(e_cut_off);
+      // set mode for target energy loss calculations
+      if (GetTarget()) GetTarget()->SetOutgoing();
    }
    KVMultiDetArray* GetArray() const
    {
@@ -78,6 +82,13 @@ public:
    {
       // Reset any detectors/groups hit by previous detection
       fHitGroups.Clear();
+   }
+
+   TString GetDetectionFrame() const
+   {
+      // \returns name of kinematical frame given in last call to DetectEvent()
+
+      return fDetectionFrame;
    }
 
    ClassDef(KVDetectionSimulator, 0) //Simulate detection of particles or events in a detector array

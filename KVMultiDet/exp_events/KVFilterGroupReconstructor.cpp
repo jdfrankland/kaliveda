@@ -8,13 +8,13 @@ KVReconNucTrajectory* KVFilterGroupReconstructor::get_recon_traj_for_particle(co
 
    KVReconNucTrajectory* Rtraj{nullptr};
 
-   Info("get_recon_traj", "node=%s traj=%s", node->GetName(), traj->GetPathString().Data());
+//   Info("get_recon_traj", "node=%s traj=%s", node->GetName(), traj->GetPathString().Data());
    for (auto& n : EventIterator(fSimEvent.get())) {
       TString stop = n.GetParameters()->GetTStringValue("STOPPING DETECTOR");
-      std::cout << stop << std::endl;
+      //std::cout << stop << std::endl;
       if (stop == node->GetName()) {
          Rtraj = (KVReconNucTrajectory*)GetGroup()->GetTrajectoryForReconstruction(traj, node);
-         if (Rtraj) std::cout << n.GetParameters()->GetTStringValue("TRAJECTORY") << " : " << Rtraj->GetPathString() << std::endl;
+         //if (Rtraj) std::cout << n.GetParameters()->GetTStringValue("TRAJECTORY") << " : " << Rtraj->GetPathString() << std::endl;
          if (Rtraj && n.GetParameters()->GetTStringValue("TRAJECTORY") == Rtraj->GetPathString()) {
             // correspondence recon <-> simu
             part_correspond[current_nuc_recon].Add(&n);
@@ -23,9 +23,9 @@ KVReconNucTrajectory* KVFilterGroupReconstructor::get_recon_traj_for_particle(co
          }
       }
    }
-   if (!Rtraj) {
-      Info("get_recon_traj_for_particle", "noRtraj for this: %s %s", node->GetName(), traj->GetPathString().Data());
-   }
+//   if (!Rtraj) {
+//      Info("get_recon_traj_for_particle", "noRtraj for this: %s %s", node->GetName(), traj->GetPathString().Data());
+//   }
    return Rtraj;
 }
 
@@ -61,6 +61,8 @@ void KVFilterGroupReconstructor::identify_particle(KVIDTelescope* idt, KVIdentif
    if (idt->IsReadyForID()
          && idt->CanIdentify(sim_part->GetZ(), sim_part->GetA())
          && idt->CheckTheoreticalIdentificationThreshold((KVNucleus*)sim_part)) {
+      IDR->IDattempted = true;
+      IDR->SetIDType(idt->GetType());
       IDR->IDOK = true;
       IDR->Z = sim_part->GetZ();
       IDR->A = sim_part->GetA();
@@ -136,11 +138,11 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
    while (auto node = PART->GetReconstructionTrajectory()->GetNextNode()) {
       double edet, dE;
       auto det = node->GetDetector();
-      Info("Calib", "det=%s", det->GetName());
-      Info("Calib", "number_uncalibrated=%d, energy_loss=%f", number_uncalibrated[det->GetName()], energy_loss[det->GetName()]);
+      //Info("Calib", "det=%s", det->GetName());
+      //Info("Calib", "number_uncalibrated=%d, energy_loss=%f", number_uncalibrated[det->GetName()], energy_loss[det->GetName()]);
       // deal with pileup in detectors
       if (number_uncalibrated[det->GetName()] > 1 || (det != PART->GetStoppingDetector() && number_unidentified[det->GetName()] > 0)) {
-         Info("Calib", "number_uncalib[%s]=%d, Einc=%f", det->GetName(), number_uncalibrated[det->GetName()], Einc);
+         //Info("Calib", "number_uncalib[%s]=%d, Einc=%f", det->GetName(), number_uncalibrated[det->GetName()], Einc);
          // there are other uncalibrated particles which hit this detector
          // the contribution for this particle must be calculated from the residual energy (Einc)
          // deposited in all detectors so far (if any)
@@ -148,20 +150,20 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
             // calculate dE in active layer for particle
             dE = det->GetDeltaEFromERes(PART->GetZ(), PART->GetA(), Einc);
             if (dE == 0) {
-               Info("Calib", "dE from Eres gives 0! dead");
+               //Info("Calib", "dE from Eres gives 0! dead");
                PART->SetECode(0);
                PART->SetIsCalibrated();
                break;
             }
             det->SetEResAfterDetector(Einc);
             edet = det->GetCorrectedEnergy(PART, dE);
-            Info("Calib", "calculated edet=%f from dE=%f", edet, dE);
+            //Info("Calib", "calculated edet=%f from dE=%f", edet, dE);
             // negative parameter for calculated contribution
             PART->SetParameter(Form("%s.E%s", GetGroup()->GetArray()->GetName(), det->GetLabel()), -edet);
             PART->SetECode(2); // calculated
          }
          else {
-            Info("Calib", "Einc=0, dead");
+            //Info("Calib", "Einc=0, dead");
             // nothing to do here
             PART->SetECode(0);
             PART->SetIsCalibrated();
@@ -171,7 +173,7 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
       else if (det->GetNHits() > 1) {
          // other particles hit this detector, but their contributions have already been calculated
          // and subtracted. use remaining energy calculated in detector.
-         Info("Calib", "det->nhits>1");
+         //Info("Calib", "det->nhits>1");
          dE = energy_loss[det->GetName()];
          det->SetEResAfterDetector(Einc);
          edet = det->GetCorrectedEnergy(PART, dE);
@@ -183,28 +185,31 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
          dE = det->GetEnergyLoss();
          det->SetEResAfterDetector(Einc);
          edet = det->GetCorrectedEnergy(PART, -1., (Einc > 0));
-         Info("Calib", "Simple normal dE=%f edet=%f", dE, edet);
+         //Info("Calib", "Simple normal dE=%f edet=%f", dE, edet);
          PART->SetParameter(Form("%s.E%s", GetGroup()->GetArray()->GetName(), node->GetDetector()->GetLabel()), edet);
       }
       Einc += edet;
       --number_uncalibrated[det->GetName()];
       energy_loss[det->GetName()] -= dE;
       det->SetEnergyLoss(energy_loss[det->GetName()]);
-      Info("Calib", "After: number_uncalibrated=%d, energy_loss=%f", number_uncalibrated[det->GetName()], energy_loss[det->GetName()]);
-      Info("Calib", "After: number_unidentified=%d", number_unidentified[det->GetName()]);
+      //Info("Calib", "After: number_uncalibrated=%d, energy_loss=%f", number_uncalibrated[det->GetName()], energy_loss[det->GetName()]);
+      //Info("Calib", "After: number_unidentified=%d", number_unidentified[det->GetName()]);
    }
    if (PART->GetECode() > 0) {
       PART->SetEnergy(Einc);
+      // set particle momentum from telescope dimensions (random)
+      PART->GetAnglesFromReconstructionTrajectory();
+      //Info("CalibrateParticle","Calibrated particle with %f MeV",Einc);
       //add correction for target energy loss - moving charged particles only!
       Double_t E_targ = 0.;
       if (PART->GetZ() && PART->GetEnergy() > 0) {
          E_targ = GetTargetEnergyLossCorrection(PART);
+         //Info("CalibrateParticle","Target energy loss %f MeV",E_targ);
          PART->SetTargetEnergyLoss(E_targ);
       }
       Double_t E_tot = PART->GetEnergy() + E_targ;
       PART->SetEnergy(E_tot);
-      // set particle momentum from telescope dimensions (random)
-      PART->GetAnglesFromReconstructionTrajectory();
+      //Info("CalibrateParticle","Total energy now %f MeV",E_tot);
    }
 }
 

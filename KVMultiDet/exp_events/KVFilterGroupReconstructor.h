@@ -30,7 +30,6 @@ protected:
 
 public:
    KVFilterGroupReconstructor() {}
-   virtual ~KVFilterGroupReconstructor() {}
 
    void SetSimEvent(KVEvent* e)
    {

@@ -15,9 +15,7 @@ KVDetectionSimulator::KVDetectionSimulator(KVMultiDetArray* a, Double_t e_cut_of
    //
    // The detector array is put into simulation mode, and the minimum cut-off energy
    // for propagation of particles is set (1 keV is default)
-   a->Clear();
-   a->SetSimMode(kTRUE);
-   get_array_navigator()->SetCutOffKEForPropagation(e_cut_off);
+   SetArray(a);
 }
 
 void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_frame)
@@ -52,6 +50,8 @@ void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_f
    //       *  "INCOMPLETE"  corresponds to particles which stopped in the first detection stage of the multidetector
    //         in a detector which can not give alone a clear identification,
    //
+
+   fDetectionFrame = detection_frame;
 
    if (get_array_navigator()->IsTracking()) {
       // clear any tracks created by last event
@@ -99,7 +99,6 @@ void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_f
       }
       else {
          if (IncludeTargetEnergyLoss() && GetTarget() && part.GetZ()) {
-            GetTarget()->SetOutgoing(kTRUE);
             //simulate passage through target material
             auto ebef = part_to_detect->GetE();
             GetTarget()->DetectParticle(part_to_detect);
@@ -111,7 +110,6 @@ void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_f
                part.AddGroup("UNDETECTED");
                part.AddGroup("STOPPED IN TARGET");
             }
-            GetTarget()->SetOutgoing(kFALSE);
          }
 
          if (fGeoFilter || (part_to_detect->GetE() > GetMinKECutOff())) {
@@ -203,13 +201,9 @@ KVNameValueList KVDetectionSimulator::PropagateParticle(KVNucleus* part)
          KVString det_name = pn3.Next();
          if (pn3.End() || pn3.Next().BeginsWith("ACTIVE")) {
             // energy loss in active layer of detector
-            KVDetector* curDet = last_detector = fArray->GetDetector(det_name);
-            if (!curDet) {
-               Error("DetectParticle",
-                     "Cannot find detector %s corresponding to particle energy loss %s",
-                     det_name.Data(), pname.Data());
-            }
-            else {
+            KVDetector* curDet = fArray->GetDetector(det_name);
+            if (curDet) {
+               last_detector = curDet;
                Double_t de = param->GetDouble();
                NVL.SetValue(curDet->GetName(), de);
                // add detector to name of trajectory followed by particle

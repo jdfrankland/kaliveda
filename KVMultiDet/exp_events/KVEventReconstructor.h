@@ -60,7 +60,6 @@ protected:
 
 public:
    KVEventReconstructor(KVMultiDetArray*, KVReconstructedEvent*);
-   virtual ~KVEventReconstructor() {}
 
    void Copy(TObject& obj) const;
 

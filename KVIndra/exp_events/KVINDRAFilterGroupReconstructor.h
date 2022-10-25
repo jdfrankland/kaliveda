@@ -20,10 +20,6 @@ public:
    {
    }
 
-   virtual ~KVINDRAFilterGroupReconstructor()
-   {
-   }
-
    ClassDef(KVINDRAFilterGroupReconstructor, 1) //Reconstruct simulated events after filtering with INDRA
 };
 

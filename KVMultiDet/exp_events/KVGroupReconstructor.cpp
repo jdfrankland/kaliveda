@@ -442,7 +442,6 @@ Double_t KVGroupReconstructor::GetTargetEnergyLossCorrection(KVReconstructedNucl
    //
    // WARNING: for this correction to work, the target must be in the right 'state':
    //
-   //      gMultiDetArray->GetTarget()->SetIncoming(kFALSE);
    //      gMultiDetArray->GetTarget()->SetOutgoing(kTRUE);
    //
    // (see KVTarget::GetParticleEIncFromERes).

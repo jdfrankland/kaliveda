@@ -129,32 +129,26 @@ Bool_t KVEventFiltering::Analysis()
       if (fTransformKinematics) {
          if (fNewFrame == "proj")   to_be_detected->SetFrame("lab", fProjVelocity);
          else                    to_be_detected->SetFrame("lab", fCMVelocity);
-         if (fRotate) {
-            RandomRotation(to_be_detected, "lab");
-            //gMultiDetArray->DetectEvent(to_be_detected, fReconEvent, "rotated_frame");
-            fDetSimulator.DetectEvent(to_be_detected, "rotated_frame");
-         }
-         else {
-            //gMultiDetArray->DetectEvent(to_be_detected, fReconEvent, "lab");
-            fDetSimulator.DetectEvent(to_be_detected, "lab");
-         }
       }
       else {
          // default kinematics is lab frame. make sure name is set.
          to_be_detected->SetFrameName("lab");
-         if (fRotate) {
-            RandomRotation(to_be_detected);
-            //gMultiDetArray->DetectEvent(to_be_detected, fReconEvent, "rotated_frame");
-            fDetSimulator.DetectEvent(to_be_detected, "rotated_frame");
-         }
-         else {
-            //gMultiDetArray->DetectEvent(to_be_detected, fReconEvent);
-            fDetSimulator.DetectEvent(to_be_detected);
-         }
       }
-      //fReconEvent->SetNumber(fEVN++);
-      //fReconEvent->SetFrameName("lab");
-      // Now reconstruct the event!
+      if (fRotate) {
+         RandomRotation(to_be_detected, "lab");
+         fDetSimulator.DetectEvent(to_be_detected, "rotated_frame");
+      }
+      else {
+         fDetSimulator.DetectEvent(to_be_detected, "lab");
+      }
+
+      fEventReconstructor->SetDetectionFrame(fDetSimulator.GetDetectionFrame());
+      fEventReconstructor->SetSimEvent(to_be_detected);
+      fEventReconstructor->ReconstructEvent();
+
+      fReconEvent->SetNumber(fEVN++);
+      fReconEvent->SetFrameName("lab");
+
       FillTree();
 #ifdef WITH_GEMINI
    }
@@ -337,6 +331,8 @@ void KVEventFiltering::InitAnalysis()
    TString reconevclass = gDataSet->GetReconstructedEventClassName();
    fReconEvent = (KVReconstructedEvent*)TClass::GetClass(reconevclass)->New();
    KVEvent::MakeEventBranch(t, "ReconEvent", fReconEvent);
+
+   fEventReconstructor.reset(new KVFilterEventReconstructor(gMultiDetArray, fReconEvent));
 }
 
 void KVEventFiltering::InitRun()
