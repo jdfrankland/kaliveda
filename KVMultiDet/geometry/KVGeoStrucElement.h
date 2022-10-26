@@ -108,6 +108,10 @@ public:
    {
       return &fDetectors;
    }
+   KVSeqCollection* GetDetectors()
+   {
+      return &fDetectors;
+   }
    const KVSeqCollection* GetStructures() const
    {
       return &fStructures;
