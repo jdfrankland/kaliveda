@@ -19,6 +19,9 @@ cp kaliveda.git/*/*/doc/* kaliveda.git/*/doc/* kaliveda.doxygen/
 # KVError.H
 cp kaliveda.git/KVMultiDet/base/KVError.h kaliveda.doxygen/KVMultiDet/base/
 
+# KVEventMixer.h
+cp kaliveda.git/KVMultiDet/analysis/KVEventMixer.h kaliveda.doxygen/KVMultiDet/analysis/
+
 # download ROOT tag file to link ROOT documentation
 if [ ! -f ./ROOT.tag ]; then
    wget https://root.cern/doc/master/ROOT.tag
