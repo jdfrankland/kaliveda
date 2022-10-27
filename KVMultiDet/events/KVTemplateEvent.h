@@ -81,6 +81,9 @@ int ztot=0;
 for(auto& p : recon_event.ConditionalIterator({"IDZ", [](const KVReconstructedNucleus* n){ return n->IsZMeasured(); }}))
    ztot += p.GetZ();
 ~~~~
+
+For a full description of event iterators, see \ref NucEvents
+
  \sa NucEvents, KVEvent, KVParticle, KVTemplateParticleCondition, KVNucleusEvent, KVSimEvent, KVReconstructedEvent
  */
 template <typename Particle>

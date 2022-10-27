@@ -68,7 +68,7 @@ This will class events according to:
      mtot_cuts->AddBin(25,30);
 ~~~~
 
-This will class events according to the 2 bins with the following numbers:
+This will class events according to the 3 bins with the following numbers:
 
 | mtot     |   mtot_EC   |
 |----------|-------------|

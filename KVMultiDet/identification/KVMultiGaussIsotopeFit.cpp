@@ -144,7 +144,9 @@ void KVMultiGaussIsotopeFit::DrawFitWithGaussians(Option_t* opt) const
 
 int KVMultiGaussIsotopeFit::GetMostProbableA(double PID, double& P) const
 {
-   // for a given PID, calculate the most probable value of A, P is its probability.
+   // For a given PID, calculate the most probable value of \f$A\f$, P is its probability.
+   //
+   // \returns most probable \f$A\f$
 
    auto total = Eval(PID);
    std::map<double, int> probabilities;
@@ -162,7 +164,10 @@ int KVMultiGaussIsotopeFit::GetMostProbableA(double PID, double& P) const
 
 double KVMultiGaussIsotopeFit::GetMeanA(double PID) const
 {
-   // for a given PID, calculate the weighted sum of A
+   // for a given PID, calculate the mean value of \f$A\f$ from the weighted sum of all gaussians
+   //
+   // \returns mean value of \f$A\f$
+
    auto total = Eval(PID);
    int ig = 1;
    double amean(0), totprob(0);
@@ -177,7 +182,11 @@ double KVMultiGaussIsotopeFit::GetMeanA(double PID) const
 
 std::map<int, double> KVMultiGaussIsotopeFit::GetADistribution(double PID) const
 {
-   // For the given PID, the map is filled with all possible values of A and the associated probability
+   // For the given PID, the map is filled with all possible values of \f$A\f$
+   // and the associated probability.
+   //
+   // \returns std::map containing probability distribution \f$P(A|PID)\f$
+
    auto total = Eval(PID);
    std::map<int, double> Adist;
    int ig = 1;
@@ -190,7 +199,7 @@ std::map<int, double> KVMultiGaussIsotopeFit::GetADistribution(double PID) const
 
 int KVMultiGaussIsotopeFit::GetA(double PID, double& P) const
 {
-   // Probabilistic method to determine A from PID.
+   // Probabilistic method to determine \f$A\f$ from PID.
    //
    // The A returned will be drawn at random from the probability distribution given by the
    // sum of all gaussians (and the background) for the given PID.
@@ -199,6 +208,8 @@ int KVMultiGaussIsotopeFit::GetA(double PID, double& P) const
    // in this case we return 0
    //
    // P is the probability of the chosen result.
+   //
+   // \returns randomly drawn \f$A\f$ for given PID
 
    auto total = Eval(PID);
    double p_tot = 0;

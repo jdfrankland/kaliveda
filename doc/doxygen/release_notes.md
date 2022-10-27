@@ -1,8 +1,27 @@
 \page release_notes Release Notes for KaliVeda
 
-Last update: 8th July 2022
+Last update: 26th October 2022
 
-## Version 1.13/00 (current development version - dev branch)
+## Version 1.13/01 (current development version - dev branch)
+
+__Changes 26/10/2022 in__ \ref Analysis : __Generic event mixing algorithm for correlation studies__
+
+KVEventMixer is a generic implementation of the event mixing technique used to estimate the uncorrelated
+background for two-particle correlation functions.
+Events belonging to different user-defined event classes can be treated separately at the same time.
+Given events containing particles of type A and particles type B, it is assumed the user wants to construct
+some quantity which can be calculated from the properties of any pair (A,B), using both correlated
+and uncorrelated (mixed) pairs. The algorithm requires the user to provide:
+   + iterators to perform loops over A and B particles in each event;
+   + functions to treat each correlated and uncorrelated pair (A,B)
+   
+An example of use in an analysis class is given in \ref ExampleCorrelationAnalysis.cpp
+
+__Changes 15/6/2022 in__ \ref Identification : __Multi-gaussian fits to PID mass spectra__
+
+New class KVMultiGaussIsotopeFit is now used by KVIDZAFromZGrid to fit PID mass spectra with a weighted sum of gaussians
+plus a background function. This is a huge improvement on the previous identification method of KVIDZAFromZGrid,
+as it allows to perform background suppression and also estimate the degree of confidence of mass identification.
 
 __Changes 31/5/2022 in__ \ref NucEvents : __General event iterators and new KVTemplateParticleCondition__
 

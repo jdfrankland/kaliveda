@@ -13,9 +13,35 @@
 /**
  \class KVMultiGaussIsotopeFit
  \brief Function for fitting PID mass spectra
+ \ingroup Identification
 
- Write a detailed documentation for your class here, see doxygen manual for help.
+ This class is used by KVIDZAFromZGrid (and in the GUI for determining identified isotopes with such grids, KVItvFinderDialog)
+ in order to fit PID mass spectra for a given \f$Z\f$ with a set of gaussians and a background function. The fit can then be used
+ to calculate yields of each isotope, probability that a given PID value is associated with a certain \f$A\f$,
+ mean/most probable \f$A\f$ for a given PID, mass distribution \f$P(A|PID)\f$ for given PID, etc. etc.
 
+ The function used to fit the PID spectrum is
+ \f[
+ N(PID) = \exp(b_0 + b_1*PID) + \sum_{i=1}^{N_{iso}} N_i \mathcal{G}(PID,f(A_i),\sigma)
+ \f]
+
+ where:
+    + \f$N_{iso}\f$ is the number of isotopes \f$A_i\f$ in the spectrum;
+    + \f$b_0 , b_1\f$ are the parameters of the exponential background;
+    + \f$\mathcal{G}(x,\bar{x},\sigma)\f$ is a normalized gaussian distribution with mean \f$\bar{x}\f$ and standard deviation \f$\sigma\f$;
+    + \f$N_i\f$ is the yield of each isotope;
+    + \f$f(A_i)\f$ is a function which parameterizes the PID coordinate of the centroid of the gaussian for mass \f$A_i\f$,
+
+ \f[
+ f(A_i) = a_0 + a_1 A_i + a_2 A_i^2
+ \f]
+
+ Note that the same width \f$\sigma\f$ is used for all isotopes \f$A_i\f$ of a given element \f$Z\f$.
+
+ The probability that a given PID value is associated with the mass number \f$A_i\f$ is then given by
+ \f[
+ P(A_i|PID) = \frac{N_i \mathcal{G}(PID,f(A_i),\sigma)}{N(PID)}
+ \f]
  \author eindra
  \date Wed Jun 15 10:56:41 2022
 */
@@ -112,17 +138,17 @@ public:
 
    double GetPIDvsAfit_a0() const
    {
-      // \returns constant term in PID vs. A relation
+      // \returns constant term \f$a_0\f$ in PID vs. A relation
       return GetParameter(fit_param_index::pidvsA_a0);
    }
    double GetPIDvsAfit_a1() const
    {
-      // \returns coefficient of linear term in PID vs. A relation
+      // \returns coefficient \f$a_1\f$ of linear term in PID vs. A relation
       return GetParameter(fit_param_index::pidvsA_a1);
    }
    double GetPIDvsAfit_a2() const
    {
-      // \returns coefficient of quadratic term in PID vs. A relation
+      // \returns coefficient \f$a_2\f$ of quadratic term in PID vs. A relation
       return GetParameter(fit_param_index::pidvsA_a2);
    }
 
@@ -157,7 +183,8 @@ public:
    double GetProbability(int A, double PID) const;
    double GetInterpolatedA(double PID) const
    {
-      // calculate interpolated A from PID using the quadratic fit parameters
+      // \returns interpolated A from PID using the quadratic fit parameters
+      // analytic inversion of \f$f(A_i) = a_0 + a_1 A_i + a_2 A_i^2\f$
 
       auto a = GetPIDvsAfit_a2();
       auto b = GetPIDvsAfit_a1();
@@ -180,17 +207,17 @@ public:
 
    double GetBackgroundConstant() const
    {
-      // \returns fitted parameter constant term in exponential background
+      // \returns fitted parameter constant term \f$b_0\f$ in exponential background
       return GetParameter(fit_param_index::bkg_cst);
    }
    double GetBackgroundSlope() const
    {
-      // \returns fitted parameter slope term in exponential background
+      // \returns fitted parameter slope term \f$b_1\f$ in exponential background
       return GetParameter(fit_param_index::bkg_slp);
    }
    double GetCentroid(int i) const
    {
-      // \returns the fitted centroid position of the ith gaussian (i=1,2,...,Niso)
+      // \returns the fitted centroid position of the ith gaussian (i=1,2,...,Niso) i.e. \f$f(A_i) = a_0 + a_1 A_i + a_2 A_i^2\f$
       assert(i > 0 && i <= Niso);
       return GetParameter(fit_param_index::pidvsA_a0)
              + (GetParameter(fit_param_index::pidvsA_a1)
@@ -198,12 +225,12 @@ public:
    }
    double GetGaussianWidth(int) const
    {
-      // \returns the fitted width (sigma) used for all gaussians
+      // \returns the fitted width \f$\sigma\f\$ used for all gaussians
       return GetParameter(fit_param_index::gauss_wid);
    }
    double GetGaussianNorm(int i) const
    {
-      // \returns the fitted normalisation constant of the ith gaussian (i=1,2,...,Niso)
+      // \returns the fitted normalisation constant \f$N_i\f$ of the ith gaussian (i=1,2,...,Niso)
       assert(i > 0 && i <= Niso);
       return GetParameter(get_gauss_norm_index(i));
    }

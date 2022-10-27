@@ -237,6 +237,8 @@ public:
    KVTemplateParticleCondition(const KVString& cond)
       : KVBase(cond, "KVParticleCondition")
    {
+      // \deprecated Particle conditions using strings should not be used, only lambda functions. This constructor is kept for backwards compatibility only.
+      //
       //Create named object and set condition.
       //   This must be a valid C++ expression using `_NUC_` instead and in place of
       //   a `const KVNucleus*` pointer to the particle to be tested, for example
@@ -264,6 +266,8 @@ public:
    KVTemplateParticleCondition(const Char_t* cond)
       : KVBase(cond, "KVParticleCondition")
    {
+      // \deprecated Particle conditions using strings should not be used, only lambda functions. This constructor is kept for backwards compatibility only.
+      //
       //Create named object and set condition.
       //   This must be a valid C++ expression using `_NUC_` instead and in place of
       //   a `const KVNucleus*` pointer to the particle to be tested, for example
@@ -369,6 +373,8 @@ public:
 
    void Set(const KVString& cond)
    {
+      // \deprecated Particle conditions using strings should not be used, only lambda functions. This constructor is kept for backwards compatibility only.
+      //
       //Set particle condition criteria.
       //
       //These must be valid C++ expressions using _NUC_ instead and in place of
@@ -428,6 +434,8 @@ public:
    }
    void AddExtraInclude(const Char_t* inc_file)
    {
+      // \deprecated Particle conditions using strings should not be used, only lambda functions. This constructor is kept for backwards compatibility only.
+      //
       //Optimisation of KVParticleCondition::Test() implies the automatic generation
       //of a new class which implements the selection required by the user (see Optimize()).
       //
@@ -489,6 +497,8 @@ public:
 
    KVTemplateParticleCondition& operator=(const KVString& sel)
    {
+      // \deprecated Particle conditions using strings should not be used, only lambda functions. This constructor is kept for backwards compatibility only.
+      //
       // Set condition using pseudo-code in string (replacing any previous definition).
       //
       //   This must be a valid C++ expression using `_NUC_` instead and in place of

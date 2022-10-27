@@ -56,6 +56,10 @@ The number of particles in the event, its size or multiplicity, is given by GetM
 ~~~~{.cpp}
 auto mult = e.GetMult();
 ~~~~
+
+### Iterating over particles in an event
+See \ref NucEvents
+
 \sa KVTemplateEvent, NucEvents
 
  */
@@ -265,7 +269,8 @@ public:
       if (strcmp(opt, "")) { // pass options to particle class Clear() method
          TString Opt = Form("C+%s", opt);
          fParticles->Clear(Opt);
-      } else
+      }
+      else
          fParticles->Clear("C");
       fParameters.Clear();
       ResetGetNextParticle();
