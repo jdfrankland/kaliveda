@@ -163,8 +163,9 @@ protected :
    // List of branches
    TBranch*        b_Event;   //!
 
-   //List of global variables
-   KVGVList gvlist;            //!
+   // Lists of global variables with different selection criteria
+   KVUniqueNameList fGlobalVariables; //!
+   Bool_t fGlobalVariableAbortEventAnalysis;//!
 
    KVString fBranchName; //name of branch which contains events to analyse
 
@@ -230,9 +231,7 @@ public:
    KVEventSelector(TTree* /*tree*/ = 0) : fChain(0), fAuxChain(0), fBranchName("data"), fFirstEvent(kTRUE),
       fEventsRead(0), fEventsReadInterval(100), fNotifyCalled(kFALSE), fDisableCreateTreeFile(kFALSE)
    {
-   }
-   virtual ~KVEventSelector()
-   {
+      fGlobalVariables.SetOwner();
    }
    void SetEventsReadInterval(Long64_t N)
    {
@@ -333,19 +332,42 @@ public:
    {
       AbstractMethod("EndAnalysis");
    }
-   KVGVList* GetGVList(void)
+   KVGVList* AddGVList(const KVString& list_name, const KVParticleCondition& selection = KVParticleCondition())
    {
-      //Access to the internal list of global variables
-      return &gvlist;
+      // Create a new list of global variables with given name and an optional particle selection.
+      //
+      // \param[in] list_name name of new list, can be used to retrieve list with GetGVList()
+      // \param[in] selection [optional] selection criteria for particles to be used by global variables, default is no selection
+      // \returns pointer to new global variable list
+
+      auto gvl = new KVGVList(list_name, selection);
+      fGlobalVariables.Add(gvl);
+      return gvl;
    }
-   const KVGVList* GetGVList(void) const
+   KVGVList* GetGVList(const KVString& list_name = "default")
    {
-      //Access to the internal list of global variables
-      return &gvlist;
+      // Access the named list of global variables
+      //
+      // If the list_name = "default" and no global variable lists have been defined,
+      // this will automatically create the default list, for which the default selection is
+      // only 'OK' particles (this will change in future to default selection = no selection)
+
+      if (list_name == "default" && fGlobalVariables.IsEmpty()) {
+         auto l = new KVGVList;
+         fGlobalVariables.Add(l);
+         return l;
+      }
+      return (KVGVList*)fGlobalVariables.FindObject(list_name);
+   }
+   const KVGVList* GetGVList(const KVString& list_name = "default") const
+   {
+      // Access the named list of global variables
+      return (KVGVList*)fGlobalVariables.FindObject(list_name);
    }
    void AddGV(KVVarGlob* vg)
    {
-      //Add the global variable "vg" to the list of variables for the analysis.
+      //Add the global variable "vg" to the default list of variables for the analysis.
+      //
       //This is equivalent to GetGVList()->Add( vg ).
       if (!vg)
          Error("AddGV(KVVarGlob*)", "KVVarGlob pointer is null");
@@ -355,8 +377,8 @@ public:
    KVVarGlob* AddGV(const Char_t* class_name, const Char_t* name);
    KVVarGlob* GetGV(const Char_t* name) const
    {
-      //Access the global variable with name "name" in the list of variables
-      //for the analysis.
+      //Access the global variable with name "name" in the default list of global variables for the analysis.
+      //
       //This is equivalent to GetGVList()->GetGV( name ).
 
       auto gv = GetGVList()->GetGV(name);

@@ -171,15 +171,15 @@ Bool_t KVEventSelector::Process(Long64_t entry)
       }
 
       // initialise global variables at first event
-      if (fFirstEvent && !gvlist.IsEmpty()) {
-         gvlist.Init();
+      if (fFirstEvent) {
+         for (auto p : fGlobalVariables) dynamic_cast<KVGVList*>(p)->Init();
          fFirstEvent = kFALSE;
       }
       RecalculateGlobalVariables();
    }
 
    Bool_t ok_anal = kTRUE;
-   if (gvlist.IsEmpty() || !gvlist.AbortEventAnalysis()) {
+   if (!fGlobalVariableAbortEventAnalysis) {
       // if global variables are defined, events are only analysed if no global variables
       // in the list have failed an event selection condition
       ok_anal = Analysis();     //user analysis
@@ -300,7 +300,16 @@ void KVEventSelector::RecalculateGlobalVariables()
    //this calculation, make sure that at the END of Analysis() you reset the selection
    //criteria.
 
-   if (!gvlist.IsEmpty()) gvlist.CalculateGlobalVariables(GetEvent());
+   fGlobalVariableAbortEventAnalysis = false;
+   for (auto p : fGlobalVariables) {
+      auto gvl = dynamic_cast<KVGVList*>(p);
+      gvl->CalculateGlobalVariables(GetEvent());
+      // check if a variable event selection failed
+      if (gvl->AbortEventAnalysis()) {
+         fGlobalVariableAbortEventAnalysis = true;
+         return;
+      }
+   }
 }
 
 //____________________________________________________________________________
