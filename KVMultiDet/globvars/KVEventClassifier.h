@@ -79,6 +79,11 @@ This will class events according to the 3 bins with the following numbers:
 
 Note that in this case, any value outside of a defined bin is unclassified.
 
+#### Integer variables and non-integer cuts
+If the global variable used for event classification is detected to be of integer type (KVVarGlob::GetValueType()=='I')
+then a random value in the range [-0.5,+0.5] will be added to the current value of the variable before testing the cuts.
+This allows to use non-integer cuts in a statistically correct way.
+
  \author John Frankland
  \date Mon Jan 25 16:25:26 2021
 */
@@ -91,6 +96,7 @@ class KVEventClassifier : public KVVarGlob1 {
    bool fBins;//! true if separate bins are to be used
    bool fWithVal;//! true if named value given
    bool fWithExpression;//! true if an expression using several values is used
+   bool fIntegerVariable;//! true if global variable used for cuts has integer values
    std::unique_ptr<TFormula> fFormula;//! in case a combination of values is used
    std::vector<std::string> fValues;//! indices of values in parsed expression
 
@@ -98,11 +104,11 @@ class KVEventClassifier : public KVVarGlob1 {
 
 public:
    KVEventClassifier() : KVVarGlob1("KVEventClassifier"), fVar(nullptr), fVal(""), fBcuts(false),
-      fBins(false), fWithVal(false), fWithExpression(false), fFormula(nullptr)
+      fBins(false), fWithVal(false), fWithExpression(false), fIntegerVariable(false), fFormula(nullptr)
    {}
    KVEventClassifier(KVVarGlob* b, const TString& value = "")
       : KVVarGlob1((value == "") ? Form("%s_EC", b->GetName()) : Form("%s_%s_EC", b->GetName(), value.Data())),
-        fVar(b), fVal(value), fBcuts(false), fBins(false), fWithVal(value != ""), fWithExpression(false), fFormula(nullptr)
+        fVar(b), fVal(value), fBcuts(false), fBins(false), fWithVal(value != ""), fWithExpression(false), fIntegerVariable(false), fFormula(nullptr)
    {
       // \param[in] b address of global variable to use for event classification
       // \param[in] value [optional] for multi-valued variables, you can specify which value to use by name, or a mathematical expression
@@ -123,6 +129,7 @@ public:
       ((KVEventClassifier&)other).fBins = fBins;
       ((KVEventClassifier&)other).fWithVal = fWithVal;
       ((KVEventClassifier&)other).fWithExpression = fWithExpression;
+      ((KVEventClassifier&)other).fIntegerVariable = fIntegerVariable;
       ((KVEventClassifier&)other).fFormula.reset(new TFormula(*(fFormula.get())));
       ((KVEventClassifier&)other).fValues = fValues;
    }
