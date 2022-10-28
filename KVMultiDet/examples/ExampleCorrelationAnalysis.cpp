@@ -21,6 +21,9 @@ void ExampleCorrelationAnalysis::InitAnalysis(void)
       AddHisto<TH1F>(get_uncor_histo_name(i, "dphi"), Form("Uncorrelated spectrum #Delta#phi bin %d", i), 21, -4.5, 184.5);
    }
 
+   auto t = AddTree("check_tree", "check event classifier");
+   GetGVList()->MakeBranches(t);
+
    /*** DEFINE WHERE TO SAVE THE RESULTS ***/
    SetJobOutputFileName("ExampleCorrelationAnalysis_results.root");
 }
@@ -36,6 +39,9 @@ void ExampleCorrelationAnalysis::InitRun(void)
 Bool_t ExampleCorrelationAnalysis::Analysis(void)
 {
    auto bin = mult_bin->GetEventClassification();
+
+   GetGVList()->FillBranches();
+   FillTree();
 
    event_mixer.ProcessEvent(bin,
    ReconEventIterator(GetEvent(), {
