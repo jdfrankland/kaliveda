@@ -154,7 +154,7 @@ protected:
    void CalculateN();
 
 public:
-   KVGVList(const KVParticleCondition& selection = KVParticleCondition());
+   KVGVList(const KVString& name = "default", const KVParticleCondition& selection = KVParticleCondition());
    KVGVList(const KVGVList& a);
 
    KVVarGlob* AddGV(const Char_t* class_name, const Char_t* name);

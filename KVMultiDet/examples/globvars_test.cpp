@@ -63,7 +63,7 @@ void globvars_test(const KVParticleCondition& selection = KVParticleCondition())
    KVNucleusEvent test_event;
 
    // global variable list
-   KVGVList globVars(selection);
+   KVGVList globVars("globVarList", selection);
    globVars.SetOwner(); // let list delete variables after use
 
    // add global variables to list

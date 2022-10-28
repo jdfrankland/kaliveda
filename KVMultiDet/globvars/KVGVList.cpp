@@ -16,7 +16,7 @@ void KVGVList::init_KVGVList(void)
 }
 
 //_________________________________________________________________
-KVGVList::KVGVList(const KVParticleCondition& selection): KVUniqueNameList(),
+KVGVList::KVGVList(const KVString& name, const KVParticleCondition& selection): KVUniqueNameList(),
    fSelection(selection)
 {
    // Create a list of global variables.
@@ -26,6 +26,8 @@ KVGVList::KVGVList(const KVParticleCondition& selection): KVUniqueNameList(),
    //
    // By default, if no selection is defined, only particles which are "OK" (i.e. for which
    // KVParticle::IsOK() returns true) will be iterated over - this will change in the future!
+
+   SetName(name);
    init_KVGVList();
 }
 
@@ -163,7 +165,8 @@ void KVGVList::CalculateGlobalVariables(KVEvent* e)
                      // we use every distinct pair of particles (including identical pairs) in the event
                      vg->Fill2(it.get_const_pointer(), it2.get_const_pointer());
                   }
-               } else
+               }
+               else
                   vg->Fill(it.get_const_pointer());
             }
          }
@@ -282,7 +285,8 @@ void KVGVList::MakeBranches(TTree* tree)
                if (ob->GetValueType(i) == 'I') ++fNbIBranch;
                else ++fNbBranch;
             }
-         } else {
+         }
+         else {
             if (ob->GetValueType(0) == 'I') ++fNbIBranch;
             else ++fNbBranch;
          }
@@ -309,16 +313,19 @@ void KVGVList::MakeBranches(TTree* tree)
                if (ob->GetValueType(i) == 'I') {
                   tree->Branch(Form("%s.%s", sane_varname.Data(), sane_name.Data()), &fIBranchVar[ fNbIBranch ], Form("%s.%s/I", sane_varname.Data(), sane_name.Data()));
                   ++fNbIBranch;
-               } else {
+               }
+               else {
                   tree->Branch(Form("%s.%s", sane_varname.Data(), sane_name.Data()), &fBranchVar[ fNbBranch ], Form("%s.%s/D", sane_varname.Data(), sane_name.Data()));
                   ++fNbBranch;
                }
             }
-         } else {
+         }
+         else {
             if (ob->GetValueType(0) == 'I') {
                tree->Branch(sane_varname, &fIBranchVar[ fNbIBranch ], Form("%s/I", sane_varname.Data()));
                ++fNbIBranch;
-            } else {
+            }
+            else {
                tree->Branch(sane_varname, &fBranchVar[ fNbBranch ], Form("%s/D", sane_varname.Data()));
                ++fNbBranch;
             }
@@ -352,16 +359,19 @@ void KVGVList::FillBranches()
                if (ob->GetValueType(j) == 'I') {
                   fIBranchVar[ INT_index ] = (Int_t)ob->GetValue(j);
                   ++INT_index;
-               } else {
+               }
+               else {
                   fBranchVar[ FLT_index ] = ob->GetValue(j);
                   ++FLT_index;
                }
             }
-         } else {
+         }
+         else {
             if (ob->GetValueType(0) == 'I') {
                fIBranchVar[ INT_index ] = (Int_t)ob->GetValue();
                ++INT_index;
-            } else {
+            }
+            else {
                fBranchVar[ FLT_index ] = ob->GetValue();
                ++FLT_index;
             }
@@ -481,15 +491,18 @@ KVVarGlob* KVGVList::prepareGVforAdding(const Char_t* class_name, const Char_t* 
                "Called with class_name=%s.\nClass is unknown: not in standard libraries, and plugin (user-defined class) not found",
                class_name);
          return 0;
-      } else {
+      }
+      else {
          vg = (KVVarGlob*) ph->ExecPlugin(1, name);
       }
-   } else if (!clas->InheritsFrom("KVVarGlob")) {
+   }
+   else if (!clas->InheritsFrom("KVVarGlob")) {
       Error("AddGV(const Char_t*,const Char_t*)",
             "%s is not a valid class deriving from KVVarGlob.",
             class_name);
       return nullptr;
-   } else {
+   }
+   else {
       // need to use plugins to create even known classes, in order to call ctor with name
       TPluginHandler* ph = KVBase::LoadPlugin("KVVarGlob", class_name);
       if (!ph) {
