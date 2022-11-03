@@ -227,6 +227,7 @@ namespace KVImpactParameters {
       TF1 p_X_X_integrator_with_selection;
       TF1 fitted_P_X;
       TF1 Cb_dist_for_X_select;
+      TF1 Cb_dist_for_arb_X_select;
       TF1 B_dist_for_X_select;
       TF1 B_dist_for_arb_X_select;
 
@@ -343,10 +344,27 @@ namespace KVImpactParameters {
          // \param[in] p[0],p[1] \f$X_1\f$, \f$X_2\f$
 
          p_X_X_integrator.SetParameter(0, x[0]);
-         double num =  p_X_X_integrator.Integral(p[0], p[1], 1.e-4);
+         double num = p_X_X_integrator.Integral(p[0], p[1], 1.e-4);
          double den = fitted_P_X.Integral(p[0], p[1], 1.e-4);
          if (den > 0) return num / den;
          return 0;
+      }
+      double cb_dist_for_arb_X_selection(double* x, double* p)
+      {
+         // Function implementing the calculation of the centrality distribution \f$P(c_b|\mathbb{S})\f$ for an arbitrary selection of events \f$\mathbb{S}\f$
+         //\f[
+         //P(c_b|\mathbb{S})=\frac{\int P(X|c_b)\frac{P(X|\mathbb{S})}{P(X)}\,\mathrm{d}X}{\int P(X|\mathbb{S})\,\mathrm{d}X}
+         //\f]
+         //
+         // \return value of \f$P(c_b|\mathbb{S})\f$ for centrality \f$c_b\f$
+         // \param[in] x[0] centrality \f$c_b\f$
+         // \param[in] p[0],p[1] integration limits for \f$X\f$, \f$[X_1,X_2]\f$
+
+         p_X_X_integrator_with_selection.SetParameter(0, x[0]);
+         double num = p_X_X_integrator_with_selection.Integral(p[0], p[1], 1.e-4);
+         //num*=(1./histo->Integral("width"));
+
+         return num;
       }
       double b_dist_for_X_selection(double* x, double* p)
       {
@@ -392,6 +410,7 @@ namespace KVImpactParameters {
            p_X_X_integrator_with_selection("p_X_X_integrator_with_selection", this, &bayesian_estimator::P_X_cb_for_X_integral_with_selection, 0, 1000, 1),
            fitted_P_X("fitted_P_X", this, &bayesian_estimator::P_X_from_fit, 0, 1000, 1),
            Cb_dist_for_X_select("Cb_dist_for_X_select", this, &bayesian_estimator::cb_dist_for_X_selection, 0, 1, 2),
+           Cb_dist_for_arb_X_select("Cb_dist_for_arb_X_select", this, &bayesian_estimator::cb_dist_for_arb_X_selection, 0, 1, 2),
            B_dist_for_X_select("b_dist_for_X_select", this, &bayesian_estimator::b_dist_for_X_selection, 0, 20, 2),
            B_dist_for_arb_X_select("b_dist_for_arb_X_select", this, &bayesian_estimator::b_dist_for_arb_X_selection, 0, 20, 2),
            fIntegerVariable(integer_variable)
@@ -416,6 +435,7 @@ namespace KVImpactParameters {
            p_X_X_integrator_with_selection("p_X_X_integrator_with_selection", this, &bayesian_estimator::P_X_cb_for_X_integral_with_selection, 0, 1000, 1),
            fitted_P_X("fitted_P_X", this, &bayesian_estimator::P_X_from_fit, 0, 1000, 1),
            Cb_dist_for_X_select("Cb_dist_for_X_select", this, &bayesian_estimator::cb_dist_for_X_selection, 0, 1, 2),
+           Cb_dist_for_arb_X_select("Cb_dist_for_arb_X_select", this, &bayesian_estimator::cb_dist_for_arb_X_selection, 0, 1, 2),
            B_dist_for_X_select("b_dist_for_X_select", this, &bayesian_estimator::b_dist_for_X_selection, 0, 20, 2),
            B_dist_for_arb_X_select("b_dist_for_arb_X_select", this, &bayesian_estimator::b_dist_for_arb_X_selection, 0, 20, 2),
            fIntegerVariable(integer_variable)
@@ -582,6 +602,80 @@ namespace KVImpactParameters {
          f->SetLineWidth(2);
          f->SetTitle(title);
          return f->GetMaximum();
+      }
+      void DrawCbDistForSelection(TH1* sel, TH1* incl, double& mean_cb, double& sigma_cb, Option_t* opt = "", Color_t color = kRed, const TString& title = "")
+      {
+         // Draw centrality distribution for an arbitrary selection \f$\mathbb{S}\f$ of data,
+         //\f[
+         //P(c_b|\mathbb{S})=\frac{\int P(X|c_b)\frac{P(X|\mathbb{S})}{P(X)}\,\mathrm{d}X}{\int P(X|\mathbb{S})\,\mathrm{d}X}
+         //\f]
+         //
+         // \param[in] sel pointer to histogram containing observable distribution for selected events
+         // \param[in] incl pointer to histogram containing inclusive observable distribution
+         // \param[out] mean_cb mean value of c_b distribution
+         // \param[out] sigma_cb standard deviation of c_b distribution
+         // \param[in] opt drawing option if required, e.g. "same"
+         // \param[in] color colour to use for drawing distribution
+         // \param[in] title title to affect to the drawn distribution
+         //
+         // \note Histograms sel and incl must have exactly the same axis definitions, binning etc.
+
+         assert(sel->GetNbinsX() == incl->GetNbinsX());
+
+         // - extract first and last (not empty) bins -
+         // - define the P(X|S)/P(X) vector (used for integrand) -
+         sel_rapp.assign((std::vector<double>::size_type)incl->GetNbinsX(), 0.0);
+         int first_bin(0), last_bin(0);
+         for (int i = 1; i <= incl->GetNbinsX(); ++i) {
+            if (incl->GetBinContent(i) > 0) {
+               sel_rapp[i - 1] = sel->GetBinContent(i) / incl->GetBinContent(i);
+               if (sel->GetBinContent(i) > 0) {
+                  if (!first_bin) first_bin = i;
+                  last_bin = i;
+               }
+            }
+         }
+         double Xmin = incl->GetBinLowEdge(first_bin);
+         double Xmax = incl->GetXaxis()->GetBinUpEdge(last_bin);
+
+         histo = incl;
+         h_selection = sel;
+
+         //- set parameters -
+         Cb_dist_for_arb_X_select.SetParameters(Xmin, Xmax);
+         Cb_dist_for_arb_X_select.SetRange(0., 1.);
+         Cb_dist_for_arb_X_select.GetHistogram();
+
+         // - fill the graph -
+         double cb_mean(0), cb_sqrmean(0), sum_pcb(0);
+         TGraph* f = new TGraph;
+         for (int i = 0; i < 500; ++i) {//graph with 500 points
+            double cb  = i / 499.;
+            double p_cb = Cb_dist_for_arb_X_select.Eval(cb);
+
+            cb_mean    += p_cb * cb;
+            cb_sqrmean += p_cb * cb * cb;
+            sum_pcb    += p_cb;
+
+            f->SetPoint(i, cb, p_cb);
+         }
+
+         // - compute the standard deviation -
+         cb_sqrmean /= sum_pcb;
+         cb_mean /= sum_pcb;
+         mean_cb = cb_mean;
+         sigma_cb = TMath::Sqrt(cb_sqrmean - cb_mean * cb_mean);
+
+         //debug
+         Info("DrawCbDistForSelection",  "Xmin=%lf, Xmax=%lf, cb_mean=%lf, sigma_cb=%lf", Xmin, Xmax, cb_mean,  sigma_cb);
+
+         // - draw and options -
+         f->SetLineColor(color);
+         f->SetMarkerColor(color);
+         f->SetLineWidth(2);
+         f->SetTitle(title);
+         if (TString(opt) == "same") f->Draw("l");
+         else f->Draw("al");
       }
       double DrawBDistForXSelection(KVValueRange<double> Xrange, Option_t* opt = "", Color_t color = kRed, const TString& title = "")
       {
