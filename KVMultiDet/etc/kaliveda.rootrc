@@ -417,8 +417,8 @@ EventReconstruction.DoIdentification: yes
 EventReconstruction.DoCalibration: yes
 
 # Plugins for reading simulated events and converting to TTrees
-Plugin.KVSimReader: ELIE  KVSimReader_ELIE KVMultiDetsimulation "KVSimReader_ELIE()"
-+Plugin.KVSimReader: ELIE_asym  KVSimReader_ELIE_asym KVMultiDetsimulation "KVSimReader_ELIE_asym()"
+Plugin.KVSimReader: ELIE  KVSimReader_ELIE2023 KVMultiDetsimulation "KVSimReader_ELIE2023()"
++Plugin.KVSimReader: ELIE_asym  KVSimReader_ELIE2023_asym KVMultiDetsimulation "KVSimReader_ELIE2023_asym()"
 +Plugin.KVSimReader: HIPSE  KVSimReader_HIPSE KVMultiDetsimulation "KVSimReader_HIPSE()"
 +Plugin.KVSimReader: HIPSE_asym  KVSimReader_HIPSE_asym KVMultiDetsimulation "KVSimReader_HIPSE_asym()"
 +Plugin.KVSimReader: MMM  KVSimReader_MMM KVMultiDetsimulation "KVSimReader_MMM()"

@@ -61,14 +61,14 @@ Bool_t KVSimReader_DIT::ReadEvent()
 {
    evt->Clear();
    //
-   Int_t res = ReadLineAndCheck(21, " ");
+   auto res = ReadLineAndCheck(21, " ");
 
    switch (res) {
-      case 0 :
+      case KVFileReader::ReadStatus::EmptyLine :
          Info("ReadEvent", "Line is empty");
          return kFALSE;
 
-      case 1 :
+      case KVFileReader::ReadStatus::OK :
          evt->SetNumber(nevt);
          StoreEventInVariables();
          FillEvent();

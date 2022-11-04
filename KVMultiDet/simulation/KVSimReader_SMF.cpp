@@ -46,11 +46,11 @@ Bool_t KVSimReader_SMF::ReadHeader()
 {
 
    KVString snom;
-   Int_t res = ReadLineAndCheck(1, " ");
+   auto res = ReadLineAndCheck(1, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          snom.Form("%s", GetReadPar(0).Data());
          snom.ReplaceAll("evt_", "");
          //Info("ReadHeader","lecture %d",snom.Atoi());
@@ -71,11 +71,11 @@ Bool_t KVSimReader_SMF::ReadEvent()
    evt->Clear();
 
    Int_t mult = 0;
-   Int_t res = ReadLineAndCheck(1, " ");
+   auto res = ReadLineAndCheck(1, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          mult = GetIntReadPar(0);
          break;
 

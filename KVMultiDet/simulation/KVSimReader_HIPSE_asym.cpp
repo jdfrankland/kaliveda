@@ -30,12 +30,12 @@ Bool_t KVSimReader_HIPSE_asym::ReadEvent()
 
    evt->Clear();
    Int_t mult = 0, mtotal = 0;
-   Int_t res = ReadLineAndCheck(2, " ");
+   auto res = ReadLineAndCheck(2, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          Info("ReadEvent", "case 0 line est vide");
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          evt->SetNumber(nevt);
          mult = GetIntReadPar(0);
          mtotal = GetIntReadPar(1);
@@ -60,9 +60,9 @@ Bool_t KVSimReader_HIPSE_asym::ReadEvent()
 
    res = ReadLineAndCheck(3, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          evt->GetParameters()->SetValue("Esa", GetDoubleReadPar(0));
          evt->GetParameters()->SetValue("vcm", GetDoubleReadPar(1));
          evt->GetParameters()->SetValue("Bparstore", GetDoubleReadPar(2));
@@ -76,9 +76,9 @@ Bool_t KVSimReader_HIPSE_asym::ReadEvent()
 
    res = ReadLineAndCheck(3, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
 
          break;
       default:
@@ -100,13 +100,13 @@ Bool_t KVSimReader_HIPSE_asym::ReadEvent()
 Bool_t KVSimReader_HIPSE_asym::ReadNucleus()
 {
 
-   Int_t res = ReadLineAndCheck(3, " ");
+   auto res = ReadLineAndCheck(3, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          Info("ReadNucleus", "case 0 line est vide");
          return kFALSE;
 
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          /*
          proven = 0 -> fusion of the QP and QT
          proven = 1 -> QP
@@ -128,11 +128,11 @@ Bool_t KVSimReader_HIPSE_asym::ReadNucleus()
 
    res = ReadLineAndCheck(3, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          Info("ReadNucleus", "case 0 line est vide");
          return kFALSE;
 
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          //Axe "faisceau dans HIPSE x -> on effectue une rotation X,Y,Z -> Y,Z,X"
          nuc->SetMomentum(GetDoubleReadPar(1), GetDoubleReadPar(2), GetDoubleReadPar(0));
          {

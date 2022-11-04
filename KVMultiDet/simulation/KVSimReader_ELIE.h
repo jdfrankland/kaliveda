@@ -65,7 +65,7 @@ class KVSimReader_ELIE : public KVSimReader {
    void init()
    {
       tree_name = "ELIE";
-      elie_params = new KVNameValueList;
+      elie_params = new KVNameValueList;//has to be on heap as it will be stored in TTree::GetUserInfo() list and written to file
    }
 
 protected:
@@ -75,11 +75,11 @@ protected:
    virtual void define_output_filename();
    void transform_to_cm();
 
+   void read_elie_params(KVFileReader& input_file_reader);
 public:
    KVSimReader_ELIE();
    KVSimReader_ELIE(KVString filename);
-   virtual ~KVSimReader_ELIE();
-   virtual void ConvertEventsInFile(KVString filename);
+   void ConvertEventsInFile(KVString filename);
 
    void ReadFile();
    Bool_t ReadHeader();

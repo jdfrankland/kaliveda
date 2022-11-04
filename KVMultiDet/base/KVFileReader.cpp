@@ -5,12 +5,6 @@
 
 ClassImp(KVFileReader)
 
-KVFileReader::KVFileReader()
-{
-   // Default constructor
-   init();
-}
-
 //______________________
 KVFileReader::KVFileReader(const KVFileReader& obj) : KVBase()
 {

@@ -35,6 +35,8 @@
 #pragma link C++ class KVSimReader_MMM_asym;
 #pragma link C++ class KVSimReader_ELIE;
 #pragma link C++ class KVSimReader_ELIE_asym;
+#pragma link C++ class KVSimReader_ELIE2023;
+#pragma link C++ class KVSimReader_ELIE2023_asym;
 #pragma link C++ class KVTestEvent+;
 #pragma link C++ class KVWilckeReactionParameters+;
 #endif

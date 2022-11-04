@@ -68,8 +68,6 @@ public:
    KVSimReader_ELIE_asym();
    KVSimReader_ELIE_asym(KVString filename);
 
-   virtual ~KVSimReader_ELIE_asym();
-   void ConvertEventsInFile(KVString filename);
    Bool_t ReadNucleus();
 
    ClassDef(KVSimReader_ELIE_asym, 1) //Read ELIE events after secondary decay

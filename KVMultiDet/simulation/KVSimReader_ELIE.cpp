@@ -13,6 +13,8 @@ void KVSimReader_ELIE::define_output_filename()
    // Call after reading file header
    SetROOTFileName(Form("ELIE_%s_%s_%.1fAMeV_PRIM.root",
                         proj.GetSymbol(), targ.GetSymbol(), ebeam));
+   tree_title.Form("ELIE primary events %s + %s %.1f MeV/nuc.",
+                   proj.GetSymbol(), targ.GetSymbol(), ebeam);
 }
 
 void KVSimReader_ELIE::transform_to_cm()
@@ -38,18 +40,11 @@ KVSimReader_ELIE::KVSimReader_ELIE(KVString filename) : KVSimReader()
    ConvertEventsInFile(filename);
 }
 
-KVSimReader_ELIE::~KVSimReader_ELIE()
-{
-   // Destructor
-}
-
 void KVSimReader_ELIE::ConvertEventsInFile(KVString filename)
 {
    if (!OpenFileToRead(filename)) return;
    if (!ReadHeader()) return;
    define_output_filename();
-   tree_title.Form("ELIE primary events %s + %s %.1f MeV/nuc.",
-                   proj.GetSymbol(), targ.GetSymbol(), ebeam);
    Run();
    CloseFile();
 }
@@ -86,12 +81,12 @@ Bool_t KVSimReader_ELIE::ReadHeader()
    //
    // The simulation parameters are stored in a KVNameValueList
 
-   Int_t res = ReadLineAndCheck(5, " ");
+   auto res = ReadLineAndCheck(5, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          Info("ReadHeader", "Can't read system");
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          AddInfo("Aproj", GetReadPar(1));
          AddInfo("Zproj", GetReadPar(0));
          AddInfo("Atarg", GetReadPar(3));
@@ -107,30 +102,35 @@ Bool_t KVSimReader_ELIE::ReadHeader()
 
    res = ReadLineAndCheck(1, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          Info("ReadHeader", "Can't read events");
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          AddInfo("Nevents", GetReadPar(0));
          break;
 
       default:
          return kFALSE;
    }
-   elie_params->Clear();
-   elie_params->SetName("ELIE Parameters");
-   res = ReadLineAndCheck(2, "=");
-   while (res < 2) {
-      if (res > 0) {
-         if (GetReadPar(1).IsDigit()) elie_params->SetValue(GetReadPar(0), GetIntReadPar(1));
-         else if (GetReadPar(1).IsFloat()) elie_params->SetValue(GetReadPar(0), GetDoubleReadPar(1));
-         else elie_params->SetValue(GetReadPar(0), GetReadPar(1));
-      }
-      res = ReadLineAndCheck(2, "=");
-   }
-   if (elie_params->GetEntries()) AddObject(elie_params);
+   read_elie_params(*this);
 
    return kTRUE;
+}
+
+void KVSimReader_ELIE::read_elie_params(KVFileReader& input_file_reader)
+{
+   elie_params->Clear();
+   elie_params->SetName("ELIE Parameters");
+   auto res = input_file_reader.ReadLineAndCheck(2, "=");
+   while (res != KVFileReader::ReadStatus::EndOfFile) {
+      if (res == KVFileReader::ReadStatus::OK) {
+         if (input_file_reader.GetReadPar(1).IsDigit()) elie_params->SetValue(input_file_reader.GetReadPar(0), input_file_reader.GetIntReadPar(1));
+         else if (input_file_reader.GetReadPar(1).IsFloat()) elie_params->SetValue(input_file_reader.GetReadPar(0), input_file_reader.GetDoubleReadPar(1));
+         else elie_params->SetValue(input_file_reader.GetReadPar(0), input_file_reader.GetReadPar(1));
+      }
+      res = input_file_reader.ReadLineAndCheck(2, "=");
+   }
+   if (elie_params->GetEntries()) AddObject(elie_params);
 }
 
 Bool_t KVSimReader_ELIE::ReadEvent()
@@ -154,12 +154,13 @@ Bool_t KVSimReader_ELIE::ReadEvent()
 
    // first line of first event will have been read already by ReadHeader,
    // therefore we do not read a new line in this case (when nevt=0)
-   Int_t res = (nevt ? ReadLineAndCheck(3, " ") : ReuseLineAndCheck(3, " "));
+   auto res = (nevt ? ReadLineAndCheck(3, " ") : ReuseLineAndCheck(3, " "));
    Int_t mult = 0;
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
+      case KVFileReader::ReadStatus::EndOfFile:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          evt->SetNumber(GetIntReadPar(0));
          mult = GetIntReadPar(1);
          evt->GetParameters()->SetValue("bred", GetDoubleReadPar(2));
@@ -199,13 +200,13 @@ Bool_t KVSimReader_ELIE::ReadNucleus()
 
 
 
-   Int_t res = ReadLineAndCheck(8, " ");
+   auto res = ReadLineAndCheck(8, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          Info("ReadNucleus", "case 0 line est vide");
          return kFALSE;
 
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          nuc->SetZ(GetIntReadPar(1));
          nuc->SetA(GetIntReadPar(2));
          if (GetDoubleReadPar(6) >= 0.) nuc->SetExcitEnergy(GetDoubleReadPar(6));

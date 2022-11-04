@@ -22,22 +22,35 @@ private:
    {
       reading_line = "";
       nline = 0;
+      skip_comments = !comment_string.IsNull();
    }
 
 protected:
    std::unique_ptr<TObjArray> toks;//!
-   KVString reading_line, file_name;
+   KVString reading_line, file_name, comment_string;
    Int_t nline;
    Bool_t status;
+   Bool_t skip_comments = false;
 
 public:
    std::ifstream f_in;
 
-   KVFileReader();
+   enum class ReadStatus {
+      EmptyLine,
+      OK,
+      ParamMismatch,
+      CommentLine,
+      EndOfFile
+   };
+
+   KVFileReader(const KVString& comments = "")
+      : comment_string(comments)
+   {
+      // \param[in] comments if given, any lines beginning with the given string will be ignored
+      init();
+   }
    KVFileReader(const KVFileReader&);
    virtual void Copy(TObject&) const;
-
-   virtual ~KVFileReader() {}
 
    KVString GetFileName()
    {
@@ -65,7 +78,7 @@ public:
       status = f_in.good();
 
       if (!status)
-         Error("OpenFileToRead", "Echec dans l ouverture du fichier %s", filename.Data());
+         Error("OpenFileToRead", "Failed to open file %s", filename.Data());
 
       return status;
 
@@ -85,6 +98,7 @@ public:
    {
       reading_line.ReadLine(f_in);
       nline++;
+      if (skip_comments && reading_line.BeginsWith(comment_string)) return;
       if (pattern)
          StoreParameters(pattern);
    }
@@ -93,37 +107,43 @@ public:
    {
       reading_line.ReadLine(f_in);
       nline++;
+      if (skip_comments && reading_line.BeginsWith(comment_string)) return;
       if (pattern)
          AddParameters(pattern);
    }
 
-   Int_t ReadLineAndCheck(Int_t nexpect, const Char_t* pattern)
+   ReadStatus ReadLineAndCheck(Int_t nexpect, const Char_t* pattern)
    {
-      ReadLine(0);
+      reading_line.ReadLine(f_in);
+      if (!IsOK()) return ReadStatus::EndOfFile;
+
+      nline++;
+      if (skip_comments && reading_line.BeginsWith(comment_string)) return ReadStatus::CommentLine;
+
       GetCurrentLine().RemoveAllExtraWhiteSpace();
 
       if (GetCurrentLine().IsNull()) {
-         return 0;
+         return ReadStatus::EmptyLine;
       }
       StoreParameters(pattern);
       if (GetNparRead() == nexpect) {
-         return 1;
+         return ReadStatus::OK;
       }
       else {
-         return 2;
+         return ReadStatus::ParamMismatch;
       }
 
    }
-   Int_t ReuseLineAndCheck(Int_t nexpect, const Char_t* pattern)
+   ReadStatus ReuseLineAndCheck(Int_t nexpect, const Char_t* pattern)
    {
       // Same as ReadLineAndCheck, except that instead of reading a
       // new line we re-use the last read line
       StoreParameters(pattern);
       if (GetNparRead() == nexpect) {
-         return 1;
+         return ReadStatus::OK;
       }
       else {
-         return 2;
+         return ReadStatus::ParamMismatch;
       }
 
    }

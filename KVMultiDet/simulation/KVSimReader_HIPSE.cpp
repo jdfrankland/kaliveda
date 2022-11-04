@@ -42,11 +42,11 @@ void KVSimReader_HIPSE::ReadFile()
 Bool_t KVSimReader_HIPSE::ReadHeader()
 {
 
-   Int_t res = ReadLineAndCheck(2, " ");
+   auto res = ReadLineAndCheck(2, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          AddInfo("Aproj", GetReadPar(0).Data());
          AddInfo("Zproj", GetReadPar(1).Data());
          proj.SetZandA(GetReadPar(1).Atoi(), GetReadPar(0).Atoi());
@@ -57,9 +57,9 @@ Bool_t KVSimReader_HIPSE::ReadHeader()
 
    res = ReadLineAndCheck(2, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          AddInfo("Atarg", GetReadPar(0).Data());
          AddInfo("Ztarg", GetReadPar(1).Data());
          targ.SetZandA(GetReadPar(1).Atoi(), GetReadPar(0).Atoi());
@@ -72,9 +72,9 @@ Bool_t KVSimReader_HIPSE::ReadHeader()
 
    res = ReadLineAndCheck(1, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          AddInfo("Ebeam", GetReadPar(0).Data());
          ebeam = GetReadPar(0).Atof();
          return kTRUE;
@@ -98,12 +98,12 @@ Bool_t KVSimReader_HIPSE::ReadEvent()
      mult     = total multiplicity (i.e. including neutrons)
    //---------------------------------------------
    */
-   Int_t res = ReadLineAndCheck(2, " ");
+   auto res = ReadLineAndCheck(2, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          Info("ReadEvent", "case 0 line est vide");
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          evt->SetNumber(nevt);
          mult = GetIntReadPar(0);   //mul_vrai
          mtotal = GetIntReadPar(1);
@@ -123,9 +123,9 @@ Bool_t KVSimReader_HIPSE::ReadEvent()
    */
    res = ReadLineAndCheck(3, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          evt->GetParameters()->SetValue("Esa", GetDoubleReadPar(0));
          evt->GetParameters()->SetValue("vcm", GetDoubleReadPar(1));
          evt->GetParameters()->SetValue("Bparstore", GetDoubleReadPar(2));
@@ -147,9 +147,9 @@ Bool_t KVSimReader_HIPSE::ReadEvent()
    */
    res = ReadLineAndCheck(2, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          evt->GetParameters()->SetValue("excitat", GetDoubleReadPar(0));
          evt->GetParameters()->SetValue("xmassav", GetDoubleReadPar(1));
 
@@ -161,9 +161,9 @@ Bool_t KVSimReader_HIPSE::ReadEvent()
 
    res = ReadLineAndCheck(3, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
 
          evt->GetParameters()->SetValue("ekinav", GetDoubleReadPar(0));
          evt->GetParameters()->SetValue("epotav", GetDoubleReadPar(1));
@@ -188,13 +188,13 @@ Bool_t KVSimReader_HIPSE::ReadEvent()
 Bool_t KVSimReader_HIPSE::ReadNucleus()
 {
 
-   Int_t res = ReadLineAndCheck(3, " ");
+   auto res = ReadLineAndCheck(3, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          Info("ReadNucleus", "case 0 line est vide");
          return kFALSE;
 
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          /*
           proven = 0 -> fusion of the QP and QT
           proven = 1 -> QP
@@ -212,11 +212,11 @@ Bool_t KVSimReader_HIPSE::ReadNucleus()
 
    res = ReadLineAndCheck(3, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          Info("ReadNucleus", "case 0 line est vide");
          return kFALSE;
 
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          //Axe "faisceau dans HIPSE x -> on effectue une rotation X,Y,Z -> Y,Z,X"
          nuc->SetMomentum(GetDoubleReadPar(1), GetDoubleReadPar(2), GetDoubleReadPar(0));
          break;
@@ -235,11 +235,11 @@ Bool_t KVSimReader_HIPSE::ReadNucleus()
    */
    res = ReadLineAndCheck(2, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          Info("ReadNucleus", "case 0 line est vide");
          return kFALSE;
 
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          nuc->SetExcitEnergy(GetDoubleReadPar(0)*AA);
          nuc->GetParameters()->SetValue("exci", GetDoubleReadPar(0));
          nuc->GetParameters()->SetValue("ether", GetDoubleReadPar(1));
@@ -251,11 +251,11 @@ Bool_t KVSimReader_HIPSE::ReadNucleus()
 
    res = ReadLineAndCheck(3, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          Info("ReadNucleus", "case 0 line est vide");
          return kFALSE;
 
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          //On effectue la meme rotation que les impulsions ... à vérifier
          nuc->SetAngMom(GetDoubleReadPar(1), GetDoubleReadPar(2), GetDoubleReadPar(0));
          return kTRUE;

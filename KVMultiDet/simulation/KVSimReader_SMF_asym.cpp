@@ -45,11 +45,11 @@ Bool_t KVSimReader_SMF_asym::ReadHeader()
 {
 
    KVString snom;
-   Int_t res = ReadLineAndCheck(1, " ");
+   auto res = ReadLineAndCheck(1, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          snom.Form("%s", GetReadPar(0).Data());
          snom.ReplaceAll("evt_", "");
          //Info("ReadHeader","lecture %d",snom.Atoi());
@@ -62,9 +62,9 @@ Bool_t KVSimReader_SMF_asym::ReadHeader()
 
    res = ReadLineAndCheck(1, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          nv->SetValue("ndes", GetIntReadPar(0));
          ndes = 0;
 
@@ -84,11 +84,11 @@ Bool_t KVSimReader_SMF_asym::ReadEvent()
    evt->Clear();
 
    Int_t mult = 0;
-   Int_t res = ReadLineAndCheck(1, " ");
+   auto res = ReadLineAndCheck(1, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          return kFALSE;
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          mult = GetIntReadPar(0);
          break;
 
@@ -115,13 +115,13 @@ Bool_t KVSimReader_SMF_asym::ReadEvent()
 Bool_t KVSimReader_SMF_asym::ReadNucleus()
 {
 
-   Int_t res = ReadLineAndCheck(5, " ");
+   auto res = ReadLineAndCheck(5, " ");
    switch (res) {
-      case 0:
+      case KVFileReader::ReadStatus::EmptyLine:
          Info("ReadNucleus", "case 0 line est vide");
          return kFALSE;
 
-      case 1:
+      case KVFileReader::ReadStatus::OK:
          nuc->SetZ(GetIntReadPar(1));
          nuc->SetA(GetIntReadPar(0));
 
