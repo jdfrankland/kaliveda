@@ -120,7 +120,7 @@ public:
    {
       kmode = mode;
    }
-   virtual void DeclareTree(Option_t* option);
+   void DeclareTree(Option_t* option);
 
    TTree* GetTree()
    {
