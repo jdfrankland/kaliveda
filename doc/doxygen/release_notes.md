@@ -1,8 +1,23 @@
 \page release_notes Release Notes for KaliVeda
 
-Last update: 26th October 2022
+Last update: 9th November 2022
 
 ## Version 1.13/01 (current development version - dev branch)
+
+__Changes 9/11/2022 in__ \ref Analysis : __New isoscaling analysis tool__
+
+Isoscaling corresponds to the scaling behaviour obtained from the ratio \f$ R_{21}(N,Z) \f$ of the same isotope measured with two colliding systems differing in their neutron-to-proton content,
+\f$ Y_{(1)}(N,Z) \f$ and \f$ Y_{(2)}(N,Z) \f$, where \f$ (2) \f$ stands for the neutron-rich system.
+
+In a variety of HIC an exponential dependence of the ratio on N and Z is observed, such as
+\f[
+R_{21}(N,Z) = \frac{Y_{(2)}(N,Z)}{Y_{(1)}(N,Z)} = C\,exp\left[ \alpha N + \beta Z \right]
+\f]
+
+where \f$ C \f$ is an overall normalization constant while \f$ \alpha \f$ and \f$ \beta \f$ are the isoscaling parameters.
+
+KVIsoscaling, contributed by Quentin Fable (quentin.fable@l2it.in2p3.fr), is the class used to perform the isoscaling analyses in
+the recent INDRA-VAMOS paper <a href="https://journals.aps.org/prc/abstract/10.1103/PhysRevC.106.024605">Phys. Rev. C 106 024605 (2022)</a>.
 
 __Changes 26/10/2022 in__ \ref Analysis : __Generic event mixing algorithm for correlation studies__
 

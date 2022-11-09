@@ -1,15 +1,7 @@
-//Created by KVClassFactory on Tue Mar  3 12:41:49 2020
-//Author: qfable
-
-/*
-Class used to compute isoscaling coefficients and extract Csym/T from input data files (Z fixed).
-See Phys. Rev. C 68, 051601(R) (2003) and Phys. Rev. C 75, 044605 (2007) for more details about isoscaling.
-*/
-
 #include "KVIsoscaling.h"
 #include "KVString.h"
 
-#include "Riostream.h"
+#include "TGraphErrors.h"
 #include "TString.h"
 #include "TObjArray.h"
 #include "TObjString.h"
@@ -31,57 +23,7 @@ ClassImp(KVIsoscaling)
 // --> END_HTML
 ////////////////////////////////////////////////////////////////////////////////
 
-KVIsoscaling::KVIsoscaling()
-{
-   // Default constructor
-   flist_z_ = new KVList();
-   flist_z_->SetOwner(kTRUE);
 
-   flist_a_ = new KVList();
-   flist_a_->SetOwner(kTRUE);
-
-   fhlist_lnR21N_ = new KVHashList();
-   fhlist_lnR21N_->SetOwner(kTRUE);
-
-   fhlist_lnR21N_all_ = new KVHashList();
-   fhlist_lnR21N_all_->SetOwner(kTRUE);
-
-   fhlist_fit_ = new KVHashList();
-   fhlist_fit_->SetOwner(kTRUE);
-
-   fhlist_csymT_ = new KVHashList();
-   fhlist_csymT_->SetOwner(kTRUE);
-
-   fhlist_yields_ = new KVHashList();
-   fhlist_yields_->SetOwner(kTRUE);
-
-   fhlist_delta_ = new KVHashList();
-   fhlist_delta_->SetOwner(kTRUE);
-
-   fhlist_alpha_ = new KVHashList();
-   fhlist_alpha_->SetOwner(kTRUE);
-
-   fhlist_alpha_delta_ = new KVHashList();
-   fhlist_alpha_delta_->SetOwner(kTRUE);
-
-   ftol_  = 2.5;
-
-   fdebug_ = kFALSE;
-}
-
-//____________________________________________________________________________//
-KVIsoscaling::~KVIsoscaling()
-{
-   // Destructor
-   delete flist_z_;
-   delete flist_a_;
-   delete fhlist_lnR21N_;
-   delete fhlist_fit_;
-   delete fhlist_csymT_;
-   delete fhlist_delta_;
-   delete fhlist_alpha_delta_;
-   delete fhlist_alpha_;
-}
 
 //____________________________________________________________________________//
 Bool_t KVIsoscaling::ReadYieldsFile(Int_t system, const Char_t* file_path)
@@ -219,8 +161,8 @@ Bool_t KVIsoscaling::ReadYieldsFile(Int_t system, const Char_t* file_path)
       fvec_sys_z_yields_err_.push_back(my_z_yielderr_vec);
 
       // --- Fill the global number lists ---
-      flist_z_->Add(my_z_nl);
-      flist_a_->Add(my_nla_list);
+      flist_z_.Add(my_z_nl);
+      flist_a_.Add(my_nla_list);
 
       // --- Add the system to the number list --
       fnl_sys_.Add(system);
@@ -284,14 +226,14 @@ void KVIsoscaling::BuildGaussianPlots(Int_t system)
          gr->GetXaxis()->SetTitle("N");
          gr->GetYaxis()->SetTitle("Y1");
          gr->SetMarkerStyle(20);
-         fhlist_yields_->Add(gr);
+         fhlist_yields_.Add(gr);
 
          TGraphErrors* grln = new TGraphErrors();
          grln->SetName(Form("gr_lnyields_%d_vs_N_%d", system, next_zz));
          grln->GetXaxis()->SetTitle("N");
          grln->GetYaxis()->SetTitle("Ln(Y1)");
          grln->SetMarkerStyle(20);
-         fhlist_yields_->Add(grln);
+         fhlist_yields_.Add(grln);
 
          if (fdebug_) Info("BuildGaussianPlots", "Graph %s created", gr->GetName());
 
@@ -325,7 +267,7 @@ void KVIsoscaling::BuildGaussianPlots(Int_t system)
          // --- Apply individual gaussian fit and save the results ---
          TF1* gaus = new TF1(Form("gaus_yields_%d_vs_N_%d", system, next_zz), "gaus(0)", 0, 60);
          gr->Fit(Form("gaus_yields_%d_vs_N_%d", system, next_zz), "Q");
-         fhlist_yields_->Add(gaus);
+         fhlist_yields_.Add(gaus);
 
          // - Add the average <A(Z)> values -
          my_meanA_vec.push_back(gaus->GetParameter(1) + next_zz);
@@ -356,10 +298,10 @@ void KVIsoscaling::TestGaussianApprox(Int_t system1, Int_t system2, Int_t zz, Do
    // \param[in] zz fixed charge for the isotopic yields to be tested
    // \param[in] tol threshold to be tested
 
-   TGraphErrors* gr_sys1_all = (TGraphErrors*) fhlist_yields_->FindObject(Form("gr_yields_%d_vs_N_%d", system1, zz));
-   TGraphErrors* gr_sys2_all = (TGraphErrors*) fhlist_yields_->FindObject(Form("gr_yields_%d_vs_N_%d", system2, zz));
-   TF1* gaus1 = (TF1*) fhlist_yields_->FindObject(Form("gaus_yields_%d_vs_N_%d", system1, zz));
-   TF1* gaus2 = (TF1*) fhlist_yields_->FindObject(Form("gaus_yields_%d_vs_N_%d", system2, zz));
+   TGraphErrors* gr_sys1_all = (TGraphErrors*) fhlist_yields_.FindObject(Form("gr_yields_%d_vs_N_%d", system1, zz));
+   TGraphErrors* gr_sys2_all = (TGraphErrors*) fhlist_yields_.FindObject(Form("gr_yields_%d_vs_N_%d", system2, zz));
+   TF1* gaus1 = (TF1*) fhlist_yields_.FindObject(Form("gaus_yields_%d_vs_N_%d", system1, zz));
+   TF1* gaus2 = (TF1*) fhlist_yields_.FindObject(Form("gaus_yields_%d_vs_N_%d", system2, zz));
 
    // --- Build the graphs with thresholds and ratios of the yields ---
    // Use only the A (N) shared between the 2 systems
@@ -524,7 +466,7 @@ void KVIsoscaling::BuildLnR21vsNPlots(Int_t system1, Int_t system2)
          gr_all->GetYaxis()->SetTitle("ln(R21)");
          gr_all->SetMarkerStyle(20);
          gr_all->SetMarkerColor(next_zz % 9 + 1);
-         fhlist_lnR21N_all_->Add(gr_all);
+         fhlist_lnR21N_all_.Add(gr_all);
 
          TGraphErrors* gr = new TGraphErrors();
          gr->SetName(Form("gr_lnR21_vs_N_%d_%d_%d", system1, system2, next_zz));
@@ -532,13 +474,13 @@ void KVIsoscaling::BuildLnR21vsNPlots(Int_t system1, Int_t system2)
          gr->GetYaxis()->SetTitle("ln(R21)");
          gr->SetMarkerStyle(20);
          gr->SetMarkerColor(next_zz % 9 + 1);
-         fhlist_lnR21N_->Add(gr);
+         fhlist_lnR21N_.Add(gr);
 
          if (fdebug_) Info("BuildLnR21vsNPlots", "Graph %s created", gr->GetName());
 
          // - Find individual fits of the yields -
-         TF1* gaus_np = (TF1*) fhlist_yields_->FindObject(Form("gaus_yields_%d_vs_N_%d", system1, next_zz));
-         TF1* gaus_nr = (TF1*) fhlist_yields_->FindObject(Form("gaus_yields_%d_vs_N_%d", system2, next_zz));
+         TF1* gaus_np = (TF1*) fhlist_yields_.FindObject(Form("gaus_yields_%d_vs_N_%d", system1, next_zz));
+         TF1* gaus_nr = (TF1*) fhlist_yields_.FindObject(Form("gaus_yields_%d_vs_N_%d", system2, next_zz));
          Double_t par0     = gaus_nr->GetParameter(0);
          Double_t par0_err = gaus_nr->GetParError(0);
          Double_t par1     = gaus_nr->GetParameter(1);
@@ -556,12 +498,12 @@ void KVIsoscaling::BuildLnR21vsNPlots(Int_t system1, Int_t system2)
          TF1* gaus_ratio = new TF1(Form("gaus_ratio_%d_%d_%d", system1, system2, next_zz), "gaus(0)/(gaus(3))", 0, 60);
          gaus_ratio->SetLineColor(kBlack);
          gaus_ratio->SetParameters(par0, par1, par2, par3, par4, par5);
-         fhlist_yields_->Add(gaus_ratio);
+         fhlist_yields_.Add(gaus_ratio);
 
          TF1* gaus_ratio_ln = new TF1(Form("gaus_ratio_ln_%d_%d_%d", system1, system2, next_zz), "TMath::Log(gaus(0)/(gaus(3)))", 0, 60);
          gaus_ratio_ln->SetLineColor(kBlack);
          gaus_ratio_ln->SetParameters(par0, par1, par2, par3, par4, par5);
-         fhlist_yields_->Add(gaus_ratio_ln);
+         fhlist_yields_.Add(gaus_ratio_ln);
 
          // - Find charge pos. in vector and associated values -
          Int_t pos_zz1 = GetZPos(system1, next_zz);
@@ -651,7 +593,7 @@ void KVIsoscaling::FitLnR21vsNPlots(Int_t system1, Int_t system2, Option_t* opti
    TF1*          func = NULL;
 
    Int_t ip = 0;
-   TIter it(fhlist_lnR21N_);
+   TIter it(&fhlist_lnR21N_);
    while ((gr = (TGraphErrors*) it.Next())) {
       //Tokenize
       KVString my_str(gr->GetName());
@@ -670,7 +612,7 @@ void KVIsoscaling::FitLnR21vsNPlots(Int_t system1, Int_t system2, Option_t* opti
 
          for (Int_t ii = 0; ii < 10; ii++) gr->Fit(func, option, gooption, float(nmin + 2), float(nmax - 2));
 
-         fhlist_fit_->Add(func);
+         fhlist_fit_.Add(func);
 
          ip++;
       }
@@ -689,7 +631,7 @@ void KVIsoscaling::DrawLnR21vsNFits(Int_t system1, Int_t system2)
    TMultiGraph* mgr = new TMultiGraph();
 
    TGraphErrors* gr = NULL;
-   TIter it0(fhlist_lnR21N_);
+   TIter it0(&fhlist_lnR21N_);
    while ((gr = (TGraphErrors*) it0.Next())) {
       //Tokenize
       KVString my_str(gr->GetName());
@@ -709,7 +651,7 @@ void KVIsoscaling::DrawLnR21vsNFits(Int_t system1, Int_t system2)
    mgr->GetYaxis()->SetTitle("ln(R21)");
 
    TF1* func = NULL;
-   TIter it1(fhlist_fit_);
+   TIter it1(&fhlist_fit_);
    while ((func = (TF1*) it1.Next())) {
       //Tokenize
       KVString my_str(func->GetName());
@@ -746,7 +688,7 @@ void KVIsoscaling::BuildAlphaPlot(Int_t system1, Int_t system2, Int_t mcolor, In
 
    Int_t np = 0;
    TF1* func = NULL;
-   TIter it1(fhlist_fit_);
+   TIter it1(&fhlist_fit_);
    while ((func = (TF1*) it1.Next())) {
       //Tokenize
       KVString my_str(func->GetName());
@@ -771,7 +713,7 @@ void KVIsoscaling::BuildAlphaPlot(Int_t system1, Int_t system2, Int_t mcolor, In
       }
    }//end iter
 
-   fhlist_alpha_->Add(gr);
+   fhlist_alpha_.Add(gr);
 
    if (draw) gr->Draw("ap");
 
@@ -814,7 +756,7 @@ void KVIsoscaling::BuildDeltaZA2Plot(Int_t system1, Int_t system2, Int_t mcolor,
       }
    }
 
-   fhlist_delta_->Add(gr);
+   fhlist_delta_.Add(gr);
 
    if (draw) gr->Draw("ap");
 
@@ -857,7 +799,7 @@ void KVIsoscaling::BuildAlphavsDeltaPlot(Int_t system1, Int_t system2, Int_t mco
       }
    }
 
-   fhlist_alpha_delta_->Add(gr);
+   fhlist_alpha_delta_.Add(gr);
 
    if (draw) gr->Draw("ap");
 
@@ -889,7 +831,7 @@ void KVIsoscaling::BuildCsymOverTPlot(Int_t system1, Int_t system2, Int_t mcolor
 
    Int_t np = 0;
    TF1* func = NULL;
-   TIter it1(fhlist_fit_);
+   TIter it1(&fhlist_fit_);
    while ((func = (TF1*) it1.Next())) {
       //Tokenize
       KVString my_str(func->GetName());
@@ -913,7 +855,7 @@ void KVIsoscaling::BuildCsymOverTPlot(Int_t system1, Int_t system2, Int_t mcolor
       }
    }//end iter
 
-   fhlist_csymT_->Add(gr);
+   fhlist_csymT_.Add(gr);
 
    if (draw) gr->Draw("ap");
 
@@ -926,7 +868,7 @@ void KVIsoscaling::CreateCsymOverTMultiGraph(TMultiGraph* mgr)
    TGraphErrors* gr = NULL;
 
    Int_t nn = 0;
-   TIter it(fhlist_csymT_);
+   TIter it(&fhlist_csymT_);
    while ((gr = (TGraphErrors*) it.Next())) {
       Info("CreateCsymOverTMultiGraph", "%s added to the MultiGraph", gr->GetName());
       mgr->Add(gr);
@@ -939,18 +881,18 @@ void KVIsoscaling::SaveResultsROOT(const Char_t* file_name)
    // This method allows to save the lnR21, fits and Csym/T graphs in a *.root file
    // \param[in] file_name output file path
 
-   TFile* my_file = new TFile(Form("%s", file_name), "RECREATE");
-   fhlist_lnR21N_all_->Write();
-   fhlist_lnR21N_->Write();
-   fhlist_fit_->Write();
-   fhlist_yields_->Write();
+   TFile my_file(Form("%s", file_name), "RECREATE");
 
-   fhlist_delta_->Write();
-   fhlist_alpha_->Write();
-   fhlist_alpha_delta_->Write();
-   fhlist_csymT_->Write();
+   fhlist_lnR21N_all_.Write();
+   fhlist_lnR21N_.Write();
+   fhlist_fit_.Write();
+   fhlist_yields_.Write();
 
-   my_file->Close();
+   fhlist_delta_.Write();
+   fhlist_alpha_.Write();
+   fhlist_alpha_delta_.Write();
+   fhlist_csymT_.Write();
+
    if (fdebug_) Info("SaveResultsROOT", "File '%s' saved", file_name);
 }
 
@@ -1045,7 +987,7 @@ Bool_t KVIsoscaling::GetAlpha(Int_t system1, Int_t system2, Int_t zz, Float_t& a
    Bool_t is_ok = kFALSE;
 
    TF1* func = NULL;
-   TIter it1(fhlist_fit_);
+   TIter it1(&fhlist_fit_);
    while ((func = (TF1*) it1.Next())) {
       //Tokenize
       KVString my_str(func->GetName());
@@ -1279,7 +1221,7 @@ KVNumberList* KVIsoscaling::GetANumberList(Int_t system, Int_t zz)
 
    if (fdebug_) Info("GetANumberList", "Looking at sys_pos=%d, z_pos=%d", sys_pos, zz_pos);
 
-   KVList* mylist        = (KVList*)(flist_a_->At(sys_pos));
+   KVList* mylist        = (KVList*)(flist_a_.At(sys_pos));
    KVNumberList* mynlist = (KVNumberList*)(mylist->At(zz_pos));
 
    return mynlist;

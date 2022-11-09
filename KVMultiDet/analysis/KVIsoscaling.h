@@ -1,10 +1,3 @@
-//Created by KVClassFactory on Tue Mar  3 12:41:49 2020
-//Author: qfable
-/*
-Class used to estimate isoscaling alpha coefficient and extract Csym/T from input data files (Z fixed).
-See Phys. Rev. Lett. 86, 5023 (2001) for more details.
-*/
-
 #ifndef __KVISOSCALING_H
 #define __KVISOSCALING_H
 
@@ -18,13 +11,14 @@ See Phys. Rev. Lett. 86, 5023 (2001) for more details.
 #include "KVHashList.h"
 
 //ROOT libs
-#include "TGraphErrors.h"
 #include "TMultiGraph.h"
 
 /**
 \class KVIsoscaling
-\brief Class used to apply isoscaling method
+\brief Class used to estimate isoscaling alpha coefficient and extract Csym/T from input data files (Z fixed)
 \ingroup Analysis
+\author Quentin Fable (quentin.fable@l2it.in2p3.fr)
+\date Tue Mar  3 12:41:49 2020
 
 See Phys. Rev. Lett. 86, 5023 (2001) and also Phys. Rev. C 75, 044605 (2007) for more details about the isoscaling method.
 This class was used in Fable et al., Phys. Rev. C 106 024605 (2022).
@@ -82,13 +76,14 @@ The yields can be imported using:
    kvi.ReadYieldsFile(Int_t system_idx, const Char_t *my_path);
    ~~~~~
 
-After the importation, individual gaussian fits will be applied the yields in order to extract the \f$ \langle A(Z)\rangle \f$ values (see BuildGaussianPlots method for more details).
+After the importation, individual gaussian fits will be applied the yields in order to extract the \f$ \langle A(Z)\rangle \f$ values
+(see BuildGaussianPlots() method for more details).
 
 Results of the importation can be accessed from various functions:
    ~~~~~{.cpp}
-   KVNumberList KVIsoscaling::GetZNumberList(Int_t system)            returns a KVNumberList of all the charges set for `my_system`
-   KVNumberList KVIsoscaling::GetANumberList(Int_t system, Int_t zz)            returns a KVNumberList of all the masses set `my_system` and charge `zz`
-   KVNumberList KVIsoscaling::GetSharedZNumberList(Int_t system_1, Int_t system_2)            returns a KVNumberList of the charges shared between two imported systems
+   KVNumberList KVIsoscaling::GetZNumberList(Int_t system)                          // returns a KVNumberList of all the charges set for `my_system`
+   KVNumberList KVIsoscaling::GetANumberList(Int_t system, Int_t zz)                // returns a KVNumberList of all the masses set `my_system` and charge `zz`
+   KVNumberList KVIsoscaling::GetSharedZNumberList(Int_t system_1, Int_t system_2)  // returns a KVNumberList of the charges shared between two imported systems
    ...
    ~~~~~
 
@@ -130,9 +125,9 @@ To fit the graphs use:
 See the list of methods below that can then be used to exploit the fit results.
 
    ~~~~~{.cpp}
-   void KVIsoscaling::BuildAlphaPlot(int system_1, int system_2)            build alpha vs Z plot
-   void KVIsoscaling::BuildDeltaZA2Plot(int system_1, int system_2)            build Delta vs Z plot
-   void KVIsoscaling::BuildAlphavsDeltaPlot(int system_1, int system_2)         build alpha vs Delta plot
+   void KVIsoscaling::BuildAlphaPlot(int system_1, int system_2)        // build alpha vs Z plot
+   void KVIsoscaling::BuildDeltaZA2Plot(int system_1, int system_2)     // build Delta vs Z plot
+   void KVIsoscaling::BuildAlphavsDeltaPlot(int system_1, int system_2) // build alpha vs Delta plot
    ~~~~~
 
 ### Export results
@@ -150,8 +145,22 @@ Results can be saved in ROOT file using:
 class KVIsoscaling : public TObject {
 public:
 
-   KVIsoscaling();
-   virtual ~KVIsoscaling();
+   KVIsoscaling()
+   {
+      // Default constructor
+      fhlist_lnR21N_.SetOwner(kTRUE);
+      fhlist_lnR21N_all_.SetOwner(kTRUE);
+      fhlist_fit_.SetOwner(kTRUE);
+      fhlist_csymT_.SetOwner(kTRUE);
+      fhlist_yields_.SetOwner(kTRUE);
+      fhlist_delta_.SetOwner(kTRUE);
+      fhlist_alpha_.SetOwner(kTRUE);
+      fhlist_alpha_delta_.SetOwner(kTRUE);
+
+      ftol_  = 2.5;
+
+      fdebug_ = kFALSE;
+   }
 
    Bool_t ReadYieldsFile(Int_t system, const Char_t* file_path);
 
@@ -205,39 +214,39 @@ public:
    // --- Lists ---
    KVHashList* GetLnR21vsNGraphList()
    {
-      return fhlist_lnR21N_;
+      return &fhlist_lnR21N_;
    }
    KVHashList* GetLnR21vsNFitList()
    {
-      return fhlist_fit_;
+      return &fhlist_fit_;
    }
    KVHashList* GetAlphaPlots()
    {
-      return fhlist_alpha_;
+      return &fhlist_alpha_;
    }
    KVHashList* GetDeltaZA2Plots()
    {
-      return fhlist_delta_;
+      return &fhlist_delta_;
    }
    KVHashList* GetAlphavsDeltaPlots()
    {
-      return fhlist_alpha_delta_;
+      return &fhlist_alpha_delta_;
    }
    KVHashList* GetCsymOverTPlots()
    {
-      return fhlist_csymT_;
+      return &fhlist_csymT_;
    }
 
    KVNumberList* GetZNumberList(Int_t system)
    {
-      return (KVNumberList*)(flist_z_->At(GetSystemPos(system)));
+      return (KVNumberList*)(flist_z_.At(GetSystemPos(system)));
    }
    KVNumberList* GetANumberList(Int_t system, Int_t zz);
    KVNumberList GetSharedZNumberList(Int_t system1, Int_t system2);
    KVNumberList GetSharedANumberList(Int_t system1, Int_t system2, Int_t zz);
    KVList* GetAList()
    {
-      return flist_a_;
+      return &flist_a_;
    }
 
    // --- Printers ---
@@ -277,16 +286,16 @@ protected:
 
    // --- Lists ---
    KVNumberList fnl_sys_;           // KVNumberList of treated systems (yield files have been read without error)
-   KVList* flist_z_;            // contains all lists of charges Z (one KVNumberList per system, in system order)
-   KVList* flist_a_;            // contains all lists of masses A (one list of KVNumberList per (system, Z) combination)
-   KVHashList* fhlist_lnR21N_;       // contains all graphs of lnR21 vs N (with tolerance applied)
-   KVHashList* fhlist_lnR21N_all_;  // contains all graphs of lnR21 vs N (without tolerance applied)
-   KVHashList* fhlist_fit_;         // contains all linear fits attempted from lnR21_vs_N graphs
-   KVHashList* fhlist_yields_;      // contains all yield plots vs N
-   KVHashList* fhlist_delta_;       // contains all Delta vs Z graphs
-   KVHashList* fhlist_alpha_;       // contains all Aplha vs Z graphs
-   KVHashList* fhlist_alpha_delta_; // contains all Alpha vs Delta graphs
-   KVHashList* fhlist_csymT_;     // contains all Csym/T vs Z graphs
+   KVList flist_z_;            // contains all lists of charges Z (one KVNumberList per system, in system order)
+   KVList flist_a_;            // contains all lists of masses A (one list of KVNumberList per (system, Z) combination)
+   KVHashList fhlist_lnR21N_;       // contains all graphs of lnR21 vs N (with tolerance applied)
+   KVHashList fhlist_lnR21N_all_;  // contains all graphs of lnR21 vs N (without tolerance applied)
+   KVHashList fhlist_fit_;         // contains all linear fits attempted from lnR21_vs_N graphs
+   KVHashList fhlist_yields_;      // contains all yield plots vs N
+   KVHashList fhlist_delta_;       // contains all Delta vs Z graphs
+   KVHashList fhlist_alpha_;       // contains all Aplha vs Z graphs
+   KVHashList fhlist_alpha_delta_; // contains all Alpha vs Delta graphs
+   KVHashList fhlist_csymT_;     // contains all Csym/T vs Z graphs
 
    // --- Getters ---
    Int_t   GetSystemPos(Int_t system); // returns the system position in fvec_sys_
