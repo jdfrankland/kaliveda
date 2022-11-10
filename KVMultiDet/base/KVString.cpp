@@ -439,27 +439,29 @@ void KVString::Begin(TString delim) const
    // to Begin().
    //
    // Example:
+   //~~~~{.cpp}
    //   KVString str("First | Second | Third");
    //   str.Begin("|");
    //   while( !str.End() ){
    //     cout << str.Next().Data() << endl;
    //   }
-   //
+   //~~~~
    // This will give the following output:
-   //
+   //~~~~
    // First
    //  Second
    //  Third
-   //
-   // WARNING: If the delimiter character is not contained in the string,
+   //~~~~
+   // \warning If the delimiter character is not contained in the string,
    // calling Next() will return the entire contents of the string, after
    // which End() will return kTRUE. This allows to parse strings containing
    // variable numbers of parameters separated by a delimiter which is only
    // used with 2 or more parameters, i.e.:
    //
+   //~~~~
    //      "par1|par2|par3" -> "par1" "par2" "par3"
    //      "par1"           -> "par1"
-
+   //~~~~
    fEndList = kFALSE;
    fIterIndex = 0;
    if (IsNull()) {
@@ -482,17 +484,21 @@ Bool_t KVString::End() const
    // to Begin().
    //
    // Example:
+   //~~~~{.cpp}
    //   KVString str("First | Second | Third");
    //   str.Begin("|");
    //   while( !str.End() ){
    //     cout << str.Next().Data() << endl;
    //   }
+   //~~~~
    //
    // This will give the following output:
    //
+   //~~~~
    // First
    //  Second
    //  Third
+   //~~~~
    return fEndList;
 }
 
@@ -501,28 +507,35 @@ KVString KVString::Next(Bool_t strip_whitespace) const
    // Begin(), Next() and End() can be used to loop over items in
    // a string separated by the delimiter character given as argument
    // to Begin().
-   // If strip_whitespace=kTRUE (default is kFALSE), any leading or
-   // trailing whitespace is removed from each item.
+   //
+   // @param[in] strip_whitespace if kTRUE (default is kFALSE), any leading or trailing whitespace is removed from each item
+   // \returns next item in string separated by delimiter(s) given to Begin()
    //
    // Example:
+   //~~~~{.cpp}
    //   KVString str("First | Second | Third");
    //   str.Begin("|");
    //   while( !str.End() ){
    //     cout << str.Next(kTRUE).Data() << endl;
    //   }
+   //~~~~
    //
    // This will give the following output:
    //
+   //~~~~
    // First
    // Second
    // Third
+   //~~~~
    //
    // whereas if Next() is used (i.e. strip_whitespace=kFALSE),
    // this gives:
    //
+   //~~~~
    // First
    //  Second
    //  Third
+   //~~~~
 
    KVString st;
    if (!kObjArr.get()) return st;
