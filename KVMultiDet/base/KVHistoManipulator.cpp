@@ -1873,6 +1873,39 @@ std::vector<Double_t> KVHistoManipulator::GetLimits(TGraph* G1)
 }
 
 //______________________________________________________________________________________________
+std::vector<Double_t> KVHistoManipulator::GetLimits(TGraphErrors* G1)
+{
+   /*
+   xmin -> limits[0];
+   ymin -> limits[1];
+   xmax -> limits[2];
+   ymax -> limits[3];
+   */
+   std::vector<Double_t> limits(4);
+   Double_t xx, yy;
+   Double_t ex, ey;
+   for (Int_t ii = 0; ii < G1->GetN(); ii += 1) {
+      G1->GetPoint(ii, xx, yy);
+      ex = G1->GetErrorX(ii);
+      ey = G1->GetErrorY(ii);
+
+      if (ii == 0) {
+         limits[0] = limits[2] = xx;
+         limits[1] = limits[3] = yy;
+      }
+      else {
+         if (xx - ex < limits[0]) limits[0] = xx - ex;
+         if (yy - ey < limits[1]) limits[1] = yy - ey;
+         if (xx + ex > limits[2]) limits[2] = xx + ex;
+         if (yy + ey > limits[3]) limits[3] = yy + ey;
+      }
+   }
+
+   return limits;
+
+}
+
+//______________________________________________________________________________________________
 std::vector<Double_t> KVHistoManipulator::GetLimits(TMultiGraph* mgr)
 {
 

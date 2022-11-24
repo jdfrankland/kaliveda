@@ -146,6 +146,7 @@ public:
    TGraph* ComputeNewGraphFrom(TList* lgr, TString formula);
 
    std::vector<Double_t> GetLimits(TGraph* G1);
+   std::vector<Double_t> GetLimits(TGraphErrors* G1);
    std::vector<Double_t> GetLimits(TProfile* G1);
    std::vector<Double_t> GetLimits(TMultiGraph* mgr);
    std::vector<Double_t> GetLimits(TSeqCollection* mgr);
