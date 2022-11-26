@@ -11,12 +11,12 @@ ClassImp(KVGroupReconstructor)
 bool KVGroupReconstructor::fDoIdentification = kTRUE;
 bool KVGroupReconstructor::fDoCalibration = kTRUE;
 
-KVGroupReconstructor::KVGroupReconstructor()
+KVGroupReconstructor::KVGroupReconstructor(const KVGroup* g)
    : KVBase("KVGroupReconstructor", "Reconstruction of particles in detector groups"),
-     fGroup(nullptr), fGrpEvent(nullptr)
+     fGrpEvent(nullptr)
 {
    // Default constructor
-
+   SetGroup(g);
 }
 
 KVGroupReconstructor::~KVGroupReconstructor()
@@ -26,12 +26,12 @@ KVGroupReconstructor::~KVGroupReconstructor()
    SafeDelete(fGrpEvent);
 }
 
-void KVGroupReconstructor::SetGroup(KVGroup* g)
+void KVGroupReconstructor::SetGroup(const KVGroup* g)
 {
    // Set the group to be reconstructed
    //
    // Set condition for seeding reconstructed particles
-   fGroup = g;
+   fGroup = const_cast<KVGroup*>(g);
    fPartSeedCond = dynamic_cast<KVMultiDetArray*>(fGroup->GetArray())->GetPartSeedCond();
 }
 
@@ -42,16 +42,16 @@ void KVGroupReconstructor::SetReconEventClass(TClass* c)
    if (!fGrpEvent) fGrpEvent = (KVReconstructedEvent*)c->New();
 }
 
-KVGroupReconstructor* KVGroupReconstructor::Factory(const TString& plugin)
+KVGroupReconstructor* KVGroupReconstructor::Factory(const TString& plugin, const KVGroup* g)
 {
    // Create a new object of a class derived from KVGroupReconstructor defined by a plugin
    //
    // If plugin="" this is just a new KVGroupReconstructor instance
 
-   if (plugin == "") return new KVGroupReconstructor;
+   if (plugin == "") return new KVGroupReconstructor(g);
    TPluginHandler* ph = LoadPlugin("KVGroupReconstructor", plugin);
    if (ph) {
-      return (KVGroupReconstructor*)ph->ExecPlugin(0);
+      return (KVGroupReconstructor*)ph->ExecPlugin(1, g);
    }
    return nullptr;
 }
@@ -140,15 +140,11 @@ KVReconstructedNucleus* KVGroupReconstructor::ReconstructTrajectory(const KVGeoD
    nfireddets += d->Fired();
    // if d has fired, has not been used to seed a reconstructed particle (IsAnalysed),
    // is not on the trajectory of a reconstructed particle (GetHits()->GetEntries()),
-   // and is either independent (at most only one trajectory goes forward from it : 0 if it is the first detector of a stack)
-   // or, if several trajectories pass through it,
-   // only if the detector directly in front of it on this trajectory fired also
+   // and only if the detector belongs to a unique trajectory (i.e. neither multiple trajectories
+   // arrive from behind nor continue in front)
    if (!d->IsAnalysed() && d->Fired(fPartSeedCond)
          && (!d->GetHits() || !d->GetHits()->GetEntries())
-         && (node->GetNTrajForwards() <= 1 ||
-             (traj->GetNodeInFront(node) &&
-              traj->GetNodeInFront(node)->GetDetector()->Fired()))) {
-
+         && (node->GetNTrajForwards() <= 1 && node->GetNTrajBackwards() <= 1)) {
       return GetEventFragment()->AddParticle();
    }
 
@@ -326,17 +322,17 @@ void KVGroupReconstructor::IdentifyParticle(KVReconstructedNucleus& PART)
             // the particle is less identifiable than initially thought
             // we may have to wait for secondary identification
             Int_t nseg = PART.GetNSegDet();
+            if (nseg == 0) {
+               // the last independent identification method just failed
+               AnalyseParticles();
+               return;
+            }
             PART.SetNSegDet(TMath::Max(nseg - 1, 0));
             //if there are other unidentified particles in the group and NSegDet is < 1
             //then exact status depends on segmentation of the other particles : reanalyse
             if (PART.GetNSegDet() < 1 && GetNUnidentifiedInGroup() > 1) {
                AnalyseParticles();
-               return;
-            }
-            //if NSegDet = 0 it's hopeless
-            if (!PART.GetNSegDet()) {
-               AnalyseParticles();
-               return;
+               if (PART.GetStatus() != KVReconstructedNucleus::kStatusOK) return;
             }
          }
 

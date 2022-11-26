@@ -85,7 +85,7 @@ protected:
    }
 
 public:
-   KVGroupReconstructor();
+   KVGroupReconstructor(const KVGroup* g = nullptr);
    virtual ~KVGroupReconstructor();
 
    void SetReconEventClass(TClass* c);
@@ -98,16 +98,16 @@ public:
    {
       return fGrpEvent;
    }
-   virtual void SetGroup(KVGroup* g);
+   virtual void SetGroup(const KVGroup* g);
    KVGroup* GetGroup() const
    {
       return fGroup;
    }
 
-   static KVGroupReconstructor* Factory(const TString& plugin = "");
+   static KVGroupReconstructor* Factory(const TString& plugin = "", const KVGroup* g = nullptr);
 
    void Process();
-   void Reconstruct();
+   virtual void Reconstruct();
    virtual void Identify();
    void Calibrate();
 
