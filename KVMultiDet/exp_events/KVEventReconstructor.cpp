@@ -41,7 +41,6 @@ KVEventReconstructor::KVEventReconstructor(KVMultiDetArray* a, KVReconstructedEv
             fGroupReconstructor[i] = a->GetReconstructorForGroup(gr);
             if (fGroupReconstructor[i]) {
                ((KVGroupReconstructor*)fGroupReconstructor[i])->SetReconEventClass(e->IsA());
-               ((KVGroupReconstructor*)fGroupReconstructor[i])->SetGroup(gr);
             }
          }
       }
@@ -53,11 +52,11 @@ KVEventReconstructor::KVEventReconstructor(KVMultiDetArray* a, KVReconstructedEv
    if (GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoIdentification", kFALSE) || GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoCalibration", kFALSE)) {
       if (GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoIdentification", kFALSE)) {
          Info("KVEventReconstructor", " -- identification of events will be performed");
-         fArray->PrintStatusOfIDTelescopes();
+         //fArray->PrintStatusOfIDTelescopes();
       }
       if (GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoCalibration", kFALSE)) {
          Info("KVEventReconstructor", " -- calibration of events will be performed");
-         fArray->PrintCalibStatusOfDetectors();
+         //fArray->PrintCalibStatusOfDetectors();
          if (GetArray()->GetTarget()) {
             // for target energy loss correction calculation
             GetArray()->GetTarget()->SetOutgoing();

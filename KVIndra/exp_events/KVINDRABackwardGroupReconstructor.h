@@ -16,7 +16,7 @@ class KVINDRABackwardGroupReconstructor : public KVINDRAGroupReconstructor {
 protected:
    Bool_t CoherencyChIoCsI(KVReconstructedNucleus& PART);
 public:
-   KVINDRABackwardGroupReconstructor() {}
+   KVINDRABackwardGroupReconstructor(const KVGroup* g = nullptr) : KVINDRAGroupReconstructor(g) {}
    virtual ~KVINDRABackwardGroupReconstructor() {}
 
    bool DoCoherencyAnalysis(KVReconstructedNucleus& PART);

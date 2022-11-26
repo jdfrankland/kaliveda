@@ -30,7 +30,11 @@ protected:
 
    void AddCoherencyParticles();
 public:
-   void SetGroup(KVGroup* g);
+   KVFAZIAGroupReconstructor(const KVGroup* g = nullptr) : KVGroupReconstructor(g)
+   {
+      if (g) SetGroup(g);
+   }
+   void SetGroup(const KVGroup* g);
 
    ClassDef(KVFAZIAGroupReconstructor, 1) // Reconstruct particles in FAZIA telescopes
 };

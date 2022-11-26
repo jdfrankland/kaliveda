@@ -412,7 +412,7 @@ public:
       // (i.e. the string returned by KVIDTelescope::GetType()).
       //
       // Returns nullptr if no identification of given type found, but even if a valid pointer is returned
-      // the identification may still not have been attemted (see comments in GetIdentificationResult(Int_t)).
+      // the identification may still not have been attempted (see comments in GetIdentificationResult(Int_t)).
 
       Int_t n = GetNumberOfIdentificationResults();
       for (int i = 1; i <= n; i++) {

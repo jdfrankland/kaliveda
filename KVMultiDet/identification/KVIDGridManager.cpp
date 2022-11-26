@@ -18,7 +18,6 @@ $Id: KVIDGridManager.cpp,v 1.13 2009/03/03 14:27:15 franklan Exp $
  ***************************************************************************/
 
 #include "KVIDGridManager.h"
-#include "Riostream.h"
 #include "KVString.h"
 #include "TClass.h"
 #include "TROOT.h"

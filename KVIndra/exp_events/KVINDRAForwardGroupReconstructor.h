@@ -24,7 +24,7 @@ protected:
       return n->GetReconstructionTrajectory()->GetDetector("SI");
    }
 public:
-   KVINDRAForwardGroupReconstructor() {}
+   KVINDRAForwardGroupReconstructor(const KVGroup* g = nullptr) : KVINDRAGroupReconstructor(g) {}
    virtual ~KVINDRAForwardGroupReconstructor() {}
 
    bool DoCoherencyAnalysis(KVReconstructedNucleus& PART);

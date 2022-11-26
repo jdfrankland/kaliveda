@@ -597,7 +597,7 @@ void KVFAZIAGroupReconstructor::HandleSI1SI2PunchThrough(KVIdentificationResult*
    }
 }
 
-void KVFAZIAGroupReconstructor::SetGroup(KVGroup* g)
+void KVFAZIAGroupReconstructor::SetGroup(const KVGroup* g)
 {
    KVGroupReconstructor::SetGroup(g);
    csi = (KVFAZIADetector*)g->GetDetectorByType("CsI");

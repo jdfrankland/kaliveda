@@ -68,8 +68,8 @@ FAZIADB.Runsheets:     runsheets.dat
 FAZIADB.Systems:     Systems.dat
 
 # Plugins for reconstruction of particles from data/simulation
-+Plugin.KVGroupReconstructor:   FAZIA KVFAZIAGroupReconstructor FAZIAanalysis "KVFAZIAGroupReconstructor()"
-+Plugin.KVGroupReconstructor:   FAZIA.Filter KVFAZIAFilterGroupReconstructor FAZIAgeometry "KVFAZIAFilterGroupReconstructor()"
++Plugin.KVGroupReconstructor:   FAZIA KVFAZIAGroupReconstructor FAZIAanalysis "KVFAZIAGroupReconstructor(const KVGroup*)"
++Plugin.KVGroupReconstructor:   FAZIA.Filter KVFAZIAFilterGroupReconstructor FAZIAgeometry "KVFAZIAFilterGroupReconstructor(const KVGroup*)"
 
 # Acceptable identification & energy codes for FAZIA reconstructed particles
 # Dataset-dependent values can be set with [Dataset].FAZIA.ReconstructedNuclei.Accept[ID/E]Codes

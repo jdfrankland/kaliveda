@@ -404,7 +404,7 @@ public:
       TIter it(GetDetectors());
       KVDetector* d;
       while ((d = (KVDetector*)it())) {
-         if (!d->GetNode()->GetDetectorsInFront()) {
+         if (!d->GetNode()->GetNDetsInFront()) {
             SA += d->GetSolidAngle();
          }
       }

@@ -49,7 +49,10 @@ protected:
    void CalibrateCoherencyParticle(KVReconstructedNucleus*) {}
 
 public:
-   KVINDRAGroupReconstructor() {}
+   KVINDRAGroupReconstructor(const KVGroup* g = nullptr) : KVGroupReconstructor(g)
+   {
+      if (g) theChio = g->GetDetectorByType("CI");
+   }
    virtual ~KVINDRAGroupReconstructor() {}
 
    void SetGroup(KVGroup* g)

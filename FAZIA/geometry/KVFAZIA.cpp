@@ -456,9 +456,9 @@ KVGroupReconstructor* KVFAZIA::GetReconstructorForGroup(const KVGroup* g) const
    KVGroupReconstructor* gr(nullptr);
    if (GetGroup(g->GetName())) { // make sure group belongs to us
       if (IsSimMode())
-         gr = KVGroupReconstructor::Factory("FAZIA.Filter");
+         gr = KVGroupReconstructor::Factory("FAZIA.Filter", g);
       else
-         gr = KVGroupReconstructor::Factory("FAZIA");
+         gr = KVGroupReconstructor::Factory("FAZIA", g);
    }
    return gr;
 }
