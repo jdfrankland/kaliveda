@@ -1,4 +1,6 @@
 #include "KVFilterGroupReconstructor.h"
+#include "KVIDZAGrid.h"
+#include "KVMultiDetArray.h"
 #include "KVNucleusEvent.h"
 
 KVReconNucTrajectory* KVFilterGroupReconstructor::get_recon_traj_for_particle(const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node)
@@ -8,13 +10,10 @@ KVReconNucTrajectory* KVFilterGroupReconstructor::get_recon_traj_for_particle(co
 
    KVReconNucTrajectory* Rtraj{nullptr};
 
-//   Info("get_recon_traj", "node=%s traj=%s", node->GetName(), traj->GetPathString().Data());
    for (auto& n : EventIterator(fSimEvent.get())) {
       TString stop = n.GetParameters()->GetTStringValue("STOPPING DETECTOR");
-      //std::cout << stop << std::endl;
       if (stop == node->GetName()) {
          Rtraj = (KVReconNucTrajectory*)GetGroup()->GetTrajectoryForReconstruction(traj, node);
-         //if (Rtraj) std::cout << n.GetParameters()->GetTStringValue("TRAJECTORY") << " : " << Rtraj->GetPathString() << std::endl;
          if (Rtraj && n.GetParameters()->GetTStringValue("TRAJECTORY") == Rtraj->GetPathString()) {
             // correspondence recon <-> simu
             part_correspond[current_nuc_recon].Add(&n);
@@ -23,9 +22,9 @@ KVReconNucTrajectory* KVFilterGroupReconstructor::get_recon_traj_for_particle(co
          }
       }
    }
-//   if (!Rtraj) {
-//      Info("get_recon_traj_for_particle", "noRtraj for this: %s %s", node->GetName(), traj->GetPathString().Data());
-//   }
+   if (!Rtraj) {
+      Info("get_recon_traj_for_particle", "noRtraj for this: %s %s", node->GetName(), traj->GetPathString().Data());
+   }
    return Rtraj;
 }
 
@@ -58,18 +57,25 @@ void KVFilterGroupReconstructor::identify_particle(KVIDTelescope* idt, KVIdentif
       nuc.GetParameters()->Concatenate(*sim_part->GetParameters());
    }
    auto sim_part = (KVNucleus*)part_correspond[&nuc].First();
-   if (idt->IsReadyForID()
-         && idt->CanIdentify(sim_part->GetZ(), sim_part->GetA())
-         && idt->CheckTheoreticalIdentificationThreshold((KVNucleus*)sim_part)) {
-      IDR->IDattempted = true;
-      IDR->SetIDType(idt->GetType());
-      IDR->IDOK = true;
+   IDR->SetIDType(idt->GetType());
+   IDR->IDattempted = true;
+
+   if (idt->CanIdentify(sim_part->GetZ(), sim_part->GetA())) {
       IDR->Z = sim_part->GetZ();
       IDR->A = sim_part->GetA();
-      IDR->IDcode = idt->GetIDCode();
-      IDR->IDquality = 0;
-      // set mass identification status depending on telescope, Z, A & energy of simulated particle
-      idt->SetIdentificationStatus(IDR, sim_part);
+      if (idt->CheckTheoreticalIdentificationThreshold((KVNucleus*)sim_part)) {
+         IDR->IDOK = true;
+         IDR->IDcode = idt->GetIDCode();
+         IDR->IDquality = 0;
+         // set mass identification status depending on telescope, Z, A & energy of simulated particle
+         idt->SetIdentificationStatus(IDR, sim_part);
+      }
+      else {
+         IDR->IDOK = false;
+         IDR->IDcode = ((KVMultiDetArray*)GetGroup()->GetArray())->GetIDCodeForParticlesStoppingInFirstStageOfTelescopes();
+         IDR->IDquality = KVIDZAGrid::kICODE8;
+         IDR->SetComment("below threshold for identification");
+      }
    }
    else {
       IDR->IDOK = false;

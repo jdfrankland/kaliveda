@@ -29,7 +29,7 @@ protected:
    void PerformSecondaryAnalysis();
 
 public:
-   KVFilterGroupReconstructor() {}
+   KVFilterGroupReconstructor(const KVGroup* g = nullptr) : KVGroupReconstructor(g) {}
 
    void SetSimEvent(KVEvent* e)
    {
