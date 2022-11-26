@@ -5,7 +5,7 @@
 #define __KVDETECTORNODE_H
 
 #include "KVBase.h"
-#include "KVSeqCollection.h"
+#include "KVUniqueNameList.h"
 
 class KVDetector;
 class KVGeoDNTrajectory;
@@ -47,25 +47,28 @@ class KVGeoDNTrajectory;
   */
 
 class KVGeoDetectorNode : public KVBase {
-   KVDetector*      fDetector;//!associated detector
-   KVSeqCollection* fInFront;//list of detectors in front
-   KVSeqCollection* fBehind;//list of detectors behind
-   KVSeqCollection* fTraj;//list of trajectories passing through this node
-   KVSeqCollection* fTrajF;//list of trajectories passing through this node going forwards
-   KVSeqCollection* fTrajB;//list of trajectories passing through this node going backwards
-   Int_t fNTraj;//number of trajectories passing through this node
-   Int_t fNTrajForwards;//number of trajectories going forwards from this node
-   Int_t fNTrajBackwards;//number of trajectories going backwards from this node
-
-   void init();
+   KVDetector*      fDetector;//! associated detector
+   KVUniqueNameList fInFront; //! list of detectors in front
+   KVUniqueNameList fBehind;  //! list of detectors behind
+   KVUniqueNameList fTraj;    //! list of trajectories passing through this node
+   KVUniqueNameList fTrajF;   //! list of trajectories passing through this node going forwards
+   KVUniqueNameList fTrajB;   //! list of trajectories passing through this node going backwards
+   Int_t fNTraj = -1;              //number of trajectories passing through this node
+   Int_t fNTrajForwards = -1;      //number of trajectories going forwards from this node
+   Int_t fNTrajBackwards = -1;     //number of trajectories going backwards from this node
 
    void CalculateForwardsTrajectories();
    void CalculateBackwardsTrajectories();
 
 public:
-   KVGeoDetectorNode();
-   KVGeoDetectorNode(const Char_t* name);
-   virtual ~KVGeoDetectorNode();
+   KVGeoDetectorNode()
+   {
+      fTraj.SetCleanup();
+   }
+   KVGeoDetectorNode(const Char_t* name) : KVBase(name, "/FULL/PATH/TO/NODE")
+   {
+      fTraj.SetCleanup();
+   }
 
    void SetDetector(KVDetector*);
    KVDetector* GetDetector() const;
@@ -75,25 +78,72 @@ public:
    void AddBehind(KVDetector*);
    Bool_t IsInFrontOf(KVDetector*);
    Bool_t IsBehind(KVDetector*);
-   KVSeqCollection* GetDetectorsInFront() const
+   const KVSeqCollection* GetDetectorsInFront() const
    {
-      return fInFront;
+      return &fInFront;
    }
-   KVSeqCollection* GetDetectorsBehind() const
+   const KVSeqCollection* GetDetectorsBehind() const
    {
-      return fBehind;
+      return &fBehind;
    }
-   KVSeqCollection* GetTrajectories() const
+   const KVSeqCollection* GetTrajectories() const
    {
-      return fTraj;
+      return &fTraj;
    }
-   KVSeqCollection* GetForwardTrajectories() const;
-   KVSeqCollection* GetBackwardTrajectories() const;
-   Int_t GetNDetsInFront() const;
-   Int_t GetNDetsBehind() const;
-   Int_t GetNTraj() const;
-   Int_t GetNTrajForwards() const;
-   Int_t GetNTrajBackwards() const;
+   const KVSeqCollection* GetForwardTrajectories() const
+   {
+      // Return list of all trajectories going forwards from this node
+      // Returns 0x0 if there are no forwards trajectories
+
+      if (fNTrajForwards < 0) const_cast<KVGeoDetectorNode*>(this)->CalculateForwardsTrajectories();
+      return (fNTrajForwards ? &fTrajF : nullptr);
+   }
+   const KVSeqCollection* GetBackwardTrajectories() const
+   {
+      // Return list of all trajectories going backwards from this node
+      // Returns 0x0 if there are no backwards trajectories
+
+      if (fNTrajBackwards < 0) const_cast<KVGeoDetectorNode*>(this)->CalculateBackwardsTrajectories();
+      return (fNTrajBackwards ? &fTrajB : nullptr);
+   }
+   Int_t GetNDetsInFront() const
+   {
+      // Returns number of detectors directly in front of this one
+      return fInFront.GetEntries();
+   }
+   Int_t GetNDetsBehind() const
+   {
+      // Returns number of detectors directly behind this one
+      return fBehind.GetEntries();
+   }
+   Int_t GetNTraj() const
+   {
+      // Returns number of trajectories passing through this node
+      if (fNTraj < 0) {
+         const_cast<KVGeoDetectorNode*>(this)->fNTraj = fTraj.GetEntries();
+      }
+      return fNTraj;
+   }
+   Int_t GetNTrajForwards() const
+   {
+      // Returns number of trajectories which go forwards (towards the target)
+      // from this node, i.e. the number of trajectories of which this is not the
+      // end-point node
+      // If not already done, this sets up the list of forwards trajectories
+
+      if (fNTrajForwards < 0) const_cast<KVGeoDetectorNode*>(this)->CalculateForwardsTrajectories();
+      return fNTrajForwards;
+   }
+   Int_t GetNTrajBackwards() const
+   {
+      // Returns number of trajectories which go backwards (away from the target)
+      // from this node, i.e. the number of trajectories of which this is not the
+      // start-point node
+      // If not already done, this sets up the list of backwards trajectories
+
+      if (fNTrajBackwards < 0) const_cast<KVGeoDetectorNode*>(this)->CalculateBackwardsTrajectories();
+      return fNTrajBackwards;
+   }
 
    void BuildTrajectoriesForwards(TSeqCollection*);
    void AddTrajectory(KVGeoDNTrajectory*);

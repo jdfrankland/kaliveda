@@ -137,7 +137,7 @@ TList* KVGroup::GetAlignedDetectors(KVDetector* det, UChar_t dir)
    while (det) {
       tmp->Add(det);
       KVGeoDetectorNode* node = det->GetNode();
-      KVSeqCollection* infront = node->GetDetectorsInFront();
+      auto infront = node->GetDetectorsInFront();
       if (!infront) break;
       if (infront->GetEntries() > 1) {
          Warning("GetAlignedDetectors",
