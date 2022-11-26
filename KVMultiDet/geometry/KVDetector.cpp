@@ -626,7 +626,8 @@ Double_t KVDetector::GetCorrectedEnergy(KVNucleus* nuc, Double_t e, Bool_t trans
    // maximum possible theoretical value for given nucleus' Z & A, this may be because
    // the A was not measured but calculated from Z and hence could be false, or perhaps
    // there was an (undetected) pile-up of two or more particles in the detector.
-   // In this case we return the uncorrected energy measured in the active layer
+   // In this case we return the corrected energy
+   // corresponding to the maximum theoretical energy loss in the active layer
    // and we add the following parameters to the particle (in nuc->GetParameters()):
    //
    // GetCorrectedEnergy.Warning = 1
@@ -658,8 +659,7 @@ Double_t KVDetector::GetCorrectedEnergy(KVNucleus* nuc, Double_t e, Bool_t trans
       nuc->GetParameters()->SetValue("GetCorrectedEnergy.MaxDE", maxDE);
       nuc->GetParameters()->SetValue("GetCorrectedEnergy.Transmission", (Int_t)transmission);
       nuc->GetParameters()->SetValue("GetCorrectedEnergy.ERES", ERES);
-      return e;
-
+      e = maxDE;
    }
    if (transmission && ERES > 0.) {
       // if residual energy is known we use it to calculate EINC.
