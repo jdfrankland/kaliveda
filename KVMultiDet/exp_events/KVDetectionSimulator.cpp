@@ -67,93 +67,78 @@ void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_f
       // reference to particle in requested detection frame
       auto part_to_detect = (KVNucleus*)part.GetFrame(detection_frame, kFALSE);
 
-      KVNameValueList det_stat, nvl;
-      Double_t eLostInTarget = 0;
-
       // store initial energy of particle in detection frame
       part_to_detect->SetE0();
-      part.SetParameter("SIM:ENERGY", part_to_detect->GetE());
       part.SetParameter("SIM:Z", part.GetZ());
       part.SetParameter("SIM:A", part.GetA());
+      part.SetParameter("SIM:ENERGY", part_to_detect->GetE());
+      part.SetParameter("SIM:THETA", part_to_detect->GetTheta());
+      part.SetParameter("SIM:PHI", part_to_detect->GetPhi());
 
       // neutral particles & those with less than the cut-off energy are not detected
       if ((part.GetZ() == 0) && !get_array_navigator()->IsTracking()) {
          // neutrons are included in tracking, if active
-         det_stat.SetValue("UNDETECTED", "NEUTRON");
-
-         part.AddGroup("UNDETECTED");
-         part.AddGroup("NEUTRON");
+         part.SetParameter("UNDETECTED", "NEUTRON");
       }
       else if (part.GetZ() && !get_array_navigator()->CheckIonForRangeTable(part.GetZ(), part.GetA())) {
          // ignore charged particles which range table cannot handle
-         det_stat.SetValue("UNDETECTED", Form("Z=%d", part.GetZ()));
-
-         part.AddGroup("UNDETECTED");
-         part.AddGroup("SUPERHEAVY");
+         part.SetParameter("UNDETECTED", "NOT IN RANGE TABLE");
       }
       else if (!fGeoFilter && (part_to_detect->GetEnergy() < GetMinKECutOff())) {
-         det_stat.SetValue("UNDETECTED", "INSUFFICIENT ENERGY");
-
-         part.AddGroup("UNDETECTED");
-         part.AddGroup("INSUFFICIENT ENERGY");
+         part.SetParameter("UNDETECTED", "AT REST");
       }
       else {
          if (IncludeTargetEnergyLoss() && GetTarget() && part.GetZ()) {
             //simulate passage through target material
             auto ebef = part_to_detect->GetE();
             GetTarget()->DetectParticle(part_to_detect);
-            eLostInTarget = ebef - part_to_detect->GetE();
+            auto eLostInTarget = ebef - part_to_detect->GetE();
             part.SetParameter("ENERGY LOSS IN TARGET", eLostInTarget);
-            if (part_to_detect->GetE() < GetMinKECutOff()) {
-               det_stat.SetValue("UNDETECTED", "STOPPED IN TARGET");
-
-               part.AddGroup("UNDETECTED");
-               part.AddGroup("STOPPED IN TARGET");
-            }
+            if (part_to_detect->GetE() < GetMinKECutOff())
+               part.SetParameter("UNDETECTED", "STOPPED IN TARGET");
          }
 
          if (fGeoFilter || (part_to_detect->GetE() > GetMinKECutOff())) {
 
-            nvl = PropagateParticle(part_to_detect);
+            auto nvl = PropagateParticle(part_to_detect);
 
             if (nvl.IsEmpty()) {
                if (part.GetZ() == 0) {
                   // tracking
-                  det_stat.SetValue("UNDETECTED", "NEUTRON");
-
-                  part.AddGroup("UNDETECTED");
-                  part.AddGroup("NEUTRON");
+                  part.SetParameter("UNDETECTED", "NEUTRON");
                }
                else {
                   if (part.GetParameters()->HasParameter("DEADZONE")) {
                      // deadzone
-                     det_stat.SetValue("UNDETECTED", "DEAD ZONE");
-
-                     part.AddGroup("UNDETECTED");
-                     part.AddGroup("DEAD ZONE");
+                     part.SetParameter("UNDETECTED", "DEAD ZONE");
                   }
                   else {
                      // missed all detectors
-                     det_stat.SetValue("UNDETECTED", "NO HIT");
-
-                     part.AddGroup("UNDETECTED");
-                     part.AddGroup("NO HIT");
+                     part.SetParameter("UNDETECTED", "NO HIT");
                   }
                }
             }
             else {
-               part.AddGroup("DETECTED");
+               // check for incomplete stopping of particle
+               // note that energy losses are not calculated in DEADZONE volume; as soon as a particle enters
+               // a DEADZONE volume its propagation stops. therefore particles which lose energy in one or more
+               // active material volumes and then hit a DEADZONE may have residual kinetic energy, but not
+               // because they crossed all detector layers without losing all their energy, which is the meaning of "DETECTED=PUNCH THROUGH"
+               if (!part.GetParameters()->HasParameter("DEADZONE") && part_to_detect->GetE() > GetMinKECutOff()) {
+                  part.SetParameter("RESIDUAL ENERGY", part_to_detect->GetE());
+                  part.SetParameter("DETECTED", "PUNCH THROUGH");
+               }
+               else
+                  part.SetParameter("DETECTED", "OK");
             }
-         }
-      }
 
-      if (!nvl.IsEmpty()) {
-         for (Int_t ii = 0; ii < nvl.GetNpar(); ++ii) {
-            part.SetParameter(nvl.GetNameAt(ii), nvl.GetDoubleValue(ii));
+            if (!nvl.IsEmpty()) {
+               for (Int_t ii = 0; ii < nvl.GetNpar(); ++ii) {
+                  part.SetParameter(nvl.GetNameAt(ii), nvl.GetDoubleValue(ii));
+               }
+            }
+
          }
-      }
-      for (Int_t ii = 0; ii < det_stat.GetNpar(); ii += 1) {
-         part.SetParameter(det_stat.GetNameAt(ii), det_stat.GetStringValue(ii));
       }
 
       part_to_detect->SetMomentum(part_to_detect->GetPInitial());

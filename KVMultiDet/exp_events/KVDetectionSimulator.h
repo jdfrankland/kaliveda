@@ -32,7 +32,6 @@ class KVDetectionSimulator : public KVBase {
 public:
    KVDetectionSimulator() {}
    KVDetectionSimulator(KVMultiDetArray* a, Double_t cut_off = 1.e-3);
-   virtual ~KVDetectionSimulator() {}
 
    void SetGeometricFilterMode()
    {
