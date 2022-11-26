@@ -2,7 +2,7 @@
 #define __KVINDRAFILTERGROUPRECONSTRUCTOR_H
 
 #include "KVFilterGroupReconstructor.h"
-
+#include "KVChIo.h"
 /**
  \class KVINDRAFilterGroupReconstructor
  \brief Reconstruct simulated events after filtering with INDRA
@@ -14,11 +14,22 @@
 */
 
 class KVINDRAFilterGroupReconstructor : public KVFilterGroupReconstructor {
+
+   KVChIo* theChIo = nullptr;//! pointer to ChIo in group, if present
+
+   KVReconstructedNucleus* ReconstructTrajectory(const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node);
+
+protected:
+   void identify_particle(KVIDTelescope* idt, KVIdentificationResult* IDR, KVReconstructedNucleus& nuc);
+
 public:
-   KVINDRAFilterGroupReconstructor()
-      : KVFilterGroupReconstructor()
+   KVINDRAFilterGroupReconstructor(const KVGroup* g = nullptr)
+      : KVFilterGroupReconstructor(g)
    {
+      if (g) theChIo = dynamic_cast<KVChIo*>(g->GetDetectorByType("CI"));
    }
+
+   void Reconstruct();
 
    ClassDef(KVINDRAFilterGroupReconstructor, 1) //Reconstruct simulated events after filtering with INDRA
 };
