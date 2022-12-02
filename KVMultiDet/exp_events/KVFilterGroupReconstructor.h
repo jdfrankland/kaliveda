@@ -14,6 +14,8 @@
 */
 
 class KVFilterGroupReconstructor : public KVGroupReconstructor {
+
+protected:
    std::unique_ptr<KVEvent> fSimEvent;//! particles of simulated event detected in this group
    std::unordered_map<std::string, int> hits; //! count simulated particles in stopping detectors
    std::unordered_map<KVReconstructedNucleus*, TList> part_correspond; //! correspondence between reconstructed and simulated particles
@@ -22,7 +24,6 @@ class KVFilterGroupReconstructor : public KVGroupReconstructor {
    std::unordered_map<std::string, double> energy_loss; //! energy losses in detectors
    std::unordered_map<std::string, int> number_uncalibrated; //! number of particles for which the energy contribution of detector has not yet been set
    std::unordered_map<std::string, int> number_unidentified; //! number of particles hitting detector aas yet unidentified
-protected:
    KVReconNucTrajectory* get_recon_traj_for_particle(const KVGeoDNTrajectory*, const KVGeoDetectorNode* node);
    void identify_particle(KVIDTelescope* idt, KVIdentificationResult* IDR, KVReconstructedNucleus& nuc);
 

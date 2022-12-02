@@ -66,19 +66,28 @@ void KVFilterGroupReconstructor::identify_particle(KVIDTelescope* idt, KVIdentif
       if (idt->CheckTheoreticalIdentificationThreshold((KVNucleus*)sim_part)) {
          IDR->IDOK = true;
          IDR->IDcode = idt->GetIDCode();
-         IDR->IDquality = 0;
+         IDR->IDquality = KVIDZAGrid::kICODE0;
          // set mass identification status depending on telescope, Z, A & energy of simulated particle
          idt->SetIdentificationStatus(IDR, sim_part);
       }
       else {
          IDR->IDOK = false;
-         IDR->IDcode = ((KVMultiDetArray*)GetGroup()->GetArray())->GetIDCodeForParticlesStoppingInFirstStageOfTelescopes();
+         IDR->IDcode = GetGroup()->GetParentStructure<KVMultiDetArray>()->GetIDCodeForParticlesStoppingInFirstStageOfTelescopes();
          IDR->IDquality = KVIDZAGrid::kICODE8;
          IDR->SetComment("below threshold for identification");
       }
    }
    else {
       IDR->IDOK = false;
+   }
+
+   // special case: if particle ends up in a deadzone or punches through all detector layers, having a residual energy,
+   // it would not be possible to identify it correctly.
+   if (sim_part->GetParameters()->HasDoubleParameter("RESIDUAL ENERGY")) {
+      IDR->IDOK = false;
+      IDR->IDcode = GetGroup()->GetParentStructure<KVMultiDetArray>()->GetBadIDCode();
+      IDR->IDquality = KVIDZAGrid::kICODE8;
+      IDR->SetComment(Form("particle incompletely detected, DETECTED=%s", sim_part->GetParameters()->GetStringValue("DETECTED")));
    }
 }
 
@@ -165,7 +174,7 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
             edet = det->GetCorrectedEnergy(PART, dE);
             //Info("Calib", "calculated edet=%f from dE=%f", edet, dE);
             // negative parameter for calculated contribution
-            PART->SetParameter(Form("%s.E%s", GetGroup()->GetArray()->GetName(), det->GetLabel()), -edet);
+            PART->SetParameter(Form("%s.E%s", GetGroup()->GetParentStructure<KVMultiDetArray>()->GetName(), det->GetLabel()), -edet);
             PART->SetECode(2); // calculated
          }
          else {
@@ -184,7 +193,7 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
          det->SetEResAfterDetector(Einc);
          edet = det->GetCorrectedEnergy(PART, dE);
          // negative parameter for calculated contribution
-         PART->SetParameter(Form("%s.E%s", GetGroup()->GetArray()->GetName(), det->GetLabel()), -edet);
+         PART->SetParameter(Form("%s.E%s", GetGroup()->GetParentStructure<KVMultiDetArray>()->GetName(), det->GetLabel()), -edet);
          PART->SetECode(2); // calculated
       }
       else {
@@ -192,7 +201,7 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
          det->SetEResAfterDetector(Einc);
          edet = det->GetCorrectedEnergy(PART, -1., (Einc > 0));
          //Info("Calib", "Simple normal dE=%f edet=%f", dE, edet);
-         PART->SetParameter(Form("%s.E%s", GetGroup()->GetArray()->GetName(), node->GetDetector()->GetLabel()), edet);
+         PART->SetParameter(Form("%s.E%s", GetGroup()->GetParentStructure<KVMultiDetArray>()->GetName(), node->GetDetector()->GetLabel()), edet);
       }
       Einc += edet;
       --number_uncalibrated[det->GetName()];
