@@ -171,7 +171,7 @@ TString KVReconstructedNucleus::GetArrayName() const
 {
    // Returns name of array particle was detected in (if known)
    if (GetParameters()->HasStringParameter("ARRAY")) return GetParameters()->GetStringValue("ARRAY");
-   if (GetStoppingDetector()) return GetStoppingDetector()->GetGroup()->GetArray()->GetName();
+   if (GetStoppingDetector()) return GetStoppingDetector()->GetGroup()->GetParentStructure<KVMultiDetArray>()->GetName();
    return "";
 }
 

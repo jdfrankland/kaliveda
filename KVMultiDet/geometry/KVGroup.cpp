@@ -1,10 +1,7 @@
-#include "Riostream.h"
 #include "KVGroup.h"
 #include "KVNucleus.h"
 #include "KVList.h"
 #include "KVDetector.h"
-#include "KVLayer.h"
-#include "TROOT.h"
 #include "KVNameValueList.h"
 
 using namespace std;
@@ -42,6 +39,8 @@ KVGroup::~KVGroup()
    fReconstructedNuclei = 0;
    fTrajectories.Clear();
 }
+
+
 
 UInt_t KVGroup::GetNumberOfDetectorLayers()
 {

@@ -648,7 +648,7 @@ void KVFAZIAGroupReconstructor::AddCoherencyParticles()
 //                                  ) ? "CALIB." : "NOT CALIB.")  << std::endl;
 
       rnuc->SetReconstructionTrajectory(Rtraj);
-      rnuc->SetParameter("ARRAY", GetGroup()->GetArray()->GetName());
+      rnuc->SetParameter("ARRAY", GetGroup()->GetParentStructure<KVMultiDetArray>()->GetName());
       rnuc->SetParameter("COHERENCY",
                          "Particle added to event after consistency checks between identifications and calibrations of other nuclei");
       // identification

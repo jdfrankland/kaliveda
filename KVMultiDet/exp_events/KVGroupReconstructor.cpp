@@ -32,7 +32,7 @@ void KVGroupReconstructor::SetGroup(const KVGroup* g)
    //
    // Set condition for seeding reconstructed particles
    fGroup = const_cast<KVGroup*>(g);
-   fPartSeedCond = dynamic_cast<KVMultiDetArray*>(fGroup->GetArray())->GetPartSeedCond();
+   fPartSeedCond = fGroup->GetParentStructure<KVMultiDetArray>()->GetPartSeedCond();
 }
 
 void KVGroupReconstructor::SetReconEventClass(TClass* c)
@@ -174,7 +174,7 @@ void KVGroupReconstructor::ReconstructParticle(KVReconstructedNucleus* part, con
       throw std::runtime_error(Form("<KVGroupReconstructor::ReconstructParticle>: Failed to obtain reconstruction trajectory for node %s on trajectory %s",
                                     node->GetName(), traj->GetPathString().Data()));
    part->SetReconstructionTrajectory(Rtraj);
-   part->SetParameter("ARRAY", GetGroup()->GetArray()->GetName());
+   part->SetParameter("ARRAY", GetGroup()->GetParentStructure<KVMultiDetArray>()->GetName());
    // only the stopping detector is set 'analysed' (to stop any new particles
    // being reconstructed starting from it) in case other particles stopped
    // in other detectors further up the reconstruction trajectory
@@ -377,7 +377,7 @@ void KVGroupReconstructor::TreatStatusStopFirstStage(KVReconstructedNucleus& d)
    if (zmin) {
       KVIdentificationResult idr;
       idr.Z = zmin;
-      idr.IDcode = ((KVMultiDetArray*)GetGroup()->GetArray())->GetIDCodeForParticlesStoppingInFirstStageOfTelescopes();
+      idr.IDcode = GetGroup()->GetParentStructure<KVMultiDetArray>()->GetIDCodeForParticlesStoppingInFirstStageOfTelescopes();
       idr.Zident = false;
       idr.Aident = false;
       idr.PID = zmin;
@@ -445,7 +445,7 @@ Double_t KVGroupReconstructor::GetTargetEnergyLossCorrection(KVReconstructedNucl
    // The returned value is the energy lost in the target in MeV.
    // The energy/momentum of 'ion' are not affected.
 
-   KVMultiDetArray* array = (KVMultiDetArray*)GetGroup()->GetArray();
+   auto array = GetGroup()->GetParentStructure<KVMultiDetArray>();
    if (!array->GetTarget() || !ion) return 0.0;
    return (array->GetTarget()->GetParticleEIncFromERes(ion) - ion->GetEnergy());
 }

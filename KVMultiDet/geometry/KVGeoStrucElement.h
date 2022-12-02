@@ -125,6 +125,13 @@ public:
 
    void Print(Option_t* option = "") const;
 
+   template<typename ParentClass>
+   ParentClass* GetParentStructure() const
+   {
+      // \returns pointer to first parent structure in list of parent structures
+      return dynamic_cast<ParentClass*>(GetParents()->First());
+   }
+
    ClassDef(KVGeoStrucElement, 1) //A multidetector array geometry structural element
 };
 

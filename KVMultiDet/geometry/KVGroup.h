@@ -9,7 +9,6 @@
 #include "KVNameValueList.h"
 class KVDetector;
 class KVNucleus;
-
 /**
  \class KVGroup
  \ingroup Geometry
@@ -40,11 +39,6 @@ public:
       // Setting number for group also sets name to "Group_n"
       SetName(Form("Group_%u", num));
       KVGeoStrucElement::SetNumber(num);
-   }
-   KVGeoStrucElement* GetArray() const
-   {
-      // Groups have a single parent structure, the multidetector array they belong to
-      return (KVGeoStrucElement*)GetParents()->First();
    }
 
    virtual UInt_t GetNumberOfDetectorLayers();
