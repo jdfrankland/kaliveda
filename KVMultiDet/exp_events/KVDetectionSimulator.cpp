@@ -124,9 +124,12 @@ void KVDetectionSimulator::DetectEvent(KVEvent* event, const Char_t* detection_f
                // a DEADZONE volume its propagation stops. therefore particles which lose energy in one or more
                // active material volumes and then hit a DEADZONE may have residual kinetic energy, but not
                // because they crossed all detector layers without losing all their energy, which is the meaning of "DETECTED=PUNCH THROUGH"
-               if (!part.GetParameters()->HasParameter("DEADZONE") && part_to_detect->GetE() > GetMinKECutOff()) {
+               if (part_to_detect->GetE() > GetMinKECutOff()) {
                   part.SetParameter("RESIDUAL ENERGY", part_to_detect->GetE());
-                  part.SetParameter("DETECTED", "PUNCH THROUGH");
+                  if (part.GetParameters()->HasParameter("DEADZONE"))
+                     part.SetParameter("DETECTED", "DEADZONE");
+                  else
+                     part.SetParameter("DETECTED", "PUNCH THROUGH");
                }
                else
                   part.SetParameter("DETECTED", "OK");
