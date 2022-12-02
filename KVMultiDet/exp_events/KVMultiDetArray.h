@@ -185,42 +185,6 @@ protected:
    void ReadCalibFile(const Char_t* filename, KVExpDB* db, KVDBTable* calib_table);
    void ReadOoODetectors(KVExpDB* db);
 
-   // The following methods are used by the current implementation of the filter.
-   // They should be removed in future implementations.
-   virtual UShort_t GetBadIDCode()
-   {
-      // return a general identification code for particles badly identified
-      // with this type of ID telescope
-      // redefine in child classes; default returns 14.
-      return 14;
-   }
-   virtual UShort_t GetCoherencyIDCode()
-   {
-      // return a general identification code for particles identified
-      // with this type of ID telescope after coherency analysis
-      // redefine in child classes; default returns 6.
-      return 6;
-   }
-   virtual UShort_t GetMultiHitFirstStageIDCode()
-   {
-      // return a general identification code for particles which cannot
-      // be identified correctly due to pile-up in a delta-E detector
-      // redefine in child classes; default returns 8.
-      return 8;
-   }
-   UShort_t GetZminCode()
-   {
-      // return a general identification code for particles partially identified
-      // with an estimated lower-limit for their charge
-      return GetIDCodeForParticlesStoppingInFirstStageOfTelescopes();
-   }
-   virtual UChar_t GetNormalCalibrationCode()
-   {
-      // return a general calibration code for correctly calibrated particles
-      // redefine in child classes; default returns 1.
-      return 1;
-   }
-
    void set_detector_thicknesses(const TString&);
 
 public:
@@ -611,6 +575,39 @@ public:
    virtual TString GetECodeMeaning(Int_t) const
    {
       return "";
+   }
+   virtual UShort_t GetBadIDCode() const
+   {
+      // return a general identification code for badly identified particles
+      //
+      // redefine in child classes; default returns 14.
+      return 14;
+   }
+   virtual UShort_t GetCoherencyIDCode() const
+   {
+      // return a general identification code for particles identified after coherency analysis
+      //
+      // redefine in child classes; default returns 6.
+      return 6;
+   }
+   virtual UShort_t GetMultiHitFirstStageIDCode() const
+   {
+      // return a general identification code for particles which cannot be identified correctly due to pile-up in a delta-E detector
+      //
+      // redefine in child classes; default returns 8.
+      return 8;
+   }
+   UShort_t GetZminCode() const
+   {
+      // return a general identification code for particles partially identified
+      // with an estimated lower-limit for their charge
+      return GetIDCodeForParticlesStoppingInFirstStageOfTelescopes();
+   }
+   virtual UChar_t GetNormalCalibrationCode() const
+   {
+      // return a general calibration code for correctly calibrated particles
+      // redefine in child classes; default returns 1.
+      return 1;
    }
 
    ClassDef(KVMultiDetArray, 7) //Base class for multidetector arrays

@@ -140,6 +140,15 @@ public:
       ID_SI1_SI2_PUNCH_THROUGH = 121, ///< particle punching through SI2, identified Z is a minimum value
       ID_SI1_PUNCH_THROUGH = 110, ///< particle partially identified by pulse shape analysis in SI1, although it is punching through (no SI2 signal or SI1-SI2 id)
    };
+   Int_t GetIDCodeForParticlesStoppingInFirstStageOfTelescopes() const
+   {
+      return IDCodes::ID_STOPPED_IN_FIRST_STAGE;
+   }
+   UShort_t GetBadIDCode() const
+   {
+      return IDCodes::NO_IDENTIFICATION;
+   }
+
    TString GetIDCodeMeaning(Int_t idc) const
    {
       switch (idc) {
@@ -199,10 +208,6 @@ public:
          default:
             return Form("(unknown:%d)", ec);
       }
-   }
-   virtual Int_t GetIDCodeForParticlesStoppingInFirstStageOfTelescopes() const
-   {
-      return IDCodes::ID_STOPPED_IN_FIRST_STAGE;
    }
 
    KVFAZIA(const Char_t* title = "");

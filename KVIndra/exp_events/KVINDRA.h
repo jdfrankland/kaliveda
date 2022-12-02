@@ -221,10 +221,25 @@ public:
             return Form("(unknown:%d)", ec);
       }
    }
-   virtual Int_t GetIDCodeForParticlesStoppingInFirstStageOfTelescopes() const
+   Int_t GetIDCodeForParticlesStoppingInFirstStageOfTelescopes() const
    {
       return IDCodes::ID_STOPPED_IN_FIRST_STAGE;
    }
+   UShort_t GetBadIDCode() const
+   {
+      return IDCodes::NO_IDENTIFICATION;
+   }
+   UShort_t GetCoherencyIDCode() const
+   {
+      // Note that this returns the code for ChIo-Si coherency (i.e. particles identified in ChIo-Si after subtraction
+      // of other particles identified in the same group)
+      return IDCodes::ID_CI_SI_COHERENCY;
+   }
+   UShort_t GetMultiHitFirstStageIDCode() const
+   {
+      return IDCodes::ID_CI_MULTIHIT;
+   }
+   TString GetCsIIDType() const;
 
    KVINDRA();
    virtual ~ KVINDRA();

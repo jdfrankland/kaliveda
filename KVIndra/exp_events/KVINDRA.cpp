@@ -16,7 +16,6 @@ $Id: KVINDRA.cpp,v 1.68 2009/01/21 10:05:51 franklan Exp $
  *                                                                         *
  ***************************************************************************/
 
-#include "Riostream.h"
 #include "KVINDRA.h"
 #include "KVMaterial.h"
 #include "KVDetector.h"
@@ -28,24 +27,18 @@ $Id: KVINDRA.cpp,v 1.68 2009/01/21 10:05:51 franklan Exp $
 #include "KVIDChIoCsI.h"
 #include "KVIDChIoSi75.h"
 #include "KVIDSi75SiLi.h"
-#include "KVIDSiLiCsI.h"
 #include "KVIDPhoswich.h"
 #include "KVLayer.h"
 #include "KVRing.h"
 #include "KVGroup.h"
-#include "KVSilicon.h"
 #include "KVChIo.h"
 #include "KVCsI.h"
-#include "KVPhoswich.h"
 #include "KVNucleus.h"
 #include "KVDetectorEvent.h"
 #include "KVNucleusEvent.h"
-#include "KVINDRAReconEvent.h"
 #include "TEnv.h"
-#include "KVFileReader.h"
 #include "INDRAGeometryBuilder.h"
 #include <KVASGroup.h>
-#include "TROOT.h"
 #include "KVGeoNavigator.h"
 #ifdef WITH_BUILTIN_GRU
 #include <KVGANILDataReader.h>
@@ -720,6 +713,11 @@ void KVINDRA::SetIDCodeForIDTelescope(KVIDTelescope* idt) const
       Error("SetIDCodeForIDTelescope", "Request for telescope name=%s of unknown class=%s",
             idt->GetName(), idt->IsA()->GetName());
    }
+}
+
+TString KVINDRA::GetCsIIDType() const
+{
+   return KVINDRAGroupReconstructor::CSI_ID_TYPE;
 }
 //_______________________________________________________________________________________
 
