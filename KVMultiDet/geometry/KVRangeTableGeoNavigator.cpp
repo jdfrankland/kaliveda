@@ -82,6 +82,7 @@ void KVRangeTableGeoNavigator::ParticleEntersNewVolume(KVNucleus* part)
 
       if (part->GetZ()) {
          part->GetParameters()->SetValue(Form("DE:%s", absorber_name.Data()), de);
+         part->GetParameters()->SetValue(Form("DX:%s", absorber_name.Data()), GetStepSize());
          if (active_layer) {
             // update energy loss in active layer of detector
             Double_t E = theDet->GetEnergyLoss() + de;
