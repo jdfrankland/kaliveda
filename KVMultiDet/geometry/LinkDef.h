@@ -24,4 +24,5 @@
 #pragma link C++ class KVGeoNodeIterator+;
 #pragma link C++ class KVGeoStrucElement+;
 #pragma link C++ class KV3DGeoTrack+;
+#pragma link C++ class KVMaterialStack+;
 #endif
