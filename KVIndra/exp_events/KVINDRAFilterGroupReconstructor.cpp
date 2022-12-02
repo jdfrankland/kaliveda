@@ -1,6 +1,8 @@
 #include "KVINDRAFilterGroupReconstructor.h"
 #include "KVINDRA.h"
 
+#include <KVIDGCsI.h>
+
 ClassImp(KVINDRAFilterGroupReconstructor)
 
 KVReconstructedNucleus* KVINDRAFilterGroupReconstructor::ReconstructTrajectory(const KVGeoDNTrajectory* traj, const KVGeoDetectorNode* node)
@@ -56,6 +58,40 @@ void KVINDRAFilterGroupReconstructor::Reconstruct()
                              theChIo->GetNode());
          AnalyseParticles();
          PostReconstructionProcessing();
+      }
+   }
+}
+
+void KVINDRAFilterGroupReconstructor::IdentifyParticle(KVReconstructedNucleus& PART)
+{
+   //UNIDENTIFIED PARTICLES
+   //Unidentified particles receive the general ID code for non-identified particles (kIDCode14)
+   //EXCEPT if their CsI identification was attempted but they are too heavy (Z>5) for CsI identification
+   //(Zmin) then they are relabelled "Identified" with IDcode = 9 (ident. incomplete dans CsI ou Phoswich (Z.min))
+   //Their "identifying" telescope is set to the CsI ID telescope
+
+   KVFilterGroupReconstructor::IdentifyParticle(PART);
+
+   if (!PART.IsIdentified()) {
+      /*** general ID code for non-identified particles ***/
+      PART.SetIDCode(KVINDRA::IDCodes::NO_IDENTIFICATION);
+      auto csirl = id_by_type.find(gIndra->GetCsIIDType().Data());
+      if (csirl != id_by_type.end()) {
+         if (csirl->second->IDattempted) {
+            auto idt = (KVIDTelescope*)PART.GetReconstructionTrajectory()->GetIDTelescopes()->FindObjectByType(gIndra->GetCsIIDType());
+            if (!idt->CanIdentify(PART.GetParameters()->GetIntValue("SIM:Z"), PART.GetParameters()->GetIntValue("SIM:A"))) {
+               PART.SetIsIdentified();
+               csirl->second->IDcode = KVINDRA::IDCodes::ID_CSI_FRAGMENT;
+               partID = *(csirl->second);
+               identifying_telescope = idt;
+               PART.SetIdentification(&partID, identifying_telescope);
+               PART.GetReconstructionTrajectory()->IterateFrom();
+               KVGeoDetectorNode* node;
+               while ((node = PART.GetReconstructionTrajectory()->GetNextNode())) {
+                  --number_unidentified[node->GetName()];
+               }
+            }
+         }
       }
    }
 }

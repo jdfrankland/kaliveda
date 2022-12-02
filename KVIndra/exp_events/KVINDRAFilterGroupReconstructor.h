@@ -30,6 +30,7 @@ public:
    }
 
    void Reconstruct();
+   void IdentifyParticle(KVReconstructedNucleus&);
 
    ClassDef(KVINDRAFilterGroupReconstructor, 1) //Reconstruct simulated events after filtering with INDRA
 };
