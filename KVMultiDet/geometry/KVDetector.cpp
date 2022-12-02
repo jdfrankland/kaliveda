@@ -1167,7 +1167,7 @@ Double_t KVDetector::GetMaxDeltaE(Int_t Z, Int_t A)
    return GetELossFunction(Z, A)->GetMaximum();
 }
 
-Double_t KVDetector::GetDeltaE(Int_t Z, Int_t A, Double_t Einc)
+Double_t KVDetector::GetDeltaE(Int_t Z, Int_t A, Double_t Einc, Double_t)
 {
    // Overrides KVMaterial::GetDeltaE
    // Returns energy loss of given nucleus in the active layer of the detector.
@@ -1187,7 +1187,7 @@ Double_t KVDetector::GetTotalDeltaE(Int_t Z, Int_t A, Double_t Einc)
    return Einc - GetERes(Z, A, Einc);
 }
 
-Double_t KVDetector::GetERes(Int_t Z, Int_t A, Double_t Einc)
+Double_t KVDetector::GetERes(Int_t Z, Int_t A, Double_t Einc, Double_t)
 {
    // Overrides KVMaterial::GetERes
    // Returns residual energy of given nucleus after the detector.

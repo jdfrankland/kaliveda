@@ -20,13 +20,8 @@
 #ifndef KVMATERIAL_H
 #define KVMATERIAL_H
 
-#include "RVersion.h"
 #include "KVBase.h"
-#include "KVList.h"
-#include "KVUnits.h"
-#include "TF1.h"
 #include "TVector3.h"
-#include "Riostream.h"
 class KVIonRangeTable;
 
 class KVNucleus;

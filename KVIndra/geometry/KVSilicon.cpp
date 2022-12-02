@@ -15,9 +15,7 @@ $Id: KVSilicon.cpp,v 1.55 2009/04/15 09:49:19 ebonnet Exp $
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-#include "Riostream.h"
 #include "KVSilicon.h"
-#include "TClass.h"
 
 ClassImp(KVSilicon)
 
@@ -108,25 +106,6 @@ void KVSilicon::SetMoultonPHDParameters(Double_t, Double_t, Double_t, Double_t)
 //   return -1;
 //}
 
-//______________________________________________________________________________
-
-TF1* KVSilicon::GetELossFunction(Int_t Z, Int_t A)
-{
-   // Overrides KVDetector::GetELossFunction
-   // If the pulse height deficit (PHD) has been set for this detector,
-   // we return an energy loss function which takes into account the PHD,
-   // i.e. for an incident energy E we calculate
-   //
-   //      dEphd(E,Z,A) = dE(E,Z,A) - PHD(dE,Z)
-   //
-   // If no PHD is set, we return the usual KVDetector::GetELossFunction
-   // which calculates dE(E,Z,A)
-
-   //if (fPHD && fPHD->GetStatus()) return fPHD->GetELossFunction(Z, A);
-
-   return KVDetector::GetELossFunction(Z, A);
-}
-
 void KVSilicon::DeduceACQParameters(KVEvent*, KVNumberList&)
 {
 
@@ -139,17 +118,6 @@ void KVSilicon::DeduceACQParameters(KVEvent*, KVNumberList&)
 //   GetACQParam("GG")->SetData((UShort_t)TMath::Min(4095, cigg));
 //   GetACQParam("T")->SetData(110);
 }
-
-Double_t KVSilicon::GetDeltaE(Int_t Z, Int_t A, Double_t Einc)
-{
-   // Overrides KVDetector::GetDeltaE
-   // If no PHD is set, we use the optimized KVMaterial::GetDeltaE
-
-   //if (fPHD && fPHD->GetStatus()) return fPHD->GetELossFunction(Z, A)->Eval(Einc);
-
-   return KVDetector::GetDeltaE(Z, A, Einc);
-}
-
 
 //__________________________________________________________________________________________
 

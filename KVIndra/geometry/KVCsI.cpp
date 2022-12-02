@@ -1,4 +1,5 @@
 #include "KVCsI.h"
+#include "KVUnits.h"
 
 #include <KVCalibratedSignal.h>
 
@@ -94,7 +95,7 @@ Double_t KVCsI::GetCorrectedEnergy(KVNucleus* nuc, Double_t lum, Bool_t)
       SetEnergy(eloss);
       return eloss;
    }
-   
+
    return -1.;
 }
 

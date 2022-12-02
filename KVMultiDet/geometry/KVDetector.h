@@ -306,11 +306,7 @@ public:
    void init();
    virtual ~ KVDetector();
 
-#if ROOT_VERSION_CODE >= ROOT_VERSION(3,4,0)
    virtual void Copy(TObject& obj) const;
-#else
-   virtual void Copy(TObject& obj);
-#endif
 
    virtual void SetMaterial(const Char_t* type);
    void AddAbsorber(KVMaterial*);
@@ -635,19 +631,19 @@ public:
       return GetMatrix();
    }
 
-   virtual Double_t GetMaxDeltaE(Int_t Z, Int_t A);
-   virtual Double_t GetEIncOfMaxDeltaE(Int_t Z, Int_t A);
-   virtual Double_t GetDeltaE(Int_t Z, Int_t A, Double_t Einc);
+   Double_t GetMaxDeltaE(Int_t Z, Int_t A);
+   Double_t GetEIncOfMaxDeltaE(Int_t Z, Int_t A);
+   Double_t GetDeltaE(Int_t Z, Int_t A, Double_t Einc, Double_t = 0.);
    virtual Double_t GetTotalDeltaE(Int_t Z, Int_t A, Double_t Einc);
-   virtual Double_t GetERes(Int_t Z, Int_t A, Double_t Einc);
-   virtual Double_t GetIncidentEnergy(Int_t Z, Int_t A, Double_t delta_e =
-                                         -1.0, enum SolType type = kEmax);
+   Double_t GetERes(Int_t Z, Int_t A, Double_t Einc, Double_t = 0.);
+   Double_t GetIncidentEnergy(Int_t Z, Int_t A, Double_t delta_e =
+                                 -1.0, enum SolType type = kEmax);
    /*virtual Double_t GetEResFromDeltaE(...)  - DON'T IMPLEMENT, CALLS GETINCIDENTENERGY*/
-   virtual Double_t GetDeltaEFromERes(Int_t Z, Int_t A, Double_t Eres);
-   virtual Double_t GetIncidentEnergyFromERes(Int_t Z, Int_t A, Double_t Eres);
-   virtual Double_t GetRange(Int_t Z, Int_t A, Double_t Einc);
-   virtual Double_t GetLinearRange(Int_t Z, Int_t A, Double_t Einc);
-   virtual Double_t GetPunchThroughEnergy(Int_t Z, Int_t A);
+   Double_t GetDeltaEFromERes(Int_t Z, Int_t A, Double_t Eres);
+   Double_t GetIncidentEnergyFromERes(Int_t Z, Int_t A, Double_t Eres);
+   Double_t GetRange(Int_t Z, Int_t A, Double_t Einc);
+   Double_t GetLinearRange(Int_t Z, Int_t A, Double_t Einc);
+   Double_t GetPunchThroughEnergy(Int_t Z, Int_t A);
    virtual TGraph* DrawPunchThroughEnergyVsZ(Int_t massform = KVNucleus::kBetaMass);
    virtual TGraph* DrawPunchThroughEsurAVsZ(Int_t massform = KVNucleus::kBetaMass);
 

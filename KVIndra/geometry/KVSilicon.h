@@ -31,8 +31,6 @@ public:
 
    void SetMoultonPHDParameters(Double_t a1, Double_t a2, Double_t b1, Double_t b2);
 
-   virtual TF1* GetELossFunction(Int_t Z, Int_t A);
-
    void SetThickness(Double_t thick /* um */)
    {
       // Sets thickness of active layer in microns
@@ -45,7 +43,6 @@ public:
       return GetActiveLayer()->GetThickness() / KVUnits::um;
    }
    void DeduceACQParameters(KVEvent*, KVNumberList&);
-   Double_t GetDeltaE(Int_t Z, Int_t A, Double_t Einc);
 
    ClassDef(KVSilicon, 9)       //INDRA forward-rings silicon detector
 };
