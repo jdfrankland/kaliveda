@@ -344,7 +344,7 @@ void KVGroupReconstructor::IdentifyParticle(KVReconstructedNucleus& PART)
       KVIdentificationResult* pid = PART.GetIdentificationResult(id_no);
       next.Reset();
       idt = (KVIDTelescope*)next();
-      while (idt->HasDetector(PART.GetStoppingDetector())) {
+      while (idt && idt->HasDetector(PART.GetStoppingDetector())) {
          if (pid->IDattempted && pid->IDOK) {
             ok = kTRUE;
             partID = *pid;
@@ -417,12 +417,16 @@ void KVGroupReconstructor::Identify()
 
 void KVGroupReconstructor::Calibrate()
 {
-   // Calculate and set energies of all identified but uncalibrated particles in event.
+   // Calculate and set energies of all Z-identified but uncalibrated charged particles in event.
 
    for (auto& d : ReconEventIterator(GetEventFragment())) {
 
-      if (d.IsIdentified() && !d.IsCalibrated()) {
-         CalibrateParticle(&d);
+      if (!d.IsCalibrated()) {
+         if (d.IsZMeasured() && d.GetZ()) {
+            CalibrateParticle(&d);
+         }
+         else
+            d.SetECode(GetGroup()->GetParentStructure<KVMultiDetArray>()->GetNoCalibrationCode());
       }
 
    }
