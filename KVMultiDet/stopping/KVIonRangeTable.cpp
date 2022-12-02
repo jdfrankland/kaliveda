@@ -132,6 +132,14 @@ const Char_t* KVIonRangeTable::GetMaterialName(const Char_t* mat)
 
 //________________________________________________________________________________//
 
+const Char_t* KVIonRangeTable::GetMaterialType(const Char_t* mat)
+{
+   // Return type of material of given type or name if it is in range tables
+   FIND_MAT_AND_EXEC(GetType(), "");
+}
+
+//________________________________________________________________________________//
+
 Double_t KVIonRangeTable::GetDensity(const Char_t* mat)
 {
    // Return density of material (g/cm**3) of given type or name if it is in range tables

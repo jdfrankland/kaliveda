@@ -137,7 +137,10 @@ public:
    virtual Bool_t IsMaterialGas(const Char_t*);
 
    // Return name of material of given type or name if it is in range tables
-   virtual const Char_t* GetMaterialName(const Char_t*);
+   const Char_t* GetMaterialName(const Char_t*);
+
+   // Return type of material of given type or name if it is in range tables
+   const Char_t* GetMaterialType(const Char_t*);
 
    // Returns range (in g/cm**2) of ion (Z,A) with energy E (MeV) in material.
    // Give Amat to change default (isotopic) mass of material,
