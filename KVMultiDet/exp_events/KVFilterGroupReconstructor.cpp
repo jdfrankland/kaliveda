@@ -147,7 +147,7 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
    // including an estimate of the energy loss in the target.
 
    PART->SetIsCalibrated();
-   PART->SetECode(1); // => general code for calibration with no problems, no calculated energy losses
+   PART->SetECode(GetGroup()->GetParentStructure<KVMultiDetArray>()->GetNormalCalibrationCode()); // => general code for calibration with no problems, no calculated energy losses
    double Einc = 0;
    PART->GetReconstructionTrajectory()->IterateFrom();
    while (auto node = PART->GetReconstructionTrajectory()->GetNextNode()) {
@@ -166,8 +166,8 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
             dE = det->GetDeltaEFromERes(PART->GetZ(), PART->GetA(), Einc);
             if (dE == 0) {
                //Info("Calib", "dE from Eres gives 0! dead");
-               PART->SetECode(0);
-               PART->SetIsCalibrated();
+               PART->SetECode(GetGroup()->GetParentStructure<KVMultiDetArray>()->GetNoCalibrationCode());
+               PART->SetIsUncalibrated();
                break;
             }
             det->SetEResAfterDetector(Einc);
@@ -175,13 +175,13 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
             //Info("Calib", "calculated edet=%f from dE=%f", edet, dE);
             // negative parameter for calculated contribution
             PART->SetParameter(Form("%s.E%s", GetGroup()->GetParentStructure<KVMultiDetArray>()->GetName(), det->GetLabel()), -edet);
-            PART->SetECode(2); // calculated
+            PART->SetECode(GetGroup()->GetParentStructure<KVMultiDetArray>()->GetCalculatedCalibrationCode()); // calculated
          }
          else {
             //Info("Calib", "Einc=0, dead");
             // nothing to do here
-            PART->SetECode(0);
-            PART->SetIsCalibrated();
+            PART->SetECode(GetGroup()->GetParentStructure<KVMultiDetArray>()->GetNoCalibrationCode());
+            PART->SetIsUncalibrated();
             break;
          }
       }
@@ -194,7 +194,7 @@ void KVFilterGroupReconstructor::CalibrateParticle(KVReconstructedNucleus* PART)
          edet = det->GetCorrectedEnergy(PART, dE);
          // negative parameter for calculated contribution
          PART->SetParameter(Form("%s.E%s", GetGroup()->GetParentStructure<KVMultiDetArray>()->GetName(), det->GetLabel()), -edet);
-         PART->SetECode(2); // calculated
+         PART->SetECode(GetGroup()->GetParentStructure<KVMultiDetArray>()->GetCalculatedCalibrationCode()); // calculated
       }
       else {
          dE = det->GetEnergyLoss();

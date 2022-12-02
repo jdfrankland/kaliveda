@@ -609,6 +609,18 @@ public:
       // redefine in child classes; default returns 1.
       return 1;
    }
+   virtual UChar_t GetNoCalibrationCode() const
+   {
+      // return a general calibration code for uncalibrated particles
+      // redefine in child classes; default returns 0.
+      return 0;
+   }
+   virtual UChar_t GetCalculatedCalibrationCode() const
+   {
+      // return a general calibration code for particles for which some energy losses were calculated, not measured
+      // redefine in child classes; default returns 2.
+      return 2;
+   }
 
    ClassDef(KVMultiDetArray, 7) //Base class for multidetector arrays
 };
