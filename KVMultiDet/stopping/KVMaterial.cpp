@@ -15,12 +15,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "Riostream.h"
 #include "KVMaterial.h"
 #include "KVNucleus.h"
-#include "TMath.h"
-#include "TSystem.h"
-#include "TROOT.h"
 #include "TEnv.h"
 #include "TGeoMaterial.h"
 #include "TGeoMedium.h"
@@ -108,11 +104,7 @@ KVMaterial::KVMaterial(const KVMaterial& obj) : KVBase()
 {
    //Copy ctor
    init();
-#if ROOT_VERSION_CODE >= ROOT_VERSION(3,4,0)
    obj.Copy(*this);
-#else
-   ((KVMaterial&) obj).Copy(*this);
-#endif
 }
 
 KVIonRangeTable* KVMaterial::GetRangeTable()
@@ -166,24 +158,29 @@ void KVMaterial::SetMaterial(const Char_t* mat_type)
    // the isotope such as \c "64Ni", \c "13C", \c "natSn", etc. etc.
 
    init();
-   //are we dealing with an isotope ?
-   Char_t type[10];
-   Int_t iso_mass = 0;
-   if (sscanf(mat_type, "nat%s", type) != 1) {
-      if (sscanf(mat_type, "%d%s", &iso_mass, type) != 2) {
-         strcpy(type, mat_type);
-      }
+   if (fIonRangeTable->IsMaterialKnown(mat_type)) {
+      SetType(fIonRangeTable->GetMaterialType(mat_type));
+      SetName(fIonRangeTable->GetMaterialName(mat_type));
+      return;
    }
-   if (iso_mass) SetMass(iso_mass);
-   SetType(type);
-   if (!fIonRangeTable->IsMaterialKnown(type))
+   // probably dealing with an element with an isotopic or 'natural' mass (i.e. "124Sn" or "natSn")
+   TString iso_name(mat_type);
+   auto iso_mass = KVNucleus::IsMassGiven(iso_name);
+   if (iso_mass < 0) {
+      // Not recognised as an element
       Warning("SetMaterial",
               "Called for material %s which is unknown in current range table %s. Energy loss & range calculations impossible.",
-              type, fIonRangeTable->GetName());
-   else {
-      SetType(fIonRangeTable->GetMaterialName(type));
-      SetName(type);
+              mat_type, fIonRangeTable->GetName());
+      return;
    }
+   if (iso_mass == 0) {
+      if (iso_name.BeginsWith("nat")) iso_name.Remove(0, 3);
+   }
+   KVNucleus n(iso_name);
+   TString type = n.GetSymbol("EL");
+   if (iso_mass) SetMass(iso_mass);
+   SetType(fIonRangeTable->GetMaterialType(type));
+   SetName(fIonRangeTable->GetMaterialName(type));
 }
 
 //___________________________________________________________________________________
@@ -560,16 +557,17 @@ Double_t KVMaterial::GetParticleEIncFromERes(KVNucleus* kvn, TVector3* norm)
 
 //______________________________________________________________________________________//
 
-Double_t KVMaterial::GetDeltaE(Int_t Z, Int_t A, Double_t Einc)
+Double_t KVMaterial::GetDeltaE(Int_t Z, Int_t A, Double_t Einc, Double_t dx)
 {
    // \param[in] Z atomic number of incident ion
    // \param[in] A mass number of incident ion
    // \param[in] Einc kinetic energy of incident ion
+   // \param[in] dx if given, used as thickness (in cm) of absorber instead of current thickness
    // \returns Energy lost \f$\Delta E\f$ [MeV] by an ion \f$Z, A\f$ impinging on the absorber with kinetic energy \f$E_{inc}\f$ [MeV]
 
    if (Z < 1) return 0.;
    Double_t E_loss =
-      fIonRangeTable->GetLinearDeltaEOfIon(GetType(), Z, A, Einc, GetThickness(), fAmasr, fTemp, fPressure);
+      fIonRangeTable->GetLinearDeltaEOfIon(GetType(), Z, A, Einc, (dx > 0 ? dx : GetThickness()), fAmasr, fTemp, fPressure);
 
    return TMath::Max(E_loss, 0.);
 }
@@ -738,11 +736,12 @@ Double_t KVMaterial::GetIncidentEnergy(Int_t Z, Int_t A, Double_t delta_e, enum 
 
 //______________________________________________________________________________________//
 
-Double_t KVMaterial::GetERes(Int_t Z, Int_t A, Double_t Einc)
+Double_t KVMaterial::GetERes(Int_t Z, Int_t A, Double_t Einc, Double_t dx)
 {
    // \param[in] Z atomic number of incident ion
    // \param[in] A mass number of incident ion
    // \param[in] Einc kinetic energy of incident ion
+   // \param[in] dx if given, used as thickness (in cm) of absorber instead of current thickness
    // \returns Residual energy \f$E_{res}=E_{inc}-\Delta E\f$ in MeV of an ion \f$Z, A\f$ after impinging on the absorber with kinetic energy \f$E_{inc}\f$
    //
    //\b Example of use:
@@ -767,7 +766,7 @@ Double_t KVMaterial::GetERes(Int_t Z, Int_t A, Double_t Einc)
       return Einc;
 
    Double_t E_res =
-      fIonRangeTable->GetEResOfIon(GetType(), Z, A, Einc, fThick, fAmasr, fTemp, fPressure);
+      fIonRangeTable->GetLinearEResOfIon(GetType(), Z, A, Einc, (dx > 0 ? dx : GetThickness()), fAmasr, fTemp, fPressure);
 
    return E_res;
 }
@@ -813,16 +812,12 @@ void KVMaterial::Clear(Option_t*)
    fELoss = 0.0;
 }
 
-#if ROOT_VERSION_CODE >= ROOT_VERSION(3,4,0)
 void KVMaterial::Copy(TObject& obj) const
-#else
-void KVMaterial::Copy(TObject& obj)
-#endif
 {
    // Make a copy of this material object
    KVBase::Copy(obj);
    ((KVMaterial&) obj).SetMaterial(GetType());
-   ((KVMaterial&) obj).SetMass(GetMass());
+   if (IsIsotopic())((KVMaterial&) obj).SetMass(fAmasr);
    ((KVMaterial&) obj).SetPressure(GetPressure());
    ((KVMaterial&) obj).SetTemperature(GetTemperature());
    ((KVMaterial&) obj).SetThickness(GetThickness());
