@@ -225,6 +225,41 @@ private:
 
    void remove_signal_for_calibrator(KVCalibrator* K);
 
+   template<typename AbsorberStack>
+   Double_t get_corrected_energy(AbsorberStack* stack, KVNucleus* nuc, Double_t e, Bool_t transmission)
+   {
+      auto z = nuc->GetZ();
+      auto a = nuc->GetA();
+      enum SolType solution = kEmax;
+      if (!transmission) solution = kEmin;
+      Double_t EINC, ERES = GetEResAfterDetector();
+      if (transmission && ERES > 0.) {
+         // if residual energy is known we use it to calculate EINC.
+         // if EINC < max of dE curve, we change solution
+         EINC = stack->GetIncidentEnergyFromERes(z, a, ERES);
+         //std::cout << "EINC calc from ERES = " << EINC << std::endl;
+         if (EINC < stack->GetEIncOfMaxDeltaE(z, a)) {
+            solution = kEmin;
+            //std::cout << "solution type changed" << std::endl;
+         }
+         // we could keep the EINC value calculated using ERES, but then
+         // the corrected dE of this detector would not depend on the
+         // measured dE !
+      }
+      EINC = stack->GetIncidentEnergy(z, a, e, solution);
+      //std::cout << "EINC calc = " << EINC << std::endl;
+      if (EINC < 0) {
+         SetEResAfterDetector(-1.);
+         //std::cout << "returning EINC" << std::endl;
+         return EINC;
+      }
+      ERES = stack->GetERes(z, a, EINC);
+      //std::cout << "ERES calc from EINC = " << ERES << std::endl;
+
+      SetEResAfterDetector(-1.);
+      return (EINC - ERES);
+   }
+
 protected:
 
    TString fFName;              //!dynamically generated full name of detector
@@ -387,7 +422,7 @@ public:
    Bool_t IsCalibrated() const
    {
       // A detector is considered to be calibrated if it has a signal "Energy" available
-      return (IsSimMode() && IsDetecting()) ||  (HasDetectorSignal("Energy") && IsOK());
+      return (IsSimMode() && IsDetecting()) || (HasDetectorSignal("Energy") && IsOK());
    }
    Bool_t IsCalibrated(const KVNameValueList& params) const;
 
@@ -620,7 +655,7 @@ public:
    virtual TF1* GetELossFunction(Int_t Z, Int_t A);
    virtual TF1* GetRangeFunction(Int_t Z, Int_t A);
 
-   virtual Double_t GetSmallestEmaxValid(Int_t Z, Int_t A);
+   virtual Double_t GetSmallestEmaxValid(Int_t Z, Int_t A) const;
 
    virtual void SetEResAfterDetector(Double_t e)
    {

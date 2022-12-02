@@ -20,6 +20,7 @@
 #include "KVCalibratedSignal.h"
 #include "KVDetectorSignalExpression.h"
 #include "KVZDependentCalibratedSignal.h"
+#include "KVMaterialStack.h"
 
 #include <TGeoPhysicalNode.h>
 #include <TGraph.h>
@@ -646,39 +647,42 @@ Double_t KVDetector::GetCorrectedEnergy(KVNucleus* nuc, Double_t e, Bool_t trans
       return 0;
    }
 
-   enum SolType solution = kEmax;
-   if (!transmission) solution = kEmin;
-
+   // check if calling this function for a previous detector in the particle's trajectory
+   // led to using an effective incident angle for the particle: if so, use it here
+   if (nuc->GetParameters()->HasDoubleParameter("GetCorrectedEnergy.IncidentAngle")) {
+      KVMaterialStack stack(this);
+      stack.SetIncidenceAngle(nuc->GetParameters()->GetDoubleValue("GetCorrectedEnergy.IncidentAngle"));
+      // check that apparent energy loss in detector is compatible with a & z
+      Double_t maxDE = stack.GetMaxDeltaE(z, a);
+      if (e > maxDE) {
+         auto inc_angle = stack.GetMinimumIncidentAngleForDEMax(z, a, e);
+         stack.SetIncidenceAngle(inc_angle);
+         nuc->GetParameters()->SetValue(Form("%s.GetCorrectedEnergy.Warning", GetName()), 1);
+         nuc->GetParameters()->SetValue(Form("%s.GetCorrectedEnergy.MeasuredDE", GetName()), e);
+         nuc->GetParameters()->SetValue(Form("%s.GetCorrectedEnergy.MaxDE", GetName()), maxDE);
+         nuc->GetParameters()->SetValue(Form("%s.GetCorrectedEnergy.Transmission", GetName()), (Int_t)transmission);
+         nuc->GetParameters()->SetValue(Form("%s.GetCorrectedEnergy.ERES", GetName()), GetEResAfterDetector());
+         nuc->GetParameters()->SetValue(Form("%s.GetCorrectedEnergy.IncidentAngle", GetName()), inc_angle);
+         nuc->GetParameters()->SetValue("GetCorrectedEnergy.IncidentAngle", inc_angle);
+      }
+      return get_corrected_energy(&stack, nuc, e, transmission);
+   }
    // check that apparent energy loss in detector is compatible with a & z
    Double_t maxDE = GetMaxDeltaE(z, a);
-   Double_t EINC, ERES = GetEResAfterDetector();
    if (e > maxDE) {
-      nuc->GetParameters()->SetValue("GetCorrectedEnergy.Warning", 1);
-      nuc->GetParameters()->SetValue("GetCorrectedEnergy.Detector", GetName());
-      nuc->GetParameters()->SetValue("GetCorrectedEnergy.MeasuredDE", e);
-      nuc->GetParameters()->SetValue("GetCorrectedEnergy.MaxDE", maxDE);
-      nuc->GetParameters()->SetValue("GetCorrectedEnergy.Transmission", (Int_t)transmission);
-      nuc->GetParameters()->SetValue("GetCorrectedEnergy.ERES", ERES);
-      e = maxDE;
+      KVMaterialStack stack(this);
+      auto inc_angle = stack.GetMinimumIncidentAngleForDEMax(z, a, e);
+      stack.SetIncidenceAngle(inc_angle);
+      nuc->GetParameters()->SetValue(Form("%s.GetCorrectedEnergy.Warning", GetName()), 1);
+      nuc->GetParameters()->SetValue(Form("%s.GetCorrectedEnergy.MeasuredDE", GetName()), e);
+      nuc->GetParameters()->SetValue(Form("%s.GetCorrectedEnergy.MaxDE", GetName()), maxDE);
+      nuc->GetParameters()->SetValue(Form("%s.GetCorrectedEnergy.Transmission", GetName()), (Int_t)transmission);
+      nuc->GetParameters()->SetValue(Form("%s.GetCorrectedEnergy.ERES", GetName()), GetEResAfterDetector());
+      nuc->GetParameters()->SetValue(Form("%s.GetCorrectedEnergy.IncidentAngle", GetName()), inc_angle);
+      nuc->GetParameters()->SetValue("GetCorrectedEnergy.IncidentAngle", inc_angle);
+      return get_corrected_energy(&stack, nuc, e, transmission);
    }
-   if (transmission && ERES > 0.) {
-      // if residual energy is known we use it to calculate EINC.
-      // if EINC < max of dE curve, we change solution
-      EINC = GetIncidentEnergyFromERes(z, a, ERES);
-      if (EINC < GetEIncOfMaxDeltaE(z, a)) solution = kEmin;
-      // we could keep the EINC value calculated using ERES, but then
-      // the corrected dE of this detector would not depend on the
-      // measured dE !
-   }
-   EINC = GetIncidentEnergy(z, a, e, solution);
-   if (EINC < 0) {
-      SetEResAfterDetector(-1.);
-      return EINC;
-   }
-   ERES = GetERes(z, a, EINC);
-
-   SetEResAfterDetector(-1.);
-   return (EINC - ERES);
+   return get_corrected_energy(this, nuc, e, transmission);
 }
 
 //______________________________________________________________________________//
@@ -1293,7 +1297,7 @@ Double_t KVDetector::GetIncidentEnergyFromERes(Int_t Z, Int_t A, Double_t Eres)
    return einc;
 }
 
-Double_t KVDetector::GetSmallestEmaxValid(Int_t Z, Int_t A)
+Double_t KVDetector::GetSmallestEmaxValid(Int_t Z, Int_t A) const
 {
    // Returns the smallest maximum energy for which range tables are valid
    // for all absorbers in the detector, and given ion (Z,A)
