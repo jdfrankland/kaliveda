@@ -14,6 +14,7 @@
 int main(int argc, char* argv[])
 {
 //cout << "Creating myapp" << endl;
+   KVBase::InitEnvironment();
 #ifdef WITHRINT
    TRint* myapp = new TRint("RootSession", &argc, argv, NULL, 0);
 #else

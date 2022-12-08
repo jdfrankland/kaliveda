@@ -25,3 +25,6 @@ Default.BatchSystem:   Slurm
 
 # available run files are centralised in one place
 KVAvailableRunsFile.RunFileDirectory: $(THRONG_DIR)/KaliVeda/KVFiles
+
+# otherwise GUI are very very slow!!!
+X11.UseXft: no
