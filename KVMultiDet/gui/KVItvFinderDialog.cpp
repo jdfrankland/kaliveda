@@ -61,7 +61,7 @@ KVItvFinderDialog::KVItvFinderDialog(KVIDZAFromZGrid* gg, TH2* hh)//:fSpectrum(7
    fMain->Connect("CloseWindow()", "KVItvFinderDialog", this, "DoClose()");
    fMain->DontCallClose();
    fMain->SetCleanup(kDeepCleanup);
-   // afterwards, in the destructor do fMain->CloseWindo(), and in DoClose(), do 'delete this'
+   // afterwards, in the destructor do fMain->CloseWindow(), and in DoClose(), do 'delete this'
 
    // Default constructor
    TGHorizontalFrame* fCanvasFrame = new TGHorizontalFrame(fMain, 627, 7000, kHorizontalFrame);
@@ -77,7 +77,6 @@ KVItvFinderDialog::KVItvFinderDialog(KVIDZAFromZGrid* gg, TH2* hh)//:fSpectrum(7
    fCanvas->AddExec("toto", "if(_dummy_itv)_dummy_itv->HandleKey();");
    fRootEmbeddedCanvas615->AdoptCanvas(fCanvas);
    fPad = fCanvas->cd();
-//   fPad->AddExec("test","printf('coucou\n')");
    fCanvas->SetRightMargin(0.02);
    fCanvas->SetTopMargin(0.02);
    fCanvas->SetLeftMargin(0.08);
@@ -87,8 +86,6 @@ KVItvFinderDialog::KVItvFinderDialog(KVIDZAFromZGrid* gg, TH2* hh)//:fSpectrum(7
    fMain->AddFrame(fCanvasFrame, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 0, 0, 0, 0));
 
    TGVerticalFrame* fControlOscillo  = new TGVerticalFrame(fCanvasFrame, 2000, 7000, kVerticalFrame);
-   //    fControlOscillo->SetBackgroundColor(fColor);
-
 
    {
       const char* xpms[] = {
@@ -266,6 +263,7 @@ KVItvFinderDialog::KVItvFinderDialog(KVIDZAFromZGrid* gg, TH2* hh)//:fSpectrum(7
    fRat = 0.0001;
 
    DrawIntervals();
+   PrintHelp();
 
 }
 
@@ -1204,11 +1202,17 @@ void KVItvFinderDialog::HandleKey()
          fCanvas->SetLogy(!fCanvas->GetLogy());
          break;
       case kButton1Shift:
-//         std::cout << fCanvas->GetEventX() << " " << fCanvas->AbsPixeltoX(fCanvas->GetEventX()) << std::endl;
          AddInterval(fCanvas->AbsPixeltoX(fCanvas->GetEventX()));
          break;
    }
 
+}
+
+void KVItvFinderDialog::PrintHelp()
+{
+   std::cout << "Mouse shortcuts :   Wheel-click       Fit intervals of current Z" << std::endl;
+   std::cout << "                   Double-click       Set/Unset log scale on Y axis" << std::endl;
+   std::cout << "                    Shift-click       Add an interval where clicked" << std::endl;
 }
 
 void KVItvFinderDialog::FindPIDIntervals(Int_t zz)

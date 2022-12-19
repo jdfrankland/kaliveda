@@ -143,6 +143,7 @@ public:
    void RemoveFit();
 
    void HandleKey();
+   void PrintHelp();
 
    void ProcessIdentification(Int_t zmin = -1, Int_t zmax = -1);
    void FindPIDIntervals(Int_t zz);
