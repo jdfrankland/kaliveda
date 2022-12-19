@@ -53,6 +53,13 @@ class KVTestIDGridDialog {
    TGNumberEntry* fHzvseXBinsEntry;
    TGNumberEntry* fHzvseXminEntry;
    TGNumberEntry* fHzvseXmaxEntry;
+   TGHorizontalFrame* fHzvsdeXBinsFrame;
+   TGLabel* fHzvsdeXBinsLabel;
+   TGLabel* fHzvsdeXminLabel;
+   TGLabel* fHzvsdeXmaxLabel;
+   TGNumberEntry* fHzvsdeXBinsEntry;
+   TGNumberEntry* fHzvsdeXminEntry;
+   TGNumberEntry* fHzvsdeXmaxEntry;
    TGHorizontalFrame* fHzvseYBinsFrame;
    TGLabel* fHzvseYBinsLabel;
    TGLabel* fHzvseYminLabel;
@@ -81,6 +88,9 @@ class KVTestIDGridDialog {
    static Int_t hzvseybins;
    static Int_t hzvseymin;
    static Int_t hzvseymax;
+   static Int_t hzvsdexbins;
+   static Double_t hzvsdexmin;
+   static Double_t hzvsdexmax;
 
    std::unique_ptr<TCanvas> resultsCanvas;
    std::unique_ptr<KVCanvas> resultsKVCanvas;

@@ -1311,7 +1311,8 @@ void KVIDGraph::TestIdentification(TH2F* data, KVHashList& histos, KVNameValueLi
    //        "ID_REAL"="[name of histo to fill with PID spectrum]"
    //        "ID_REAL_AIDENT"="[name of histo to fill with PID spectrum]" Z&A identification
    //        "ID_REAL_ZIDENT"="[name of histo to fill with PID spectrum]" Only Z identification
-   //        "ID_REAL_VS_ERES" - PID vs. Eres histo
+   //        "ID_REAL_VS_ERES" - PID vs. Eres (X) histo
+   //        "ID_REAL_VS_DE" - PID vs. DeltaE (Y) histo
    //        "ID_REAL_VS_ERES_AIDENT" - PID vs. Eres histo, Z&A identification
    //        "ID_REAL_VS_ERES_ZIDENT" - PID vs. Eres histo, only Z identification
    //     - only for isotopic identificiation:
@@ -1362,15 +1363,18 @@ void KVIDGraph::TestIdentification(TH2F* data, KVHashList& histos, KVNameValueLi
                   RealA = (idr.Aident ? idr.PID : (Float_t)idr.A);
                   RealZ = (idr.Aident ? (Float_t)idr.Z : idr.PID);
                   idresults.fill("ID_REAL", PID, weight);
+                  idresults.fill("ID_REAL_VS_DE", y, PID, weight);
                   idresults.fill("ID_REAL_VS_ERES", x, PID, weight);
                   if (idr.Aident) {
                      idresults.fill("Z_A_REAL", RealA - RealZ, gRandom->Gaus(RealZ, 0.15), weight);
                      idresults.fill("ZADIST_AIDENT", idr.Z, idr.A, weight);
                      idresults.fill("ID_REAL_AIDENT", PID, weight);
+                     idresults.fill("ID_REAL_VS_DE_AIDENT", y, PID, weight);
                      idresults.fill("ID_REAL_VS_ERES_AIDENT", x, PID, weight);
                   }
                   else if (idr.Zident) {
                      idresults.fill("ID_REAL_ZIDENT", PID, weight);
+                     idresults.fill("ID_REAL_VS_DE_ZIDENT", y, PID, weight);
                      idresults.fill("ID_REAL_VS_ERES_ZIDENT", x, PID, weight);
                   }
                }

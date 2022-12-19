@@ -27,6 +27,9 @@ Int_t KVTestIDGridDialog::hzrealxmax = 100;
 Int_t KVTestIDGridDialog::hzvsexbins = 500;
 Double_t KVTestIDGridDialog::hzvsexmin = 0;
 Double_t KVTestIDGridDialog::hzvsexmax = 5000;
+Int_t KVTestIDGridDialog::hzvsdexbins = 500;
+Double_t KVTestIDGridDialog::hzvsdexmin = 0;
+Double_t KVTestIDGridDialog::hzvsdexmax = 5000;
 Int_t KVTestIDGridDialog::hzvseybins = 500;
 Int_t KVTestIDGridDialog::hzvseymin = 0;
 Int_t KVTestIDGridDialog::hzvseymax = 100;
@@ -42,6 +45,7 @@ KVTestIDGridDialog::KVTestIDGridDialog(const TGWindow* p,
       fNameZreal.Form("PID:H=%s_G=%s", data_histo->GetName(), g->GetName());
       fNameZvsE.Form("PIDvsEres:H=%s_G=%s", data_histo->GetName(), g->GetName());
       hzvsexmax = data_histo->GetXaxis()->GetXmax();
+      hzvsdexmax = data_histo->GetYaxis()->GetXmax();
    }
    // set PID limits from grid
    g->GetIdentifiers()->Sort(); // make sure lines are in order of increasing PID
@@ -65,130 +69,143 @@ KVTestIDGridDialog::KVTestIDGridDialog(const TGWindow* p,
    // use hierarchical cleaning
    fMain->SetCleanup(kDeepCleanup);
 
+   int tw = 30;
+
    /******* frame for name of data histo ********/
    fHdataFrame = new TGHorizontalFrame(fMain);
    fHdataNameLabel = new TGLabel(fHdataFrame, "Name of data histo (TH2F)");
    fHdataNameEntry = new TGTextEntry(fNameData, fHdataFrame);
    fHdataNameEntry->SetWidth(150);
-   fHdataFrame->AddFrame(fHdataNameEntry,
-                         new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHdataFrame->AddFrame(fHdataNameLabel,
-                         new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+
+   fHdataFrame->AddFrame(fHdataNameEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHdataFrame->AddFrame(fHdataNameLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
 
    /******* frame for Zreal histo **************/
    fHzrealFrame = new TGGroupFrame(fMain, "ID test histo");
    fHzrealNameFrame = new TGHorizontalFrame(fHzrealFrame);
-   fHzrealNameLabel =
-      new TGLabel(fHzrealNameFrame, "Name of PID histo (TH1F)");
+   fHzrealNameLabel = new TGLabel(fHzrealNameFrame, "Name of PID histo (TH1F)");
    fHzrealNameEntry = new TGTextEntry(fNameZreal, fHzrealNameFrame);
    fHzrealNameEntry->SetWidth(150);
-   fHzrealNameFrame->AddFrame(fHzrealNameEntry,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzrealNameFrame->AddFrame(fHzrealNameLabel,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+
+   fHzrealNameFrame->AddFrame(fHzrealNameEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzrealNameFrame->AddFrame(fHzrealNameLabel, new TGLayoutHints(kLHintsLeft, 5, 5, 2, 2));
+
    fHzrealBinsFrame = new TGHorizontalFrame(fHzrealFrame);
+
    fHzrealBinsLabel = new TGLabel(fHzrealBinsFrame, "nbins");
-   fHzrealBinsEntry =
-      new TGNumberEntry(fHzrealBinsFrame, hzrealbins, 4, 0,
-                        TGNumberFormat::kNESInteger,
-                        TGNumberFormat::kNEAPositive);
+   fHzrealBinsLabel->ChangeOptions(fHzrealBinsLabel->GetOptions() | kFixedSize);
+   fHzrealBinsLabel->Resize(60, fHzrealBinsLabel->GetHeight());
+   fHzrealBinsLabel->SetTextJustify(kTextRight);
+   fHzrealBinsEntry = new TGNumberEntry(fHzrealBinsFrame, hzrealbins, 4, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEAPositive);
    fHzrealXminLabel = new TGLabel(fHzrealBinsFrame, "xmin");
-   fHzrealXminEntry =
-      new TGNumberEntry(fHzrealBinsFrame, hzrealxmin, 4, 0,
-                        TGNumberFormat::kNESInteger,
-                        TGNumberFormat::kNEAPositive);
+   fHzrealXminLabel->ChangeOptions(fHzrealXminLabel->GetOptions() | kFixedSize);
+   fHzrealXminLabel->Resize(tw, fHzrealXminLabel->GetHeight());
+   fHzrealXminLabel->SetTextJustify(kTextRight);
+   fHzrealXminEntry = new TGNumberEntry(fHzrealBinsFrame, hzrealxmin, 4, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEAPositive);
    fHzrealXmaxLabel = new TGLabel(fHzrealBinsFrame, "xmax");
-   fHzrealXmaxEntry =
-      new TGNumberEntry(fHzrealBinsFrame, hzrealxmax, 4, 0,
-                        TGNumberFormat::kNESInteger,
-                        TGNumberFormat::kNEAPositive);
-   fHzrealBinsFrame->AddFrame(fHzrealXmaxEntry,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzrealBinsFrame->AddFrame(fHzrealXmaxLabel,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzrealBinsFrame->AddFrame(fHzrealXminEntry,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzrealBinsFrame->AddFrame(fHzrealXminLabel,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzrealBinsFrame->AddFrame(fHzrealBinsEntry,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzrealBinsFrame->AddFrame(fHzrealBinsLabel,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzrealFrame->AddFrame(fHzrealNameFrame,
-                          new TGLayoutHints(kLHintsNormal, 5, 5, 2, 2));
-   fHzrealFrame->AddFrame(fHzrealBinsFrame,
-                          new TGLayoutHints(kLHintsNormal, 5, 5, 2, 2));
+   fHzrealXmaxLabel->ChangeOptions(fHzrealXmaxLabel->GetOptions() | kFixedSize);
+   fHzrealXmaxLabel->Resize(tw, fHzrealXmaxLabel->GetHeight());
+   fHzrealXmaxLabel->SetTextJustify(kTextRight);
+   fHzrealXmaxEntry = new TGNumberEntry(fHzrealBinsFrame, hzrealxmax, 4, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEAPositive);
+
+   fHzrealBinsFrame->AddFrame(fHzrealXmaxEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzrealBinsFrame->AddFrame(fHzrealXmaxLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzrealBinsFrame->AddFrame(fHzrealXminEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzrealBinsFrame->AddFrame(fHzrealXminLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzrealBinsFrame->AddFrame(fHzrealBinsEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzrealBinsFrame->AddFrame(fHzrealBinsLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+
+   fHzrealFrame->AddFrame(fHzrealNameFrame, new TGLayoutHints(kLHintsExpandX, 5, 5, 2, 2));
+   fHzrealFrame->AddFrame(fHzrealBinsFrame, new TGLayoutHints(kLHintsExpandX, 5, 5, 2, 2));
 
    /******* frame for ZvsE histo **************/
    fHzvseFrame = new TGGroupFrame(fMain, "PID vs. E histo");
+
    fHzvseNameFrame = new TGHorizontalFrame(fHzvseFrame);
    fHzvseNameLabel = new TGLabel(fHzvseNameFrame, "Name of histo (TH2F)");
    fHzvseNameEntry = new TGTextEntry(fNameZvsE, fHzvseNameFrame);
    fHzvseNameEntry->SetWidth(150);
-   fHzvseNameFrame->AddFrame(fHzvseNameEntry,
-                             new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzvseNameFrame->AddFrame(fHzvseNameLabel,
-                             new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseNameFrame->AddFrame(fHzvseNameEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseNameFrame->AddFrame(fHzvseNameLabel, new TGLayoutHints(kLHintsLeft, 5, 5, 2, 2));
+
    fHzvseXBinsFrame = new TGHorizontalFrame(fHzvseFrame);
-   fHzvseXBinsLabel = new TGLabel(fHzvseXBinsFrame, "nbins");
-   fHzvseXBinsEntry =
-      new TGNumberEntry(fHzvseXBinsFrame, hzvsexbins, 4, 0,
-                        TGNumberFormat::kNESInteger,
-                        TGNumberFormat::kNEAPositive);
-   fHzvseXminLabel = new TGLabel(fHzvseXBinsFrame, "E : min");
-   fHzvseXminEntry =
-      new TGNumberEntry(fHzvseXBinsFrame, hzvsexmin, 4, 0,
-                        TGNumberFormat::kNESReal);
+   fHzvseXBinsLabel = new TGLabel(fHzvseXBinsFrame, "E : nbins");
+   fHzvseXBinsLabel->ChangeOptions(fHzvseXBinsLabel->GetOptions() | kFixedSize);
+   fHzvseXBinsLabel->Resize(60, fHzvseXBinsLabel->GetHeight());
+   fHzvseXBinsLabel->SetTextJustify(kTextRight);
+   fHzvseXBinsEntry = new TGNumberEntry(fHzvseXBinsFrame, hzvsexbins, 4, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEAPositive);
+   fHzvseXminLabel = new TGLabel(fHzvseXBinsFrame, "min");
+   fHzvseXminLabel->ChangeOptions(fHzvseXminLabel->GetOptions() | kFixedSize);
+   fHzvseXminLabel->Resize(tw, fHzvseXminLabel->GetHeight());
+   fHzvseXminLabel->SetTextJustify(kTextRight);
+   fHzvseXminEntry = new TGNumberEntry(fHzvseXBinsFrame, hzvsexmin, 4, 0, TGNumberFormat::kNESReal);
    fHzvseXmaxLabel = new TGLabel(fHzvseXBinsFrame, "max");
-   fHzvseXmaxEntry =
-      new TGNumberEntry(fHzvseXBinsFrame, hzvsexmax, 4, 0,
-                        TGNumberFormat::kNESReal);
-   fHzvseXBinsFrame->AddFrame(fHzvseXmaxEntry,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzvseXBinsFrame->AddFrame(fHzvseXmaxLabel,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzvseXBinsFrame->AddFrame(fHzvseXminEntry,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzvseXBinsFrame->AddFrame(fHzvseXminLabel,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzvseXBinsFrame->AddFrame(fHzvseXBinsEntry,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzvseXBinsFrame->AddFrame(fHzvseXBinsLabel,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseXmaxLabel->ChangeOptions(fHzvseXmaxLabel->GetOptions() | kFixedSize);
+   fHzvseXmaxLabel->Resize(tw, fHzvseXmaxLabel->GetHeight());
+   fHzvseXmaxLabel->SetTextJustify(kTextRight);
+   fHzvseXmaxEntry = new TGNumberEntry(fHzvseXBinsFrame, hzvsexmax, 5, 0, TGNumberFormat::kNESReal);
+
+   fHzvseXBinsFrame->AddFrame(fHzvseXmaxEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseXBinsFrame->AddFrame(fHzvseXmaxLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseXBinsFrame->AddFrame(fHzvseXminEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseXBinsFrame->AddFrame(fHzvseXminLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseXBinsFrame->AddFrame(fHzvseXBinsEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseXBinsFrame->AddFrame(fHzvseXBinsLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+
+   // DE
+   fHzvsdeXBinsFrame = new TGHorizontalFrame(fHzvseFrame);
+   fHzvsdeXBinsLabel = new TGLabel(fHzvsdeXBinsFrame, "DE : nbins");
+   fHzvsdeXBinsLabel->ChangeOptions(fHzvsdeXBinsLabel->GetOptions() | kFixedSize);
+   fHzvsdeXBinsLabel->Resize(60, fHzvsdeXBinsLabel->GetHeight());
+   fHzvsdeXBinsLabel->SetTextJustify(kTextRight);
+   fHzvsdeXBinsEntry = new TGNumberEntry(fHzvsdeXBinsFrame, hzvsdexbins, 4, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEAPositive);
+   fHzvsdeXminLabel = new TGLabel(fHzvsdeXBinsFrame, "min");
+   fHzvsdeXminLabel->ChangeOptions(fHzvsdeXminLabel->GetOptions() | kFixedSize);
+   fHzvsdeXminLabel->Resize(tw, fHzvsdeXminLabel->GetHeight());
+   fHzvsdeXminLabel->SetTextJustify(kTextRight);
+   fHzvsdeXminEntry = new TGNumberEntry(fHzvsdeXBinsFrame, hzvsexmin, 4, 0, TGNumberFormat::kNESReal);
+   fHzvsdeXmaxLabel = new TGLabel(fHzvsdeXBinsFrame, "max");
+   fHzvsdeXmaxLabel->ChangeOptions(fHzvsdeXmaxLabel->GetOptions() | kFixedSize);
+   fHzvsdeXmaxLabel->Resize(tw, fHzvsdeXmaxLabel->GetHeight());
+   fHzvsdeXmaxLabel->SetTextJustify(kTextRight);
+   fHzvsdeXmaxEntry = new TGNumberEntry(fHzvsdeXBinsFrame, hzvsdexmax, 5, 0, TGNumberFormat::kNESReal);
+
+   fHzvsdeXBinsFrame->AddFrame(fHzvsdeXmaxEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvsdeXBinsFrame->AddFrame(fHzvsdeXmaxLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvsdeXBinsFrame->AddFrame(fHzvsdeXminEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvsdeXBinsFrame->AddFrame(fHzvsdeXminLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvsdeXBinsFrame->AddFrame(fHzvsdeXBinsEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvsdeXBinsFrame->AddFrame(fHzvsdeXBinsLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   //
+
    fHzvseYBinsFrame = new TGHorizontalFrame(fHzvseFrame);
-   fHzvseYBinsLabel = new TGLabel(fHzvseYBinsFrame, "nbins");
-   fHzvseYBinsEntry =
-      new TGNumberEntry(fHzvseYBinsFrame, hzvseybins, 4, 0,
-                        TGNumberFormat::kNESInteger,
-                        TGNumberFormat::kNEAPositive);
-   fHzvseYminLabel = new TGLabel(fHzvseYBinsFrame, "PID : min");
-   fHzvseYminEntry =
-      new TGNumberEntry(fHzvseYBinsFrame, hzvseymin, 4, 0,
-                        TGNumberFormat::kNESInteger,
-                        TGNumberFormat::kNEAPositive);
+   fHzvseYBinsLabel = new TGLabel(fHzvseYBinsFrame, "PID: nbins");
+   fHzvseYBinsLabel->ChangeOptions(fHzvseYBinsLabel->GetOptions() | kFixedSize);
+   fHzvseYBinsLabel->Resize(60, fHzvseYBinsLabel->GetHeight());
+   fHzvseYBinsLabel->SetTextJustify(kTextRight);
+   fHzvseYBinsEntry = new TGNumberEntry(fHzvseYBinsFrame, hzvseybins, 4, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEAPositive);
+   fHzvseYminLabel = new TGLabel(fHzvseYBinsFrame, "min");
+   fHzvseYminLabel->ChangeOptions(fHzvseYminLabel->GetOptions() | kFixedSize);
+   fHzvseYminLabel->Resize(tw, fHzvseYminLabel->GetHeight());
+   fHzvseYminLabel->SetTextJustify(kTextRight);
+   fHzvseYminEntry = new TGNumberEntry(fHzvseYBinsFrame, hzvseymin, 4, 0,  TGNumberFormat::kNESInteger, TGNumberFormat::kNEAPositive);
    fHzvseYmaxLabel = new TGLabel(fHzvseYBinsFrame, "max");
-   fHzvseYmaxEntry =
-      new TGNumberEntry(fHzvseYBinsFrame, hzvseymax, 4, 0,
-                        TGNumberFormat::kNESInteger,
-                        TGNumberFormat::kNEAPositive);
-   fHzvseYBinsFrame->AddFrame(fHzvseYmaxEntry,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzvseYBinsFrame->AddFrame(fHzvseYmaxLabel,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzvseYBinsFrame->AddFrame(fHzvseYminEntry,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzvseYBinsFrame->AddFrame(fHzvseYminLabel,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzvseYBinsFrame->AddFrame(fHzvseYBinsEntry,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzvseYBinsFrame->AddFrame(fHzvseYBinsLabel,
-                              new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
-   fHzvseFrame->AddFrame(fHzvseNameFrame,
-                         new TGLayoutHints(kLHintsNormal, 5, 5, 2, 2));
-   fHzvseFrame->AddFrame(fHzvseXBinsFrame,
-                         new TGLayoutHints(kLHintsNormal, 5, 5, 2, 2));
-   fHzvseFrame->AddFrame(fHzvseYBinsFrame,
-                         new TGLayoutHints(kLHintsNormal, 5, 5, 2, 2));
+   fHzvseYmaxLabel->ChangeOptions(fHzvseYmaxLabel->GetOptions() | kFixedSize);
+   fHzvseYmaxLabel->Resize(tw, fHzvseYmaxLabel->GetHeight());
+   fHzvseYmaxLabel->SetTextJustify(kTextRight);
+   fHzvseYmaxEntry = new TGNumberEntry(fHzvseYBinsFrame, hzvseymax, 5, 0, TGNumberFormat::kNESInteger, TGNumberFormat::kNEAPositive);
+
+   fHzvseYBinsFrame->AddFrame(fHzvseYmaxEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseYBinsFrame->AddFrame(fHzvseYmaxLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseYBinsFrame->AddFrame(fHzvseYminEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseYBinsFrame->AddFrame(fHzvseYminLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseYBinsFrame->AddFrame(fHzvseYBinsEntry, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+   fHzvseYBinsFrame->AddFrame(fHzvseYBinsLabel, new TGLayoutHints(kLHintsRight, 5, 5, 2, 2));
+
+   fHzvseFrame->AddFrame(fHzvseNameFrame, new TGLayoutHints(kLHintsExpandX, 5, 5, 2, 2));
+   fHzvseFrame->AddFrame(fHzvseXBinsFrame, new TGLayoutHints(kLHintsExpandX, 5, 5, 2, 2));
+   fHzvseFrame->AddFrame(fHzvsdeXBinsFrame, new TGLayoutHints(kLHintsExpandX, 5, 5, 2, 2));
+   fHzvseFrame->AddFrame(fHzvseYBinsFrame, new TGLayoutHints(kLHintsExpandX, 5, 5, 2, 2));
 
    /********** progress bar **********/
    fProgressBar = new TGHProgressBar(fMain, TGProgressBar::kFancy, 300);
@@ -215,13 +232,13 @@ KVTestIDGridDialog::KVTestIDGridDialog(const TGWindow* p,
                                  kLHintsCenterY, 2, 2, 5, 5));
 
    fMain->AddFrame(fHdataFrame,
-                   new TGLayoutHints(kLHintsLeft | kLHintsTop, 2, 2, 15,
+                   new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2, 2, 15,
                                      5));
    fMain->AddFrame(fHzrealFrame,
                    new TGLayoutHints(kLHintsLeft | kLHintsTop, 2, 2, 5,
                                      5));
    fMain->AddFrame(fHzvseFrame,
-                   new TGLayoutHints(kLHintsLeft | kLHintsTop, 2, 2, 5,
+                   new TGLayoutHints(kLHintsExpandX | kLHintsTop, 2, 2, 5,
                                      10));
    fMain->AddFrame(fProgressBar,
                    new TGLayoutHints(kLHintsCenterX | kLHintsTop, 2, 2, 5,
@@ -286,6 +303,11 @@ void KVTestIDGridDialog::TestGrid()
    hzvsexbins = fHzvseXBinsEntry->GetIntNumber();
    hzvsexmin = fHzvseXminEntry->GetNumber();
    hzvsexmax = fHzvseXmaxEntry->GetNumber();
+
+   hzvsdexbins = fHzvsdeXBinsEntry->GetIntNumber();
+   hzvsdexmin = fHzvsdeXminEntry->GetNumber();
+   hzvsdexmax = fHzvsdeXmaxEntry->GetNumber();
+
 
    hzvseybins = fHzvseYBinsEntry->GetIntNumber();
    hzvseymin = fHzvseYminEntry->GetIntNumber();
@@ -388,6 +410,30 @@ void KVTestIDGridDialog::TestGrid()
 
       histo_names.SetValue("ID_REAL_VS_ERES_ZIDENT", "ID_REAL_VS_ERES_ZIDENT");
       add_histo(hzvse_zident);
+
+
+      auto hzvsde =
+         new TH2F("ID_REAL_VS_DE", "PID vs. #Delta E", hzvsdexbins, hzvsdexmin,
+                  hzvsdexmax, hzvseybins, hzvseymin, hzvseymax);
+
+      histo_names.SetValue("ID_REAL_VS_DE", "ID_REAL_VS_DE");
+      add_histo(hzvsde);
+
+      auto hzvsde_aident =
+         new TH2F("ID_REAL_VS_DE_AIDENT", "PID vs. #Delta E [Z&A identified]", hzvsexbins, hzvsdexmin,
+                  hzvsdexmax, hzvseybins, hzvseymin, hzvseymax);
+
+      histo_names.SetValue("ID_REAL_VS_DE_AIDENT", "ID_REAL_VS_DE_AIDENT");
+      add_histo(hzvsde_aident);
+
+      auto hzvsde_zident =
+         new TH2F("ID_REAL_VS_DE_ZIDENT", "PID vs. #Delta E [only Z identified]", hzvsexbins, hzvsdexmin,
+                  hzvsdexmax, hzvseybins, hzvseymin, hzvseymax);
+
+      histo_names.SetValue("ID_REAL_VS_DE_ZIDENT", "ID_REAL_VS_DE_ZIDENT");
+      add_histo(hzvsde_zident);
+
+
    }
 
    //progress bar set up
@@ -417,14 +463,14 @@ void KVTestIDGridDialog::TestGrid()
    gStyle->SetOptTitle(); // display histo title in pads
 
    if (fSelectedGrid->HasMassIDCapability()) {
-      cc->Divide(2, 3);
+      cc->Divide(3, 3);
       cc->SetWindowPosition(100, 100);
-      cc->SetWindowSize(1000, 1300);
+      cc->SetWindowSize(1500, 1300);
    }
    else {
-      cc->Divide(2, 1);
+      cc->Divide(3, 1);
       cc->SetWindowPosition(100, 100);
-      cc->SetWindowSize(1000, 500);
+      cc->SetWindowSize(1500, 500);
    }
 
    int ipad = 1;
@@ -442,6 +488,16 @@ void KVTestIDGridDialog::TestGrid()
    pad->SetLogz(kTRUE);
    pad->SetGridx();
    pad->SetGridy();
+   hzvse->SetStats(kFALSE);
+   hzvse->Draw("zcol");
+   pad->Modified();
+   pad->Update();
+
+   pad = cc->cd(ipad++);
+   pad->SetLogz(kTRUE);
+   pad->SetGridx();
+   pad->SetGridy();
+   hzvse = histos.get_object<TH2F>("ID_REAL_VS_DE");
    hzvse->SetStats(kFALSE);
    hzvse->Draw("zcol");
    pad->Modified();
@@ -468,6 +524,16 @@ void KVTestIDGridDialog::TestGrid()
       pad->Update();
 
       pad = cc->cd(ipad++);
+      pad->SetLogz(kTRUE);
+      pad->SetGridx();
+      pad->SetGridy();
+      hzvse = histos.get_object<TH2F>("ID_REAL_VS_DE_AIDENT");
+      hzvse->SetStats(kFALSE);
+      hzvse->Draw("zcol");
+      pad->Modified();
+      pad->Update();
+
+      pad = cc->cd(ipad++);
       pad->SetGridx();
       pad->SetGridy();
       hzreal = histos.get_object<TH1F>("ID_REAL_ZIDENT");
@@ -481,6 +547,16 @@ void KVTestIDGridDialog::TestGrid()
       pad->SetGridx();
       pad->SetGridy();
       hzvse = histos.get_object<TH2F>("ID_REAL_VS_ERES_ZIDENT");
+      hzvse->SetStats(kFALSE);
+      hzvse->Draw("zcol");
+      pad->Modified();
+      pad->Update();
+
+      pad = cc->cd(ipad++);
+      pad->SetLogz(kTRUE);
+      pad->SetGridx();
+      pad->SetGridy();
+      hzvse = histos.get_object<TH2F>("ID_REAL_VS_DE_ZIDENT");
       hzvse->SetStats(kFALSE);
       hzvse->Draw("zcol");
       pad->Modified();
