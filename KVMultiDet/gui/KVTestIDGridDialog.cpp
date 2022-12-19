@@ -364,6 +364,14 @@ void KVTestIDGridDialog::TestGrid()
    histo_names.SetValue("ID_REAL_VS_ERES", fNameZvsE.Data());
    add_histo(hzvse);
 
+   auto hzvsde =
+      new TH2F("ID_REAL_VS_DE", "PID vs. #Delta E", hzvsdexbins, hzvsdexmin,
+               hzvsdexmax, hzvseybins, hzvseymin, hzvseymax);
+
+   histo_names.SetValue("ID_REAL_VS_DE", "ID_REAL_VS_DE");
+   add_histo(hzvsde);
+
+
    // A vs Z map in case of mass identification
    // A dist for isotopically identified particles
    if (fSelectedGrid->HasMassIDCapability()) {
@@ -412,12 +420,6 @@ void KVTestIDGridDialog::TestGrid()
       add_histo(hzvse_zident);
 
 
-      auto hzvsde =
-         new TH2F("ID_REAL_VS_DE", "PID vs. #Delta E", hzvsdexbins, hzvsdexmin,
-                  hzvsdexmax, hzvseybins, hzvseymin, hzvseymax);
-
-      histo_names.SetValue("ID_REAL_VS_DE", "ID_REAL_VS_DE");
-      add_histo(hzvsde);
 
       auto hzvsde_aident =
          new TH2F("ID_REAL_VS_DE_AIDENT", "PID vs. #Delta E [Z&A identified]", hzvsexbins, hzvsdexmin,
