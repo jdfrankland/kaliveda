@@ -62,6 +62,7 @@ KVNameValueList::ELIE Parameters :  (0x55b2067172f0)
 */
 
 class KVSimReader_ELIE : public KVSimReader {
+
    void init()
    {
       tree_name = "ELIE";
@@ -72,6 +73,8 @@ protected:
    KVNucleus proj, targ;
    Double_t ebeam;
    KVNameValueList* elie_params;
+   int run_number = -1;
+
    virtual void define_output_filename();
    void transform_to_cm();
 

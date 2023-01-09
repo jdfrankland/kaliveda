@@ -35,6 +35,7 @@ Bool_t KVSimReader_ELIE2023::ReadHeader()
          AddInfo("Ebeam", GetReadPar(4));
          AddInfo("Nevents", GetReadPar(5));
          AddInfo("RunNumber", GetReadPar(6));
+         run_number = GetIntReadPar(6);
          proj.SetZAandE(GetIntReadPar(0), GetIntReadPar(1), GetIntReadPar(1)*GetDoubleReadPar(4));
          targ.SetZandA(GetIntReadPar(2), GetIntReadPar(3));
          ebeam = GetDoubleReadPar(4);

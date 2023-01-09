@@ -9,10 +9,24 @@ ClassImp(KVSimReader_ELIE)
 
 void KVSimReader_ELIE::define_output_filename()
 {
-   // ROOT file called: ELIE_[PROJ]_[TARG]_[EBEAM]AMeV_PRIM.root
+   // ROOT file called either
+   //
+   //       ELIE_[PROJ]_[TARG]_[EBEAM]AMeV_PRIM.root
+   //
+   // or
+   //
+   //       ELIE_[PROJ]_[TARG]_[EBEAM]AMeV_Run[xx...]_PRIM.root
+   //
+   // if run_number is defined
+   //
    // Call after reading file header
-   SetROOTFileName(Form("ELIE_%s_%s_%.1fAMeV_PRIM.root",
-                        proj.GetSymbol(), targ.GetSymbol(), ebeam));
+
+   if (run_number >= 0)
+      SetROOTFileName(Form("ELIE_%s_%s_%.1fAMeV_Run%d_PRIM.root",
+                           proj.GetSymbol(), targ.GetSymbol(), ebeam, run_number));
+   else
+      SetROOTFileName(Form("ELIE_%s_%s_%.1fAMeV_PRIM.root",
+                           proj.GetSymbol(), targ.GetSymbol(), ebeam));
    tree_title.Form("ELIE primary events %s + %s %.1f MeV/nuc.",
                    proj.GetSymbol(), targ.GetSymbol(), ebeam);
 }
