@@ -51,6 +51,7 @@ KVEventReconstructor::KVEventReconstructor(KVMultiDetArray* a, KVReconstructedEv
    Info("KVEventReconstructor", "Initialised for %u groups of multidetector %s", N, fArray->GetName());
    if (GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoIdentification", kFALSE) || GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoCalibration", kFALSE)) {
       if (GetDataSetEnv(fArray->GetDataSet(), "EventReconstruction.DoIdentification", kFALSE)) {
+         fArray->InitializeIDTelescopes();
          Info("KVEventReconstructor", " -- identification of events will be performed");
          //fArray->PrintStatusOfIDTelescopes();
       }

@@ -15,8 +15,8 @@
 
 class KVFAZIAFilterGroupReconstructor : public KVFilterGroupReconstructor {
 public:
-   KVFAZIAFilterGroupReconstructor()
-      : KVFilterGroupReconstructor()
+   KVFAZIAFilterGroupReconstructor(const KVGroup* g = nullptr)
+      : KVFilterGroupReconstructor(g)
    {
    }
 

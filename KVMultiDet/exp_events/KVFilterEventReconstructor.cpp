@@ -18,6 +18,11 @@ void KVFilterEventReconstructor::ReconstructEvent(const TSeqCollection*)
    for (auto& n : EventIterator(fSimEvent)) {
       if (n.GetParameters()->HasIntParameter("GROUP")) {
          auto gr = GetReconstructor(n.GetParameters()->GetIntValue("GROUP"));
+         if (!gr) {
+            Error("ReconstructEvent", "No reconstructor for group %d", n.GetParameters()->GetIntValue("GROUP"));
+            n.Print();
+            assert(gr);
+         }
          dynamic_cast<KVFilterGroupReconstructor*>(gr)->AddSimParticle((const KVNucleus*)n.GetFrame(fDetectionFrame));
          fired.Add(GetArray()->GetDetector(n.GetParameters()->GetStringValue("STOPPING DETECTOR")));
       }
