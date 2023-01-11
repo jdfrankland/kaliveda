@@ -53,6 +53,9 @@ void KVINDRADB2::Build()
    ReadRunList(runlist_fullpath.Data());
    ReadSystemList();
    ReadChIoPressures();
+
+   if (!gIndra) KVMultiDetArray::MakeMultiDetector(fDataSet);
+   gIndra->MakeCalibrationTables(this);
 }
 
 
