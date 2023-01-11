@@ -1703,26 +1703,28 @@ KVMultiDetArray* KVMultiDetArray::MakeMultiDetector(const Char_t* dataset_name, 
 
          int n_grids_to_write = gIDGridManager->GetGrids()->GetEntries();
 
-         KVSQLROOTFile f(filepath, "recreate");
+         if (n_grids_to_write) {
+            KVSQLROOTFile f(filepath, "recreate");
 
-         printf("Info in <KVMultiDetArray::MakeMultiDetector>: Saving %d grids in SQL-ROOT database file %s\n",
-                n_grids_to_write, filepath.Data());
+            printf("Info in <KVMultiDetArray::MakeMultiDetector>: Saving %d grids in SQL-ROOT database file %s\n",
+                   n_grids_to_write, filepath.Data());
 
-         TIter it(gIDGridManager->GetGrids());
-         KVIDGraph* gr;
-         while ((gr = (KVIDGraph*)it())) {
-            f.WriteObject(gr, {
-               {"IDLabel", gr->GetIDTelescopeLabel()},
-               {"IDTelescopes", gr->GetParameters()->GetStringValue("IDTelescopes")},
-               {"VarX", gr->GetVarX()},
-               {"VarY", gr->GetVarY()},
-               {"Runlist", gr->GetRunList()},
+            TIter it(gIDGridManager->GetGrids());
+            KVIDGraph* gr;
+            while ((gr = (KVIDGraph*)it())) {
+               f.WriteObject(gr, {
+                  {"IDLabel", gr->GetIDTelescopeLabel()},
+                  {"IDTelescopes", gr->GetParameters()->GetStringValue("IDTelescopes")},
+                  {"VarX", gr->GetVarX()},
+                  {"VarY", gr->GetVarY()},
+                  {"Runlist", gr->GetRunList()},
+               }
+                            );
+               --n_grids_to_write;
+               if (!(n_grids_to_write % 1000))  printf("Info in <KVMultiDetArray::MakeMultiDetector>: ...%d grids left...\n",
+                                                          n_grids_to_write);
+
             }
-                         );
-            --n_grids_to_write;
-            if (!(n_grids_to_write % 1000))  printf("Info in <KVMultiDetArray::MakeMultiDetector>: ...%d grids left...\n",
-                                                       n_grids_to_write);
-
          }
       }
 #endif
