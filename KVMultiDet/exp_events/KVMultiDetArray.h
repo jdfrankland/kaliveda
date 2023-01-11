@@ -40,7 +40,7 @@ class KVMFMDataFileReader;
 class MFMEbyedatFrame;
 class MFMBufferReader;
 #ifdef WITH_MESYTEC
-class MFMMesytecMDPPFrame;
+#include "MFMMesytecMDPPFrame.h"
 #endif
 #endif
 #ifdef WITH_PROTOBUF
