@@ -64,38 +64,38 @@ void KVINDRAUpDater::SetParameters(UInt_t run, Bool_t physics_parameters_only)
 
 //_______________________________________________________________//
 
-void KVINDRAUpDater::SetCalibrationParameters(UInt_t run)
-{
-   //Set calibration parameters for this run.
-   //This will:
-   //      reset all the calibrators of all the detectors ready to receive the calibrators for the run (handled by child classes),
-   //      set calibration parameters for the run
-   //      set pedestals for the run
-   //      set PHD parameters of silicon detectors for run
+//void KVINDRAUpDater::SetCalibrationParameters(UInt_t run)
+//{
+//   //Set calibration parameters for this run.
+//   //This will:
+//   //      reset all the calibrators of all the detectors ready to receive the calibrators for the run (handled by child classes),
+//   //      set calibration parameters for the run
+//   //      set pedestals for the run
+//   //      set PHD parameters of silicon detectors for run
 
-   cout << "Setting calibration parameters of INDRA array for run " << run << ":" <<
-        endl;
-   KVDBRun* kvrun = gExpDB->GetDBRun(run);
-   if (!kvrun) {
-      Error("SetParameters(UInt_t)", "Run %u not found in database!", run);
-      return;
-   }
-   //Reset all calibrators of all detectors first
-   TIter next(fArray->GetDetectors());
-   KVDetector* kvd;
-   KVCalibrator* kvc;
-   while ((kvd = (KVDetector*) next())) {
-      if (kvd->GetListOfCalibrators()) {
-         TIter next_cal(kvd->GetListOfCalibrators());
-         while ((kvc = (KVCalibrator*) next_cal())) {
-            kvc->Reset();
-         }
-      }
-   }
-   SetCalibParameters(kvrun);
-   //SetPedestals(kvrun);
-   SetPHDs(kvrun);
-}
+//   cout << "Setting calibration parameters of INDRA array for run " << run << ":" <<
+//        endl;
+//   KVDBRun* kvrun = gExpDB->GetDBRun(run);
+//   if (!kvrun) {
+//      Error("SetParameters(UInt_t)", "Run %u not found in database!", run);
+//      return;
+//   }
+//   //Reset all calibrators of all detectors first
+//   TIter next(fArray->GetDetectors());
+//   KVDetector* kvd;
+//   KVCalibrator* kvc;
+//   while ((kvd = (KVDetector*) next())) {
+//      if (kvd->GetListOfCalibrators()) {
+//         TIter next_cal(kvd->GetListOfCalibrators());
+//         while ((kvc = (KVCalibrator*) next_cal())) {
+//            kvc->Reset();
+//         }
+//      }
+//   }
+//   SetCalibParameters(kvrun);
+//   //SetPedestals(kvrun);
+//   SetPHDs(kvrun);
+//}
 
 //_______________________________________________________________//
 void KVINDRAUpDater::SetTrigger(KVDBRun* kvrun)
@@ -389,13 +389,13 @@ void KVINDRAUpDater::SetVoltEnergyChIoSiParameters(KVDBRun* kvrun)
 
 //______________________________________________________________________________
 
-void KVINDRAUpDater::SetCalibParameters(KVDBRun* run)
-{
-   SetChVoltParameters(run);
-   SetVoltEnergyChIoSiParameters(run);
-   SetLitEnergyCsIParameters(run);
-   SetCsIGainCorrectionParameters(run);
-}
+//void KVINDRAUpDater::SetCalibParameters(KVDBRun* run)
+//{
+//   SetChVoltParameters(run);
+//   SetVoltEnergyChIoSiParameters(run);
+//   SetLitEnergyCsIParameters(run);
+//   SetCsIGainCorrectionParameters(run);
+//}
 
 //____________________________________________________________________________________
 
