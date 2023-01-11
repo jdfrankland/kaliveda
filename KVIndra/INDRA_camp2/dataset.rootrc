@@ -25,3 +25,5 @@ INDRA_camp2.GDir.Freq: 170.614+(x-1005)*0.00345344
 INDRA_camp2.ActiveIdentifications:      CSI SI-CSI CI-SI CI-CSI CI-SI75 SI75-SILI SILI-CSI PHOS
 
 +Plugin.KVDataPatch:   Camp2MassID  KVDataPatch_Camp2MassID  KVIndraanalysis  "KVDataPatch_Camp2MassID()"
+
+INDRA_camp2.INDRA.CSI.ExpectedDetectorSignals: R,L,T
