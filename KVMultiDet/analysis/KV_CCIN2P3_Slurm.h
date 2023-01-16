@@ -28,7 +28,6 @@ protected:
 public:
 
    KV_CCIN2P3_Slurm(const Char_t* name);
-   virtual ~ KV_CCIN2P3_Slurm();
 
    void SetJobTime(const Char_t* h = "");      /* Set CPU time for batch job */
    void SetJobMemory(const Char_t* h = ""); /* Set max memory for batch job */

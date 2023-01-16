@@ -6,8 +6,6 @@
 #include "TEnv.h"
 #include "KVDataAnalyser.h"
 #include "KVDataAnalysisTask.h"
-#include "KVGEBatchJob.h"
-#include "KVDataRepository.h"
 #include "KVDataSetAnalyser.h"
 #include "KVSimDirAnalyser.h"
 
@@ -39,11 +37,6 @@ void KV_CCIN2P3_Slurm::Clear(Option_t* opt)
 }
 
 //_______________________________________________________________________________//
-
-KV_CCIN2P3_Slurm::~KV_CCIN2P3_Slurm()
-{
-   //Destructor
-}
 
 void KV_CCIN2P3_Slurm::SetJobTime(const Char_t* time)
 {
@@ -100,7 +93,8 @@ void KV_CCIN2P3_Slurm::ChooseJobTime()
    if (!tmp.Length()) {
       SetJobTime();
       return;
-   } else
+   }
+   else
       SetJobTime(tmp);
 }
 
@@ -164,7 +158,8 @@ void KV_CCIN2P3_Slurm::Print(Option_t* option) const
    if (!strcmp(option, "log")) {
       KVBatchSystem::Print(option);
       cout << "* MEM_REQ:         " << GetJobMemory() << "                             *" << endl;
-   } else
+   }
+   else
       KVBatchSystem::Print(option);
 }
 
@@ -180,10 +175,13 @@ void KV_CCIN2P3_Slurm::ChangeDefJobOpt(KVDataAnalyser* da)
    // changes the options as a function of the type of analysis task).
    // Here we add the CCIN2P3-specific case where the job is launched from a directory
    // on the /sps/ semi-permanent storage facility, or if the data being analysed is
-   // stored in a repository on /sps/. In this case we need to add
-   // the option '-l u_sps_indra' to the 'qsub' command (if not already in the
-   // default job options)
+   // stored in a repository on /sps/.
    //
+   // Then we must declare the resource 'sps'.
+   // As the 'sbatch' command does not allow multiple '-L' ressource declarations,
+   // the whole thing has to be done here. 'xrootd' resource is declared by
+   // default, 'sps' is added if needed.
+
    KVBatchSystem::ChangeDefJobOpt(da);
    KVString taskname = da->GetAnalysisTask()->GetName();
    KVString rootdir = da->GetRootDirectoryOfDataToAnalyse();
@@ -192,13 +190,13 @@ void KV_CCIN2P3_Slurm::ChangeDefJobOpt(KVDataAnalyser* da)
    KVString wrkdir(gSystem->WorkingDirectory());
    KVString oldoptions(GetDefaultJobOptions());
 
-   if (!oldoptions.Contains("sps")) {
-      Bool_t NeedToAddSPS = wrkdir.Contains("/sps/");
-      if ((NeedToAddSPS || repIsSPS)) {
-         oldoptions += " -L sps";
-         SetDefaultJobOptions(oldoptions.Data());
-      }
+   KVString ressource_list(" -L xrootd");
+   Bool_t NeedToAddSPS = wrkdir.Contains("/sps/");
+   if ((NeedToAddSPS || repIsSPS)) {
+      ressource_list += ",sps";
    }
+   oldoptions += ressource_list;
+   SetDefaultJobOptions(oldoptions.Data());
 }
 
 
@@ -242,7 +240,8 @@ void KV_CCIN2P3_Slurm::Run()
             }
          }
          ana->SetRuns(runs, kFALSE);
-      } else if (fAnalyser->InheritsFrom("KVSimDirAnalyser")) {
+      }
+      else if (fAnalyser->InheritsFrom("KVSimDirAnalyser")) {
          // here we understand "run" to mean "file"
          KVSimDirAnalyser* ana = dynamic_cast<KVSimDirAnalyser*>(fAnalyser);
          TList* file_list = ana->GetFileList();
@@ -267,7 +266,8 @@ void KV_CCIN2P3_Slurm::Run()
          }
          ana->SetFileList(file_list);
       }
-   } else {
+   }
+   else {
       SubmitJob();
    }
 
@@ -289,7 +289,8 @@ const Char_t* KV_CCIN2P3_Slurm::GetJobName() const
    if (!fAnalyser) {
       //stand-alone batch submission ?
       fCurrJobName = fJobName;
-   } else {
+   }
+   else {
       //replace any special symbols with their current values
       fCurrJobName = fAnalyser->ExpandAutoBatchName(fJobName.Data());
       if (MultiJobsMode() && !fAnalyser->BatchMode()) {
