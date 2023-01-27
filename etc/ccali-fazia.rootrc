@@ -12,7 +12,7 @@ fazia_irods.DataRepository.XRDRootDir:       /hpss/in2p3.fr/group/fazia
 
 +BatchSystem:    Slurm
 Slurm.BatchSystem.Title:   Use Slurm batch system
-Slurm.BatchSystem.DefaultJobOptions:   --account fazia --get-user-env --job-name #JobName# --output #JobName#.o%j
+Slurm.BatchSystem.DefaultJobOptions: -n 1 --account fazia --get-user-env --job-name #JobName# --output #JobName#.o%j
 Slurm.BatchSystem.JobSubCmd:   sbatch
 Slurm.BatchSystem.JobScript:   $KVROOT/bin/KVA
 Slurm.BatchSystem.DefaultJobTime:   00:05:00
