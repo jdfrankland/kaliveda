@@ -1252,21 +1252,40 @@ Bool_t KVINDRA::handle_raw_data_event_mfmframe_mesytec_mdpp(const MFMMesytecMDPP
    mfmfilereader->GetMesytecBufferReader().read_event_in_buffer(
       (const uint8_t*)f.GetPointUserData(), f.GetBlobSize(),
 #ifdef MESYTEC_DATA_NO_MDPP_NAMESPACE
+#ifdef MESYTEC_DATA_BUFFER_READER_CALLBACK_WITH_EVENT_AND_SETUP
+   [ = ](const mesytec::event & evt, const mesytec::experimental_setup & setup) {
+#else
    [ = ](const mesytec::event & evt) {
+#endif
 #else
    [ = ](const mesytec::mdpp::event & evt) {
 #endif
+#ifndef MESYTEC_DATA_BUFFER_READER_CALLBACK_WITH_EVENT_AND_SETUP
       auto& setup = mfmfilereader->GetMesytecBufferReader().get_setup();
+#endif
       // loop over module data in event, set data in detectors when possible
+#ifdef MESYTEC_DATA_NO_PUBLIC_MEMBERS
+      for (auto& mdat : evt.get_module_data()) {
+         auto mod_id = mdat.get_module_id();
+#else
       for (auto& mdat : evt.modules) {
          auto mod_id = mdat.module_id;
+#endif
          auto& current_module = setup.get_module(mod_id);
          if (current_module.is_mdpp_module()) {
             // data for detectors from MDPP module
+#ifdef MESYTEC_DATA_NO_PUBLIC_MEMBERS
+            for (auto& voie : mdat.get_channel_data()) {
+               KVString detname(setup.get_detector(mod_id, voie.get_channel_number()));
+               KVString sig_type(current_module.get_data_type_name(voie.get_data_type()));
+               Double_t sig_data = voie.get_data();
+#else
             for (auto& voie : mdat.data) {
                KVString detname(setup.get_detector(mod_id, voie.channel));
                KVString sig_type(voie.data_type);
                Double_t sig_data = voie.data;
+
+#endif
                add_and_set_detector_signal(GetDetector(detname), detname, sig_data, sig_type);
             }
          }
@@ -1274,10 +1293,18 @@ Bool_t KVINDRA::handle_raw_data_event_mfmframe_mesytec_mdpp(const MFMMesytecMDPP
             // data from 64 bit scalers in MVLC
             //
             // 4 data words of 16 bits (least significant is first word) => 64 bit scaler
+#ifdef MESYTEC_DATA_NO_PUBLIC_MEMBERS
+            if (mdat.get_channel_data().size() == 4) {
+#else
             if (mdat.data.size() == 4) {
+#endif
                ULong64_t x = 0;
                int i = 0;
+#ifdef MESYTEC_DATA_NO_PUBLIC_MEMBERS
+               for (auto& d : mdat.get_channel_data()) x += ((uint64_t)d.get_data_word()) << (16 * (i++));
+#else
                for (auto& d : mdat.data) x += ((uint64_t)d.data_word) << (16 * (i++));
+#endif
                fReconParameters.SetValue64bit(current_module.name.c_str(), x);
             }
 //            else {

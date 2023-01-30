@@ -87,9 +87,14 @@ void KVMFMDataFileReader::InitialiseMesytecConfig(const std::string& crate, cons
    // Read the two files whose full paths are given as argument in order to set up the
    // Mesytec crate config and module-channel-detector correspondence
 
+#ifndef MESYTEC_DATA_BUFFER_READER_NO_DEFINE_SETUP
    mesytec::experimental_setup exp;
    exp.read_crate_map(crate);
    exp.read_detector_correspondence(channels);
    MTEC_bufrdr.define_setup(exp);
+#else
+   MTEC_bufrdr.read_crate_map(crate);
+   MTEC_bufrdr.read_detector_correspondence(channels);
+#endif
 }
 #endif
