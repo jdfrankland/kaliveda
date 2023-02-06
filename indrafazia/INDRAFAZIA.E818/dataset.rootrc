@@ -38,7 +38,7 @@ INDRAFAZIA.E818.INDRA.SI-CSI.GridOrder:    ADC_TotLight,1.0*ADC_TotLight
 
 # IDENTIFICATION GRIDS FAZIA
 INDRAFAZIA.E818.IdentificationParameterList.FAZIA.CsI: FAZIA.CsI.IdentificationFiles.dat
-INDRAFAZIA.E818.IdentificationParameterFile.FAZIA.Si: IDGridsFAZIA_Si.dat
+INDRAFAZIA.E818.IdentificationParameterFile.FAZIA.Si: FAZIA.Si.IdentificationFiles.dat
 INDRAFAZIA.E818.IdentificationParameterList.FAZIA.Si-Si: FAZIA.Si-Si.IdentificationFiles.dat
 INDRAFAZIA.E818.IdentificationParameterList.FAZIA.Si-CsI: FAZIA.Si-CsI.IdentificationFiles.dat
 INDRAFAZIA.E818.FAZIA.Si-CsI.GridOrder: SI1::Energy+SI2::Energy_1.0*Q3.FPGAEnergy,SI1::Energy+SI2::Energy_Q3.FPGAEnergy
