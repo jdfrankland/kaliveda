@@ -44,8 +44,11 @@ class KVSQLROOTFile : public KVBase {
    KVString UUID_for_object(const KVString&) const;
    TObject* get_object_with_UUID(const KVString& name) const;
 
+   TString fCurrentROOTFilePath;// full path to current ROOT file
 public:
    KVSQLROOTFile(const KVString& filepath, Option_t* option = "READ");
+
+   ~KVSQLROOTFile();
 
    void WriteObject(const TObject*, const KVNameValueList&);
 

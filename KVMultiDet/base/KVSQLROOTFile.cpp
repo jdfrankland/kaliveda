@@ -40,6 +40,7 @@ KVSQLROOTFile::KVSQLROOTFile(const KVString& filepath, Option_t* option)
    if (OPT.Contains("CREATE")) {
       // create directory using path
       gSystem->mkdir(filepath, true); // recursive: create any missing directories in path
+      gSystem->Chmod(filepath, 0775); // make writable for group
    }
    FP.Append("/");
    TString rpath = FP + "objStore.root";
@@ -47,6 +48,8 @@ KVSQLROOTFile::KVSQLROOTFile(const KVString& filepath, Option_t* option)
    save_working_directory();
    fObjStore.reset(new TFile(rpath, OPT));
    restore_working_directory();
+   fCurrentROOTFilePath = rpath;
+
    TString sqlpath = FP + "objInfos.sqlite";
    if (OPT == "RECREATE") gSystem->Unlink(sqlpath);
    fObjDB.reset(new KVSQLite::database(sqlpath));
@@ -59,6 +62,16 @@ KVSQLROOTFile::KVSQLROOTFile(const KVString& filepath, Option_t* option)
       tmp.add_column("unique_id", "TEXT");
       fObjDB->add_table(tmp);
    }
+   gSystem->Chmod(sqlpath, 0664); // make writable for group
+}
+
+KVSQLROOTFile::~KVSQLROOTFile()
+{
+   // Manually 'delete' ROOT file in order to force writing to disk,
+   // then change access permissions to make it writable for group
+
+   fObjStore.reset(nullptr);
+   gSystem->Chmod(fCurrentROOTFilePath, 0664);
 }
 
 void KVSQLROOTFile::WriteObject(const TObject* obj, const KVNameValueList& infos)
