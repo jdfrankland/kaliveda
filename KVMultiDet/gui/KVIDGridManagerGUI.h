@@ -21,7 +21,7 @@
 \ingroup Identification
 \ingroup GUI
 
-\image http http://indra.in2p3.fr/kaliveda/images/newIDgridManager.png
+\image html newIDgridManager.png
 
 */
 

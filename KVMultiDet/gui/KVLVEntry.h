@@ -19,7 +19,7 @@ $Date: 2009/04/28 09:11:29 $
 \brief One item/line in a KVListView window
 \ingroup GUI
 
-\image http http://indra.in2p3.fr/kaliveda/images/KVLVContainer.png
+\image html KVLVContainer.png
 
 <h3>Example of use</h3>
 KVListView takes a list of objects (TObject or derived class) and presents them

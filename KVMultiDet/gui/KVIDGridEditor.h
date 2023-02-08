@@ -47,7 +47,7 @@
 \brief Identification grid editor GUI
 \ingroup GUI,Identification
 
-\image http http://indra.in2p3.fr/KaliVedaDoc/images/IDGridEditor.png
+\image html IDGridEditor.png
 
 See users guide http://indra.in2p3.fr/kaliveda/images/DocGridEditor.pdf (in French)
 

@@ -105,7 +105,7 @@ $Date: 2009/03/03 14:27:15 $
 \brief ID Grid Manager dialog for choice of ID telescope(s)
 \ingroup GUI
 
-\image http://indra.in2p3.fr/KaliVedaDoc/images/IDTelescopeChooser.png
+\image html IDTelescopeChooser.png
 
 This dialog box presents the user with a drop-down list of ID telescope
 types, and a box containing the list of all ID telescopes in a given multidetector

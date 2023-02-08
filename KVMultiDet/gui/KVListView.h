@@ -20,7 +20,7 @@ $Date: 2009/04/28 09:11:29 $
 \brief Enhanced version of ROOT TGListView widget
 \ingroup GUI
 
-\image http http://indra.in2p3.fr/KaliVedaDoc/images/KVLVContainer.png
+\image html KVLVContainer.png
 
 <h3>Example of use</h3>
 KVListView takes a list of objects (TObject or derived class) and presents them
