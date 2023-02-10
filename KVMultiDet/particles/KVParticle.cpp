@@ -61,7 +61,7 @@ KVParticle::KVParticle(const KVParticle& obj) : TLorentzVector()
 }
 
 //________________________________________________________
-KVParticle::KVParticle(Double_t m, TVector3& p) : fParameters("ParticleParameters", "Parameters associated with a particle in an event")
+KVParticle::KVParticle(Double_t m, const TVector3& p) : fParameters("ParticleParameters", "Parameters associated with a particle in an event")
 {
    //create particle with given mass and momentum vector
    init();
@@ -122,7 +122,7 @@ void KVParticle::SetRandomMomentum(Double_t T, Double_t thmin,
 }
 
 //________________________________________________________
-void KVParticle::SetMomentum(Double_t T, TVector3 dir)
+void KVParticle::SetMomentum(Double_t T, const TVector3& dir)
 {
    //set momentum with kinetic energy t and unit direction vector d
    //(d is normalised first in case it is not a unit vector)

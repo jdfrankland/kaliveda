@@ -2,6 +2,7 @@
 //Author: John Frankland
 
 #include "KV_CCIN2P3_GE.h"
+#include "TObjString.h"
 #include "TSystem.h"
 #include "TEnv.h"
 #include "KVDataAnalyser.h"

@@ -263,7 +263,7 @@ KVNucleus::KVNucleus(const Char_t* symbol, Double_t EperA)
 }
 
 //___________________________________________________________________________________________
-KVNucleus::KVNucleus(Int_t z, Double_t t, TVector3& p)
+KVNucleus::KVNucleus(Int_t z, Double_t t, const TVector3& p)
 {
 
    //Create nucleus with given Z, kinetic energy t and direction p
@@ -278,7 +278,7 @@ KVNucleus::KVNucleus(Int_t z, Double_t t, TVector3& p)
 }
 
 //___________________________________________________________________________________________
-KVNucleus::KVNucleus(Int_t z, Int_t a, TVector3 p)
+KVNucleus::KVNucleus(Int_t z, Int_t a, const TVector3& p)
 {
    //
    //Create nucleus with given Z, A, and 3-momentum p
@@ -286,7 +286,7 @@ KVNucleus::KVNucleus(Int_t z, Int_t a, TVector3 p)
    init();
    fZ = (UChar_t) z;
    SetA(a);
-   SetMomentum(&p);
+   SetMomentum(p);
 }
 
 //___________________________________________________________________________________________

@@ -22,12 +22,9 @@ $Id: KVParticle.h,v 1.41 2008/05/21 13:19:56 ebonnet Exp $
 
 #include "TVector3.h"
 #include "TLorentzVector.h"
-#include "KVBase.h"
-#include "TRef.h"
 #include "TMath.h"
 #include "KVList.h"
 #include "KVUniqueNameList.h"
-#include "TObjString.h"
 #include "KVNameValueList.h"
 #include "KVFrameTransform.h"
 
@@ -71,7 +68,7 @@ Methods defined/redefined in this class:
 Particle properties can be defined either using one of the constructors :
 
 ~~~~~~~~~~~~~~~~~~{.cpp}
-      KVParticle(Double_t m, TVector3 & p);                              // rest mass and momentum 3-vector
+      KVParticle(Double_t m, const TVector3 & p);                        // rest mass and momentum 3-vector
       KVParticle(Double_t m, Double_t px, Double_t py, Double_t pz);     // rest mass and Cartesian components of momentum 3-vector
 ~~~~~~~~~~~~~~~~~~
 
@@ -98,7 +95,7 @@ Set momentum 3-vector, leaving rest mass unchanged, with :
  Other methods:
 
 ~~~~~~~~~~~~~~~~~~{.cpp}
-      SetMomentum(Double_t T, TVector3 dir);  // set kinetic energy to T [MeV] and direction given by 'dir' unit vector
+      SetMomentum(Double_t T, const TVector3& dir);  // set kinetic energy to T [MeV] and direction given by 'dir' unit vector
 
       SetRandomMomentum(Double_t T, Double_t thmin, Double_t thmax, Double_t phmin, Double_t phmax, Option_t * opt = "isotropic");
               // a handy tool for giving random momenta to particles.
@@ -541,6 +538,10 @@ private:
    {
       fOriginal = p;
    }
+   void SetMomentum(const TVector3* v)
+   {
+      SetMomentum(*v);
+   }
 
 protected:
    void SetGroups(KVUniqueNameList* un);
@@ -557,7 +558,7 @@ public:
    static Double_t C();
 
    KVParticle();
-   KVParticle(Double_t m, TVector3& p);
+   KVParticle(Double_t m, const TVector3& p);
    KVParticle(Double_t m, Double_t px, Double_t py, Double_t pz);
    KVParticle(const KVParticle&);
    virtual ~ KVParticle();
@@ -568,22 +569,18 @@ public:
    virtual void SetMass(Double_t m)
    {
       SetXYZM(Px(), Py(), Pz(), m);
-   };
+   }
    Double_t GetMass() const
    {
       return M();
-   };
+   }
    void SetMomentum(const TVector3& v)
    {
       SetXYZM(v(0), v(1), v(2), M());
-   };
-   void SetMomentum(const TVector3* v)
-   {
-      SetXYZM((*v)(0), (*v)(1), (*v)(2), M());
-   };
+   }
    void SetMomentum(Double_t px, Double_t py, Double_t pz, Option_t* opt =
                        "cart");
-   void SetMomentum(Double_t T, TVector3 dir);
+   void SetMomentum(Double_t T, const TVector3& dir);
    void SetRandomMomentum(Double_t T, Double_t thmin, Double_t thmax,
                           Double_t phmin, Double_t phmax,
                           Option_t* opt = "isotropic");
@@ -596,17 +593,17 @@ public:
    void SetE(Double_t a)
    {
       SetKE(a);
-   };
+   }
    void SetKE(Double_t ecin);
    void SetEnergy(Double_t e)
    {
       SetKE(e);
-   };
+   }
    void SetVelocity(const TVector3&);
    TVector3 GetMomentum() const
    {
       return Vect();
-   };
+   }
    TVector3 GetTransverseMomentum() const
    {
       TVector3 perp = GetMomentum();
@@ -619,11 +616,11 @@ public:
       Double_t m = M();
       //return (E() - M());
       return e - m;
-   };
+   }
    Double_t GetEnergy() const
    {
       return GetKE();
-   };
+   }
    Double_t GetTransverseEnergy() const
    {
       return GetKE() * TMath::Power(TMath::Sin(Theta()), 2.0);

@@ -3,6 +3,7 @@
 
 #include "KVIDGridEditor.h"
 
+#include "TObjString.h"
 #include "TSpectrum.h"
 #include "TStyle.h"
 #include "TROOT.h"
